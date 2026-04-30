@@ -1,0 +1,22 @@
+# 1. Introducción
+
+## Objetivo del proyecto
+
+**Yupay Turismo** es una aplicación móvil offline‑first diseñada para comunidades rurales del Perú, que transforma la recolección manual de datos turísticos en información útil, accesible y accionable. Nace como respuesta al desafío público *“Del cuaderno al insight”* del Ministerio de Comercio Exterior y Turismo (MINCETUR) y el Programa ProInnóvate, cuyo propósito es empoderar a los emprendedores turísticos y mejorar la toma de decisiones públicas a partir de datos confiables.
+
+El proyecto tiene como finalidad desarrollar un prototipo funcional que permita:
+
+1. Registrar visitantes de manera sencilla y offline en comunidades con conectividad limitada.
+2. Transformar esos datos en insights visuales y multimodales (texto simplificado, gráficos y audio en quechua y español).
+3. Validar la solución en condiciones reales, con miras a un piloto en las comunidades de Luquina, Misminay y Bosque de las Nuwas, representativas de la diversidad andina y amazónica del turismo rural comunitario.
+
+## Breve descripción de la aplicación
+
+**Yupay Turismo** reemplaza el tradicional cuaderno de registro por una interfaz móvil adaptada a dispositivos de baja gama. La app permite al emprendedor registrar cada visita turística (procedencia, gasto aproximado, servicios consumidos) sin necesidad de conexión a internet. Los datos se almacenan localmente y se sincronizan de forma inteligente cuando el dispositivo encuentra una red Wi‑Fi o datos móviles.
+
+Posteriormente, la aplicación procesa la información y genera:
+- Paneles de control con gráficos simples y dos elementos pictográficos (mapa de procedencias, termómetro de visitas).
+- Recomendaciones personalizadas según el tipo de emprendimiento (hospedaje, alimentación o artesanía).
+- Audios en quechua (y español) que leen los insights en voz alta, utilizando modelos de síntesis de voz de código abierto (Meta MMS + Sherpa‑ONNX), facilitando la comprensión en contextos de baja alfabetización.
+
+La solución está alineada con los lineamientos de interoperabilidad del MINCETUR y cumple con principios de privacidad y protección de datos personales.
