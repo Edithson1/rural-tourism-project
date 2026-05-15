@@ -13,6 +13,10 @@ class DataRepository(
     val appSettings: Flow<AppSettings?> = appSettingsDao.getSettings()
     val allVisits: Flow<List<Visit>> = visitDao.getAllVisits()
 
+    suspend fun getSettingsOnce(): AppSettings? {
+        return appSettingsDao.getSettingsOnce()
+    }
+
     suspend fun saveSettings(settings: AppSettings) {
         appSettingsDao.saveSettings(settings)
     }
@@ -23,11 +27,5 @@ class DataRepository(
 
     suspend fun getVisitById(id: Int): Visit? {
         return visitDao.getVisitById(id)
-    }
-
-    suspend fun updateLanguage(language: String) {
-        val current = AppSettings(language = language) // Simple for now, ideally we merge with current
-        // In a real app we would get the current first, but for id=1 it replaces
-        saveSettings(current)
     }
 }

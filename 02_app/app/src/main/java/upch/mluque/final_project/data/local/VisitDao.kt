@@ -19,4 +19,7 @@ interface VisitDao {
 
     @Query("SELECT * FROM visits WHERE id = :id")
     suspend fun getVisitById(id: Int): Visit?
+
+    @Query("SELECT * FROM visits ORDER BY registrationDate DESC")
+    suspend fun getAllOnce(): List<Visit>
 }

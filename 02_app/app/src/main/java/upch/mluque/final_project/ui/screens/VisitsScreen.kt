@@ -18,6 +18,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -61,7 +62,7 @@ fun VisitsPreview() {
                     .padding(paddingValues)
                     .padding(horizontal = 24.dp)
             ) {
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = "Tus Registros",
                     fontSize = 28.sp,
@@ -93,10 +94,11 @@ fun VisitsScreen(
 ) {
     val visits by viewModel.allVisits.collectAsState()
 
+    val groupedVisits = remember(visits) {
+        groupVisits(visits)
+    }
+
     Scaffold(
-        bottomBar = {
-            BottomNavigationBar(currentRoute = "visits", onNavigate = onNavigate)
-        },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onNavigateToAdd,
@@ -107,15 +109,15 @@ fun VisitsScreen(
                 Icon(Icons.Default.Add, contentDescription = "Add")
             }
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = Color.Transparent
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 24.dp) // More padding like home
+                .padding(horizontal = 24.dp)
         ) {
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -157,16 +159,85 @@ fun VisitsScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(bottom = 80.dp)
                 ) {
-                    items(visits) { visit ->
-                        VisitItem(
-                            visit = visit,
-                            onClick = { onNavigateToDetail(visit.id) }
-                        )
+                    groupedVisits.forEach { entry ->
+                        val category = entry.key
+                        val visitsInCategory = entry.value
+                        
+                        item {
+                            Text(
+                                text = category,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(top = 16.dp, bottom = 4.dp)
+                            )
+                        }
+                        items(visitsInCategory) { visit ->
+                            VisitItem(
+                                visit = visit,
+                                onClick = { onNavigateToDetail(visit.id) }
+                            )
+                        }
                     }
                 }
             }
         }
     }
+}
+
+private fun groupVisits(visits: List<Visit>): Map<String, List<Visit>> {
+    val grouped = mutableMapOf<String, MutableList<Visit>>()
+    val now = Calendar.getInstance()
+    
+    val sortedVisits = visits.sortedByDescending { it.registrationDate }
+    
+    sortedVisits.forEach { visit ->
+        val visitDate = Calendar.getInstance().apply { timeInMillis = visit.registrationDate }
+        
+        val category = when {
+            isSameDay(now, visitDate) -> "Hoy"
+            isYesterday(now, visitDate) -> "Ayer"
+            isSameWeek(now, visitDate) -> "Esta semana"
+            isSameMonth(now, visitDate) -> "Este mes"
+            isSameYear(now, visitDate) -> "Este año"
+            else -> "Más de un año"
+        }
+        
+        grouped.getOrPut(category) { mutableListOf() }.add(visit)
+    }
+    
+    val result = LinkedHashMap<String, List<Visit>>()
+    listOf("Hoy", "Ayer", "Esta semana", "Este mes", "Este año", "Más de un año").forEach { cat ->
+        grouped[cat]?.let { result[cat] = it }
+    }
+    return result
+}
+
+private fun isSameDay(cal1: Calendar, cal2: Calendar): Boolean {
+    return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
+           cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR)
+}
+
+private fun isYesterday(today: Calendar, date: Calendar): Boolean {
+    val yesterday = Calendar.getInstance().apply {
+        timeInMillis = today.timeInMillis
+        add(Calendar.DAY_OF_YEAR, -1)
+    }
+    return isSameDay(yesterday, date)
+}
+
+private fun isSameWeek(today: Calendar, date: Calendar): Boolean {
+    return today.get(Calendar.YEAR) == date.get(Calendar.YEAR) &&
+           today.get(Calendar.WEEK_OF_YEAR) == date.get(Calendar.WEEK_OF_YEAR)
+}
+
+private fun isSameMonth(today: Calendar, date: Calendar): Boolean {
+    return today.get(Calendar.YEAR) == date.get(Calendar.YEAR) &&
+           today.get(Calendar.MONTH) == date.get(Calendar.MONTH)
+}
+
+private fun isSameYear(today: Calendar, date: Calendar): Boolean {
+    return today.get(Calendar.YEAR) == date.get(Calendar.YEAR)
 }
 
 @Composable

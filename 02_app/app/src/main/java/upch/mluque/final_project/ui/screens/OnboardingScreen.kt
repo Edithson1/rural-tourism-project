@@ -28,7 +28,8 @@ fun OnboardingScreen(
     pageIndex: Int,
     selectedLanguage: String,
     onLanguageSelected: (String) -> Unit,
-    onNext: () -> Unit
+    onNext: () -> Unit,
+    onLink: (() -> Unit)? = null
 ) {
     val title = when (pageIndex) {
         0 -> "Registra visitas sin internet"
@@ -143,6 +144,21 @@ fun OnboardingScreen(
                     fontSize = 18.sp,
                     color = Color.White
                 )
+            }
+
+            if (pageIndex == 2 && onLink != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                TextButton(
+                    onClick = onLink,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        "O VINCULAR A OTRO DISPOSITIVO",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))

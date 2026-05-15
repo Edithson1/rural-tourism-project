@@ -78,7 +78,7 @@ fun ProfileSetupScreen(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             // Business Name Input
             Column(modifier = Modifier.fillMaxWidth()) {

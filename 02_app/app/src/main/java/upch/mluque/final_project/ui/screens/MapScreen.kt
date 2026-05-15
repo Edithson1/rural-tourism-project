@@ -1,36 +1,26 @@
 package upch.mluque.final_project.ui.screens
 
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import upch.mluque.final_project.R
 import upch.mluque.final_project.ui.MainViewModel
 import upch.mluque.final_project.ui.components.BottomNavigationBar
-import kotlin.random.Random
+import upch.mluque.final_project.ui.components.OsmMapView
 
 @Composable
 fun MapScreen(
@@ -38,6 +28,9 @@ fun MapScreen(
     onNavigate: (String) -> Unit
 ) {
     val visits by viewModel.allVisits.collectAsState()
+    val settings by viewModel.appSettings.collectAsState()
+    
+    val currentSummary = settings?.let { it.mapSummary[it.language] ?: it.mapSummary["Español"] ?: "" } ?: ""
 
     val serviceCounts = remember(visits) {
         val counts = mutableMapOf(
@@ -55,16 +48,12 @@ fun MapScreen(
         counts
     }
 
-    // Prepare colors outside Canvas
+    // Prepare colors
     val colorPrimary = MaterialTheme.colorScheme.primary
     val colorSecondary = MaterialTheme.colorScheme.secondary
     val colorTertiary = MaterialTheme.colorScheme.tertiary
-    val colorOutline = MaterialTheme.colorScheme.outline
 
     Scaffold(
-        bottomBar = {
-            BottomNavigationBar(currentRoute = "map", onNavigate = onNavigate)
-        },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(
@@ -74,7 +63,7 @@ fun MapScreen(
                 .padding(horizontal = 24.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             Text(
                 text = "Mapa de Visitas",
@@ -93,60 +82,53 @@ fun MapScreen(
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    // Map with dots
+                    // OSM Map View
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(220.dp)
+                            .clip(RoundedCornerShape(8.dp))
                     ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.world),
-                            contentDescription = "World Map",
+                        OsmMapView(
                             modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Fit,
-                            colorFilter = if (isSystemInDarkTheme()) 
-                                ColorFilter.tint(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)) 
-                                else null
+                            visits = visits,
+                            isInteractive = false
                         )
 
-                        // Draw dots based on visits
-                        Canvas(modifier = Modifier.fillMaxSize()) {
-                            visits.forEach { visit ->
-                                val random = Random(visit.id.toLong())
-                                // Approximate map coordinates
-                                val x = random.nextFloat() * size.width * 0.8f + size.width * 0.1f
-                                val y = random.nextFloat() * size.height * 0.6f + size.height * 0.2f
-                                
-                                val primaryService = visit.services.split(", ").firstOrNull()
-                                val color = when (primaryService) {
-                                    "Hospedaje" -> colorPrimary
-                                    "Alimentación" -> colorSecondary
-                                    "Artesanía" -> colorTertiary
-                                    else -> colorOutline
-                                }
-
-                                drawCircle(
-                                    color = color,
-                                    radius = 4.dp.toPx(),
-                                    center = Offset(x, y)
-                                )
-                            }
+                        // Fullscreen button
+                        IconButton(
+                            onClick = { onNavigate("fullscreen_map_action") },
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(8.dp)
+                                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f), CircleShape)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Fullscreen,
+                                contentDescription = "Expandir",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
                         }
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Legend Box
-                    Surface(
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.width(120.dp)
+                    // Legend Box - Improved
+                    Text(
+                        text = "Leyenda de Servicios",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            LegendItem(colorPrimary, serviceCounts["Hospedaje"] ?: 0)
-                            LegendItem(colorSecondary, serviceCounts["Alimentación"] ?: 0)
-                            LegendItem(colorTertiary, serviceCounts["Artesanía"] ?: 0)
-                        }
+                        LegendItem("Hospedaje", colorPrimary, serviceCounts["Hospedaje"] ?: 0)
+                        LegendItem("Alimentación", colorSecondary, serviceCounts["Alimentación"] ?: 0)
+                        LegendItem("Artesanía", colorTertiary, serviceCounts["Artesanía"] ?: 0)
                     }
                 }
             }
@@ -182,10 +164,11 @@ fun MapScreen(
                     Spacer(modifier = Modifier.width(16.dp))
                     
                     Text(
-                        text = "Escuchar resumen del mapa",
+                        text = if (currentSummary.isEmpty()) "Escuchar resumen del mapa" else "Resumen: $currentSummary",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 2
                     )
                 }
             }
@@ -194,18 +177,23 @@ fun MapScreen(
 }
 
 @Composable
-fun LegendItem(color: Color, count: Int) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(vertical = 4.dp)
+fun LegendItem(label: String, color: Color, count: Int) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.padding(4.dp)
     ) {
         Box(
             modifier = Modifier
-                .size(12.dp)
+                .size(14.dp)
                 .clip(CircleShape)
                 .background(color)
         )
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = label,
+            fontSize = 10.sp,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+        )
         Text(
             text = count.toString(),
             fontSize = 14.sp,

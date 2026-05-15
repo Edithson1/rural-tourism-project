@@ -16,11 +16,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import upch.mluque.final_project.data.local.Visit
 import upch.mluque.final_project.ui.components.BottomNavigationBar
 import upch.mluque.final_project.ui.theme.Final_projectTheme
@@ -32,6 +34,8 @@ enum class TimeView { DAY, WEEK, MONTH, YEAR }
 fun HomeScreen(
     businessName: String,
     selectedService: String,
+    entrepreneurTips: String,
+    profilePicture: ByteArray?,
     visits: List<Visit>,
     onNavigateToTip: () -> Unit,
     onNavigateToAdd: () -> Unit,
@@ -46,12 +50,6 @@ fun HomeScreen(
     val maxCount = chartData.maxOfOrNull { it.second }?.takeIf { it > 0 } ?: 1
 
     Scaffold(
-        bottomBar = {
-            BottomNavigationBar(
-                currentRoute = "home",
-                onNavigate = onNavigate
-            )
-        },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onNavigateToAdd,
@@ -62,7 +60,7 @@ fun HomeScreen(
                 Icon(Icons.Default.Add, contentDescription = "Add")
             }
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = Color.Transparent // Use transparent to show global background
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -71,20 +69,50 @@ fun HomeScreen(
                 .padding(horizontal = 24.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            Text(
-                text = "¡Hola, $businessName!",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (profilePicture != null) {
+                        AsyncImage(
+                            model = profilePicture,
+                            contentDescription = "Foto de perfil",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.AccountCircle,
+                            contentDescription = null,
+                            modifier = Modifier.size(32.dp),
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
+                
+                Spacer(modifier = Modifier.width(12.dp))
+                
+                Column {
+                    Text(
+                        text = "¡Hola, $businessName!",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
 
-            Text(
-                text = "Rubro: $selectedService",
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
-            )
+                    Text(
+                        text = "Rubro: $selectedService",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -195,7 +223,7 @@ fun HomeScreen(
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "Optimiza tus perfiles sociales para atraer más...",
+                            text = if (entrepreneurTips.isEmpty()) "Optimiza tus perfiles sociales para atraer más..." else entrepreneurTips,
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -426,6 +454,8 @@ fun HomePreview() {
         HomeScreen(
             businessName = "Tienda",
             selectedService = "Varios",
+            entrepreneurTips = "",
+            profilePicture = null,
             visits = emptyList(),
             onNavigateToTip = {},
             onNavigateToAdd = {},

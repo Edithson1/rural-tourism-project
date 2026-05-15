@@ -17,9 +17,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import upch.mluque.final_project.ui.MainViewModel
 import upch.mluque.final_project.ui.components.BottomNavigationBar
 
@@ -33,13 +35,37 @@ fun ProfileScreen(
     onNavigate: (String) -> Unit
 ) {
     val settings by viewModel.appSettings.collectAsState()
+    val syncStatus by viewModel.syncStatus.collectAsState()
+    val isSyncConnected by viewModel.isSyncConnected.collectAsState()
+    
+    val isReceiver = settings?.syncRole == "RECEIVER"
+    
     var showVoiceSpeedModal by remember { mutableStateOf(false) }
 
     Scaffold(
+        containerColor = Color.Transparent,
         bottomBar = {
-            BottomNavigationBar(currentRoute = "profile", onNavigate = onNavigate)
-        },
-        containerColor = MaterialTheme.colorScheme.background
+            if (isReceiver) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp)
+                ) {
+                    Button(
+                        onClick = { viewModel.disconnectSync() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                        shape = RoundedCornerShape(28.dp)
+                    ) {
+                        Icon(Icons.Default.LinkOff, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("DESVINCULAR DISPOSITIVO", fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -49,7 +75,7 @@ fun ProfileScreen(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             
             Text(
                 text = "Mi Perfil",
@@ -78,12 +104,21 @@ fun ProfileScreen(
                             .background(Color(0xFF0F3D3E)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            Icons.Default.AccountCircle,
-                            contentDescription = null,
-                            modifier = Modifier.size(48.dp),
-                            tint = Color.White
-                        )
+                        if (settings?.profilePicture != null) {
+                            AsyncImage(
+                                model = settings?.profilePicture,
+                                contentDescription = "Foto de perfil",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Icon(
+                                Icons.Default.AccountCircle,
+                                contentDescription = null,
+                                modifier = Modifier.size(48.dp),
+                                tint = Color.White
+                            )
+                        }
                     }
                     
                     Spacer(modifier = Modifier.width(16.dp))
@@ -148,14 +183,32 @@ fun ProfileScreen(
                     SettingsToggleItem(
                         icon = Icons.Default.CloudSync,
                         title = "Sincronización",
-                        subtitle = "Solo con Wi-Fi",
-                        checked = settings?.isSyncEnabled ?: true,
-                        onCheckedChange = { viewModel.updateSyncEnabled(it) }
+                        wifiStatus = settings?.wifiStatus ?: 0,
+                        onCheckedChange = { viewModel.updateSyncEnabled(it) },
+                        checked = settings?.isSyncEnabled ?: true
                     )
+                    
+                    if (settings?.syncRole != "RECEIVER" || isSyncConnected) {
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+                        SettingsItem(
+                            icon = Icons.Default.QrCode,
+                            title = "QR de sincronización",
+                            onClick = { onNavigate("sync_qr") }
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+                        SettingsItem(
+                            icon = Icons.Default.Devices,
+                            title = "Dispositivo vinculado",
+                            value = if (isSyncConnected) "1 conectado" else "Ninguno",
+                            onClick = { onNavigate("linked_devices") }
+                        )
+                    }
+
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
                     SettingsItem(
                         icon = Icons.Default.VolumeUp,
                         title = "Velocidad de voz",
+                        value = "x${settings?.voiceSpeed ?: 1.0f}",
                         onClick = { showVoiceSpeedModal = true }
                     )
                 }
@@ -264,8 +317,8 @@ fun SettingsItem(
 fun SettingsToggleItem(
     icon: ImageVector,
     title: String,
-    subtitle: String,
     checked: Boolean,
+    wifiStatus: Int = 0,
     onCheckedChange: (Boolean) -> Unit
 ) {
     Row(
@@ -287,11 +340,32 @@ fun SettingsToggleItem(
                 fontSize = 16.sp,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            Text(
-                text = subtitle,
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            if (checked) {
+                val statusText = when (wifiStatus) {
+                    2 -> "Con wifi con acceso a internet"
+                    1 -> "Con wifi sin acceso a internet"
+                    else -> "Sin wifi"
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = statusText,
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    val (wifiIcon, wifiColor) = when (wifiStatus) {
+                        2 -> Icons.Default.Wifi to Color(0xFF4CAF50) // Verde: Con internet
+                        1 -> Icons.Default.Wifi to Color(0xFFFF9800) // Naranja: Sin internet
+                        else -> Icons.Default.WifiOff to Color(0xFFF44336) // Rojo: No wifi
+                    }
+                    Icon(
+                        imageVector = wifiIcon,
+                        contentDescription = "Estado WiFi",
+                        modifier = Modifier.size(16.dp),
+                        tint = wifiColor
+                    )
+                }
+            }
         }
         Switch(
             checked = checked,
