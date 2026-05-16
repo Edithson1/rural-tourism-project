@@ -26,7 +26,8 @@ fun MainPagerScreen(
 
     HorizontalPager(
         state = pagerState,
-        modifier = Modifier.fillMaxSize().padding(innerPadding)
+        modifier = Modifier.fillMaxSize().padding(innerPadding),
+        beyondViewportPageCount = 1
     ) { page ->
         when (page) {
             0 -> HomeScreen(

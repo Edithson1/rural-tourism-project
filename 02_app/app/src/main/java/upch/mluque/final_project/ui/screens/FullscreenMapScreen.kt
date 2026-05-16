@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.pm.ActivityInfo
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -55,6 +56,13 @@ fun FullscreenMapScreen(
 
     val context = LocalContext.current
     
+    // Handle system back button
+    BackHandler {
+        val activity = context.findActivity()
+        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        onBack()
+    }
+    
     // Force Landscape orientation
     DisposableEffect(Unit) {
         val activity = context.findActivity()
@@ -68,6 +76,7 @@ fun FullscreenMapScreen(
         // OSM Map View
         OsmMapView(
             modifier = Modifier.fillMaxSize(),
+            viewModel = viewModel,
             visits = visits,
             isInteractive = true,
             zoomLevel = 4.0

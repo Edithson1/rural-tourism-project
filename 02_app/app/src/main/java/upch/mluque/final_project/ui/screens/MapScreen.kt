@@ -91,6 +91,7 @@ fun MapScreen(
                     ) {
                         OsmMapView(
                             modifier = Modifier.fillMaxSize(),
+                            viewModel = viewModel,
                             visits = visits,
                             isInteractive = false
                         )
