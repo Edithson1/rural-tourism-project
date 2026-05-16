@@ -23,7 +23,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import upch.mluque.final_project.ui.MainViewModel
-import upch.mluque.final_project.ui.components.BottomNavigationBar
 
 @Composable
 fun ProfileScreen(
@@ -31,41 +30,14 @@ fun ProfileScreen(
     onNavigateToEdit: () -> Unit,
     onNavigateToLanguage: () -> Unit,
     onNavigateToHelp: () -> Unit,
-    onNavigateToPrivacy: () -> Unit,
-    onNavigate: (String) -> Unit
+    onNavigateToPrivacy: () -> Unit
 ) {
     val settings by viewModel.appSettings.collectAsState()
-    val syncStatus by viewModel.syncStatus.collectAsState()
-    val isSyncConnected by viewModel.isSyncConnected.collectAsState()
-    
-    val isReceiver = settings?.syncRole == "RECEIVER"
     
     var showVoiceSpeedModal by remember { mutableStateOf(false) }
 
     Scaffold(
-        containerColor = Color.Transparent,
-        bottomBar = {
-            if (isReceiver) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(24.dp)
-                ) {
-                    Button(
-                        onClick = { viewModel.disconnectSync() },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                        shape = RoundedCornerShape(28.dp)
-                    ) {
-                        Icon(Icons.Default.LinkOff, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("DESVINCULAR DISPOSITIVO", fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-        }
+        containerColor = Color.Transparent
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -180,31 +152,6 @@ fun ProfileScreen(
                         onClick = onNavigateToLanguage
                     )
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
-                    SettingsToggleItem(
-                        icon = Icons.Default.CloudSync,
-                        title = "Sincronización",
-                        wifiStatus = settings?.wifiStatus ?: 0,
-                        onCheckedChange = { viewModel.updateSyncEnabled(it) },
-                        checked = settings?.isSyncEnabled ?: true
-                    )
-                    
-                    if (settings?.syncRole != "RECEIVER" || isSyncConnected) {
-                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
-                        SettingsItem(
-                            icon = Icons.Default.QrCode,
-                            title = "QR de sincronización",
-                            onClick = { onNavigate("sync_qr") }
-                        )
-                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
-                        SettingsItem(
-                            icon = Icons.Default.Devices,
-                            title = "Dispositivo vinculado",
-                            value = if (isSyncConnected) "1 conectado" else "Ninguno",
-                            onClick = { onNavigate("linked_devices") }
-                        )
-                    }
-
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
                     SettingsItem(
                         icon = Icons.Default.VolumeUp,
                         title = "Velocidad de voz",
@@ -309,71 +256,6 @@ fun SettingsItem(
             contentDescription = null,
             modifier = Modifier.size(20.dp),
             tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-@Composable
-fun SettingsToggleItem(
-    icon: ImageVector,
-    title: String,
-    checked: Boolean,
-    wifiStatus: Int = 0,
-    onCheckedChange: (Boolean) -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            icon,
-            contentDescription = null,
-            modifier = Modifier.size(24.dp),
-            tint = Color(0xFF0F3D3E)
-        )
-        Spacer(modifier = Modifier.width(16.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            if (checked) {
-                val statusText = when (wifiStatus) {
-                    2 -> "Con wifi con acceso a internet"
-                    1 -> "Con wifi sin acceso a internet"
-                    else -> "Sin wifi"
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = statusText,
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    val (wifiIcon, wifiColor) = when (wifiStatus) {
-                        2 -> Icons.Default.Wifi to Color(0xFF4CAF50) // Verde: Con internet
-                        1 -> Icons.Default.Wifi to Color(0xFFFF9800) // Naranja: Sin internet
-                        else -> Icons.Default.WifiOff to Color(0xFFF44336) // Rojo: No wifi
-                    }
-                    Icon(
-                        imageVector = wifiIcon,
-                        contentDescription = "Estado WiFi",
-                        modifier = Modifier.size(16.dp),
-                        tint = wifiColor
-                    )
-                }
-            }
-        }
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-            colors = SwitchDefaults.colors(
-                checkedThumbColor = Color.White,
-                checkedTrackColor = MaterialTheme.colorScheme.primary
-            )
         )
     }
 }

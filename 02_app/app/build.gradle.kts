@@ -56,9 +56,6 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.coil.compose)
     implementation(libs.osmdroid.android)
-    implementation(libs.zxing.core)
-    implementation(libs.play.services.code.scanner)
-    implementation(libs.barcode.scanning)
 
     // Room
     implementation(libs.androidx.room.runtime)

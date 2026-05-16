@@ -15,7 +15,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -28,8 +27,7 @@ fun OnboardingScreen(
     pageIndex: Int,
     selectedLanguage: String,
     onLanguageSelected: (String) -> Unit,
-    onNext: () -> Unit,
-    onLink: (() -> Unit)? = null
+    onNext: () -> Unit
 ) {
     val title = when (pageIndex) {
         0 -> "Registra visitas sin internet"
@@ -144,21 +142,6 @@ fun OnboardingScreen(
                     fontSize = 18.sp,
                     color = Color.White
                 )
-            }
-
-            if (pageIndex == 2 && onLink != null) {
-                Spacer(modifier = Modifier.height(8.dp))
-                TextButton(
-                    onClick = onLink,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        "O VINCULAR A OTRO DISPOSITIVO",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
