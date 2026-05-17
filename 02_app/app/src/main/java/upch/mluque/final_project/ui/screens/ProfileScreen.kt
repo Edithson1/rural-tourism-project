@@ -21,12 +21,16 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import upch.mluque.final_project.ui.MainViewModel
+import upch.mluque.final_project.utils.PermissionRequester
+import upch.mluque.final_project.utils.getSyncPermissions
 
 @Composable
 fun ProfileScreen(
     viewModel: MainViewModel,
+    navController: NavController,
     onNavigateToEdit: () -> Unit,
     onNavigateToLanguage: () -> Unit,
     onNavigateToHelp: () -> Unit,
@@ -35,6 +39,19 @@ fun ProfileScreen(
     val settings by viewModel.appSettings.collectAsState()
     
     var showVoiceSpeedModal by remember { mutableStateOf(false) }
+    var triggerPermissions by remember { mutableStateOf(false) }
+
+    PermissionRequester(
+        permissions = getSyncPermissions(includeCamera = true),
+        onAllGranted = {
+            navController.navigate("scan_qr")
+        },
+        onDenied = { },
+        explanationTitle = "Permisos necesarios",
+        explanationMessage = "Para vincular un dispositivo necesitamos acceso a la cámara y a las funciones de red.",
+        trigger = triggerPermissions,
+        onTriggerReset = { triggerPermissions = false }
+    )
 
     Scaffold(
         containerColor = Color.Transparent
@@ -47,7 +64,7 @@ fun ProfileScreen(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(6.dp))
             
             Text(
                 text = "Mi Perfil",
@@ -158,6 +175,18 @@ fun ProfileScreen(
                         value = "x${settings?.voiceSpeed ?: 1.0f}",
                         onClick = { showVoiceSpeedModal = true }
                     )
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+                    SettingsItem(
+                        icon = Icons.Default.QrCodeScanner,
+                        title = "Vincular nuevo dispositivo",
+                        onClick = { triggerPermissions = true }
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+                    SettingsItem(
+                        icon = Icons.Default.Devices,
+                        title = "Dispositivos vinculados",
+                        onClick = { navController.navigate("linked_devices") }
+                    )
                 }
             }
 
@@ -234,7 +263,7 @@ fun SettingsItem(
             icon,
             contentDescription = null,
             modifier = Modifier.size(24.dp),
-            tint = Color(0xFF0F3D3E)
+            tint = MaterialTheme.colorScheme.onSurface
         )
         Spacer(modifier = Modifier.width(16.dp))
         Text(

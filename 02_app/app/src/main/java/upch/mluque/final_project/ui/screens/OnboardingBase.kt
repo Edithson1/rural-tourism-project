@@ -27,7 +27,8 @@ fun OnboardingBase(
     pageIndex: Int,
     selectedLanguage: String,
     onLanguageChange: (String) -> Unit,
-    onNext: () -> Unit
+    onNext: () -> Unit,
+    extraContent: @Composable ColumnScope.() -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -119,6 +120,8 @@ fun OnboardingBase(
                     color = Color.White
                 )
             }
+
+            extraContent()
 
             Spacer(modifier = Modifier.height(16.dp))
 

@@ -14,12 +14,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.*
+import androidx.navigation.navArgument
+import androidx.navigation.NavType
 import androidx.compose.foundation.pager.*
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 import upch.mluque.final_project.ui.components.MainPagerScreen
 import upch.mluque.final_project.ui.MainViewModel
+import upch.mluque.final_project.sync.SyncViewModel
 import upch.mluque.final_project.ui.screens.*
 import upch.mluque.final_project.ui.theme.Final_projectTheme
 import upch.mluque.final_project.ui.components.BottomNavigationBar
@@ -32,14 +36,16 @@ class MainActivity : ComponentActivity() {
         setContent {
             Final_projectTheme {
                 val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<MainViewModel>()
-                MainNavigation(viewModel)
+                // Inyectar el SyncViewModel aquí para asegurar que su ciclo de vida sea el de la Activity
+                val syncViewModel = androidx.lifecycle.viewmodel.compose.viewModel<SyncViewModel>()
+                MainNavigation(viewModel, syncViewModel)
             }
         }
     }
 }
 
 @Composable
-fun MainNavigation(viewModel: MainViewModel) {
+fun MainNavigation(viewModel: MainViewModel, syncViewModel: SyncViewModel) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -113,7 +119,10 @@ fun MainNavigation(viewModel: MainViewModel) {
             NavHost(
                 navController = navController,
                 startDestination = "splash",
-                modifier = Modifier.padding(if (showBottomBar) innerPadding else PaddingValues(0.dp)),
+                modifier = Modifier.padding(
+                    top = if (showBottomBar) 0.dp else 0.dp, // Screens will handle their own top padding
+                    bottom = if (showBottomBar) innerPadding.calculateBottomPadding() else 0.dp
+                ),
                 enterTransition = {
                     val target = targetState.destination.route
                     val initial = initialState.destination.route
@@ -202,30 +211,50 @@ fun MainNavigation(viewModel: MainViewModel) {
                         state = onboardingPagerState,
                         modifier = Modifier.fillMaxSize()
                     ) { page ->
-                        OnboardingScreen(
-                            pageIndex = page,
-                            selectedLanguage = selectedLanguage,
-                            onLanguageSelected = { 
-                                selectedLanguage = it
-                                viewModel.saveLanguage(it)
-                            },
-                            onNext = {
-                                if (page < 2) {
+                        when (page) {
+                            0 -> OnboardingScreen1(
+                                navController = navController,
+                                selectedLanguage = selectedLanguage,
+                                onLanguageChange = { 
+                                    selectedLanguage = it
+                                    viewModel.saveLanguage(it)
+                                },
+                                onNext = {
                                     coroutineScope.launch {
-                                        onboardingPagerState.animateScrollToPage(page + 1)
+                                        onboardingPagerState.animateScrollToPage(1)
                                     }
-                                } else {
+                                }
+                            )
+                            1 -> OnboardingScreen2(
+                                selectedLanguage = selectedLanguage,
+                                onLanguageChange = { 
+                                    selectedLanguage = it
+                                    viewModel.saveLanguage(it)
+                                },
+                                onNext = {
+                                    coroutineScope.launch {
+                                        onboardingPagerState.animateScrollToPage(2)
+                                    }
+                                }
+                            )
+                            2 -> OnboardingScreen3(
+                                selectedLanguage = selectedLanguage,
+                                onLanguageChange = { 
+                                    selectedLanguage = it
+                                    viewModel.saveLanguage(it)
+                                },
+                                onNext = {
                                     navController.navigate("profile_setup")
                                 }
-                            }
-                        )
+                            )
+                        }
                     }
                 }
                 composable("profile_setup") {
                     ProfileSetupScreen(
                         onBack = { navController.popBackStack() },
                         onSave = { name, service ->
-                            viewModel.saveProfile(name, service)
+                            syncViewModel.saveProfile(name, service)
                             navController.navigate("main_pager") {
                                 popUpTo("onboarding") { inclusive = true }
                             }
@@ -264,6 +293,35 @@ fun MainNavigation(viewModel: MainViewModel) {
                         onBack = { navController.popBackStack() }
                     )
                 }
+                composable("show_qr") {
+                    ShowQrScreen(navController = navController, syncViewModel = syncViewModel)
+                }
+                composable("scan_qr") {
+                    ScanQrScreen(navController = navController)
+                }
+                composable("linked_devices") {
+                    LinkedDevicesScreen(navController = navController)
+                }
+                composable(
+                    "sync_status?role={role}&deviceName={deviceName}&ip={ip}&port={port}&sessionId={sessionId}",
+                    arguments = listOf(
+                        navArgument("role") { defaultValue = "CLIENT" },
+                        navArgument("deviceName") { defaultValue = "Dispositivo" },
+                        navArgument("ip") { defaultValue = "" },
+                        navArgument("port") { type = NavType.IntType; defaultValue = 0 },
+                        navArgument("sessionId") { defaultValue = "" }
+                    )
+                ) { backStackEntry ->
+                    SyncStatusScreen(
+                        navController = navController,
+                        syncViewModel = syncViewModel,
+                        role = backStackEntry.arguments?.getString("role") ?: "CLIENT",
+                        deviceName = backStackEntry.arguments?.getString("deviceName") ?: "",
+                        ip = backStackEntry.arguments?.getString("ip") ?: "",
+                        port = backStackEntry.arguments?.getInt("port") ?: 0,
+                        sessionId = backStackEntry.arguments?.getString("sessionId") ?: ""
+                    )
+                }
                 composable("profile_language") {
                     LanguageSelectionScreen(
                         viewModel = viewModel,
@@ -290,7 +348,7 @@ fun MainNavigation(viewModel: MainViewModel) {
                         visitCount = visits.size,
                         onBack = { navController.popBackStack() },
                         onSave = { nationality, flag, price, services ->
-                            viewModel.addVisit(nationality, flag, price, services)
+                            syncViewModel.addVisit(nationality, flag, price, services)
                             navController.popBackStack()
                         }
                     )

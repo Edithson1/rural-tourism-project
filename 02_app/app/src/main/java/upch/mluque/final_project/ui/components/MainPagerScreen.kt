@@ -74,6 +74,7 @@ fun MainPagerScreen(
             )
             3 -> ProfileScreen(
                 viewModel = viewModel,
+                navController = navController,
                 onNavigateToEdit = { navController.navigate("profile_edit") },
                 onNavigateToLanguage = { navController.navigate("profile_language") },
                 onNavigateToHelp = { navController.navigate("profile_help") },
