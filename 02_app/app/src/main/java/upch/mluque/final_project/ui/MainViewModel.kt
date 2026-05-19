@@ -80,7 +80,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun saveLanguage(language: String) {
         viewModelScope.launch {
             val current = repository.getSettingsOnce() ?: AppSettings()
-            repository.saveSettings(current.copy(language = language))
+            repository.saveSettings(current.copy(
+                language = language,
+                lastModified = System.currentTimeMillis()
+            ))
         }
     }
 
@@ -90,7 +93,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             repository.saveSettings(current.copy(
                 businessName = name,
                 businessCategory = category,
-                isOnboardingCompleted = true
+                isOnboardingCompleted = true,
+                lastModified = System.currentTimeMillis()
             ))
         }
     }
@@ -98,7 +102,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun updateVoiceSpeed(speed: Float) {
         viewModelScope.launch {
             val current = repository.getSettingsOnce() ?: AppSettings()
-            repository.saveSettings(current.copy(voiceSpeed = speed))
+            repository.saveSettings(current.copy(
+                voiceSpeed = speed,
+                lastModified = System.currentTimeMillis()
+            ))
         }
     }
 
@@ -119,7 +126,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val byteArray = outputStream.toByteArray()
 
                 val current = repository.getSettingsOnce() ?: AppSettings()
-                repository.saveSettings(current.copy(profilePicture = byteArray))
+                repository.saveSettings(current.copy(
+                    profilePicture = byteArray,
+                    lastModified = System.currentTimeMillis()
+                ))
                 
                 if (resizedBitmap != bitmap) resizedBitmap.recycle()
             } catch (e: Exception) {

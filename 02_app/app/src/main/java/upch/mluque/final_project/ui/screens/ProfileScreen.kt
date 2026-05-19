@@ -24,12 +24,14 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import upch.mluque.final_project.ui.MainViewModel
+import upch.mluque.final_project.sync.SyncViewModel
 import upch.mluque.final_project.utils.PermissionRequester
 import upch.mluque.final_project.utils.getSyncPermissions
 
 @Composable
 fun ProfileScreen(
     viewModel: MainViewModel,
+    syncViewModel: SyncViewModel,
     navController: NavController,
     onNavigateToEdit: () -> Unit,
     onNavigateToLanguage: () -> Unit,
@@ -37,9 +39,11 @@ fun ProfileScreen(
     onNavigateToPrivacy: () -> Unit
 ) {
     val settings by viewModel.appSettings.collectAsState()
+    val role by syncViewModel.role.collectAsState()
     
     var showVoiceSpeedModal by remember { mutableStateOf(false) }
     var triggerPermissions by remember { mutableStateOf(false) }
+    var showLogoutDialog by remember { mutableStateOf(false) }
 
     PermissionRequester(
         permissions = getSyncPermissions(includeCamera = true),
@@ -175,18 +179,29 @@ fun ProfileScreen(
                         value = "x${settings?.voiceSpeed ?: 1.0f}",
                         onClick = { showVoiceSpeedModal = true }
                     )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
-                    SettingsItem(
-                        icon = Icons.Default.QrCodeScanner,
-                        title = "Vincular nuevo dispositivo",
-                        onClick = { triggerPermissions = true }
-                    )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
-                    SettingsItem(
-                        icon = Icons.Default.Devices,
-                        title = "Dispositivos vinculados",
-                        onClick = { navController.navigate("linked_devices") }
-                    )
+                    
+                    if (role == "CLIENT") {
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+                        SettingsItem(
+                            icon = Icons.Default.QrCodeScanner,
+                            title = "Vincular nuevo dispositivo",
+                            onClick = { triggerPermissions = true }
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+                        SettingsItem(
+                            icon = Icons.Default.Devices,
+                            title = "Dispositivos vinculados",
+                            onClick = { navController.navigate("linked_devices") }
+                        )
+                    } else if (role == "SERVER") {
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+                        SettingsItem(
+                            icon = Icons.Default.ExitToApp,
+                            title = "Cerrar sesión",
+                            titleColor = Color.Red,
+                            onClick = { showLogoutDialog = true }
+                        )
+                    }
                 }
             }
 
@@ -229,6 +244,34 @@ fun ProfileScreen(
                 }
             )
         }
+
+        if (showLogoutDialog) {
+            AlertDialog(
+                onDismissRequest = { showLogoutDialog = false },
+                title = { Text("¿Cerrar sesión?") },
+                text = { Text("Se cerrará la sesión actual y el dispositivo volverá a la pantalla inicial. Deberás volver a vincularte para sincronizar datos.") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showLogoutDialog = false
+                            syncViewModel.logout {
+                                navController.navigate("onboarding") {
+                                    popUpTo(0) { inclusive = true }
+                                }
+                            }
+                        },
+                        colors = ButtonDefaults.textButtonColors(contentColor = Color.Red)
+                    ) {
+                        Text("CERRAR SESIÓN")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showLogoutDialog = false }) {
+                        Text("CANCELAR")
+                    }
+                }
+            )
+        }
     }
 }
 
@@ -250,6 +293,7 @@ fun SettingsItem(
     icon: ImageVector,
     title: String,
     value: String = "",
+    titleColor: Color = MaterialTheme.colorScheme.onSurface,
     onClick: () -> Unit
 ) {
     Row(
@@ -263,14 +307,14 @@ fun SettingsItem(
             icon,
             contentDescription = null,
             modifier = Modifier.size(24.dp),
-            tint = MaterialTheme.colorScheme.onSurface
+            tint = if (titleColor == Color.Red) Color.Red else MaterialTheme.colorScheme.onSurface
         )
         Spacer(modifier = Modifier.width(16.dp))
         Text(
             text = title,
             modifier = Modifier.weight(1f),
             fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onSurface
+            color = titleColor
         )
         if (value.isNotEmpty()) {
             Text(

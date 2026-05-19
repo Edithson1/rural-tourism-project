@@ -19,26 +19,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-
-data class LinkedDevice(
-    val id: String,
-    val name: String,
-    val model: String,
-    val lastSync: String,
-    val isActive: Boolean
-)
+import upch.mluque.final_project.sync.SyncViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LinkedDevicesScreen(navController: NavController) {
-    // TODO: SYNC-ENGINE — reemplazar lista hardcodeada con datos reales persistidos en Room
-    val devices = listOf(
-        LinkedDevice("1", "Galaxy S23", "Samsung Galaxy S23", "Ahora mismo", true),
-        LinkedDevice("2", "Pixel 7", "Google Pixel 7", "Hace 2 horas", false),
-        LinkedDevice("3", "Mi 13", "Xiaomi Mi 13", "Hace 1 día", false)
-    )
-
-    var showDisconnectAllDialog by remember { mutableStateOf(false) }
+fun LinkedDevicesScreen(navController: NavController, syncViewModel: SyncViewModel) {
+    val isConnected by syncViewModel.isConnected.collectAsState()
+    val remoteDeviceName by syncViewModel.remoteDeviceName.collectAsState()
+    
+    var showDisconnectDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -52,7 +41,7 @@ fun LinkedDevicesScreen(navController: NavController) {
             )
         }
     ) { padding ->
-        if (devices.isEmpty()) {
+        if (remoteDeviceName == null) {
             EmptyState()
         } else {
             Column(
@@ -61,8 +50,11 @@ fun LinkedDevicesScreen(navController: NavController) {
                     .padding(padding)
             ) {
                 LazyColumn(modifier = Modifier.weight(1f)) {
-                    items(devices) { device ->
-                        DeviceItem(device)
+                    item {
+                        DeviceItem(
+                            name = remoteDeviceName ?: "Desconocido",
+                            isActive = isConnected
+                        )
                         HorizontalDivider(
                             modifier = Modifier.padding(start = 72.dp),
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
@@ -71,30 +63,40 @@ fun LinkedDevicesScreen(navController: NavController) {
                 }
 
                 TextButton(
-                    onClick = { showDisconnectAllDialog = true },
+                    onClick = { showDisconnectDialog = true },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp),
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Cerrar todas las sesiones", fontWeight = FontWeight.Bold)
+                    Text("Cerrar sesión en este dispositivo", fontWeight = FontWeight.Bold)
                 }
             }
         }
     }
 
-    if (showDisconnectAllDialog) {
+    if (showDisconnectDialog) {
         AlertDialog(
-            onDismissRequest = { showDisconnectAllDialog = false },
-            title = { Text("¿Cerrar todas las sesiones?") },
-            text = { Text("Se desconectarán todos los dispositivos vinculados actualmente.") },
+            onDismissRequest = { showDisconnectDialog = false },
+            title = { Text("¿Cerrar sesión?") },
+            text = { Text("Se desconectará el dispositivo vinculado y volverás al inicio.") },
             confirmButton = {
-                TextButton(onClick = { showDisconnectAllDialog = false }) {
-                    Text("Cerrar sesiones")
+                TextButton(
+                    onClick = {
+                        showDisconnectDialog = false
+                        syncViewModel.logout {
+                            navController.navigate("onboarding") {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color.Red)
+                ) {
+                    Text("Cerrar sesión")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDisconnectAllDialog = false }) {
+                TextButton(onClick = { showDisconnectDialog = false }) {
                     Text("Cancelar")
                 }
             }
@@ -103,7 +105,7 @@ fun LinkedDevicesScreen(navController: NavController) {
 }
 
 @Composable
-fun DeviceItem(device: LinkedDevice) {
+fun DeviceItem(name: String, isActive: Boolean) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -115,7 +117,7 @@ fun DeviceItem(device: LinkedDevice) {
                 .size(40.dp)
                 .clip(CircleShape)
                 .background(
-                    if (device.isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                    if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
                     else Color.Gray.copy(alpha = 0.1f)
                 ),
             contentAlignment = Alignment.Center
@@ -123,23 +125,22 @@ fun DeviceItem(device: LinkedDevice) {
             Icon(
                 Icons.Default.PhoneAndroid,
                 contentDescription = null,
-                tint = if (device.isActive) MaterialTheme.colorScheme.primary else Color.Gray
+                tint = if (isActive) MaterialTheme.colorScheme.primary else Color.Gray
             )
         }
 
         Spacer(modifier = Modifier.width(16.dp))
 
         Column(modifier = Modifier.weight(1f)) {
-            Text(device.name, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-            Text(device.model, fontSize = 14.sp, color = Color.Gray)
+            Text(name, fontWeight = FontWeight.Bold, fontSize = 16.sp)
             Text(
-                device.lastSync,
+                if (isActive) "Conectado ahora" else "Desconectado",
                 fontSize = 12.sp,
-                color = if (device.isActive) MaterialTheme.colorScheme.primary else Color.Gray
+                color = if (isActive) MaterialTheme.colorScheme.primary else Color.Gray
             )
         }
 
-        if (device.isActive) {
+        if (isActive) {
             Box(
                 modifier = Modifier
                     .size(8.dp)

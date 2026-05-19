@@ -265,6 +265,7 @@ fun MainNavigation(viewModel: MainViewModel, syncViewModel: SyncViewModel) {
                     MainPagerScreen(
                         pagerState = mainPagerState,
                         viewModel = viewModel,
+                        syncViewModel = syncViewModel,
                         navController = navController,
                         innerPadding = PaddingValues(0.dp), // Controlled by the Scaffold
                         businessName = businessName,
@@ -300,7 +301,7 @@ fun MainNavigation(viewModel: MainViewModel, syncViewModel: SyncViewModel) {
                     ScanQrScreen(navController = navController)
                 }
                 composable("linked_devices") {
-                    LinkedDevicesScreen(navController = navController)
+                    LinkedDevicesScreen(navController = navController, syncViewModel = syncViewModel)
                 }
                 composable(
                     "sync_status?role={role}&deviceName={deviceName}&ip={ip}&port={port}&sessionId={sessionId}",

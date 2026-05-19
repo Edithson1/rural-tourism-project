@@ -17,7 +17,8 @@ data class AppSettings(
     val mapSummary: Map<String, String> = emptyMap(),
     val entrepreneurTipsAudio: String = "",
     val mapSummaryAudio: String = "",
-    val profilePicture: ByteArray? = null
+    val profilePicture: ByteArray? = null,
+    val lastModified: Long = 0L
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -35,6 +36,7 @@ data class AppSettings(
         if (mapSummary != other.mapSummary) return false
         if (entrepreneurTipsAudio != other.entrepreneurTipsAudio) return false
         if (mapSummaryAudio != other.mapSummaryAudio) return false
+        if (lastModified != other.lastModified) return false
         if (profilePicture != null) {
             if (other.profilePicture == null) return false
             if (!profilePicture.contentEquals(other.profilePicture)) return false
@@ -54,6 +56,7 @@ data class AppSettings(
         result = 31 * result + mapSummary.hashCode()
         result = 31 * result + entrepreneurTipsAudio.hashCode()
         result = 31 * result + mapSummaryAudio.hashCode()
+        result = 31 * result + lastModified.hashCode()
         result = 31 * result + (profilePicture?.contentHashCode() ?: 0)
         return result
     }

@@ -9,12 +9,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavController
 import upch.mluque.final_project.ui.MainViewModel
+import upch.mluque.final_project.sync.SyncViewModel
 import upch.mluque.final_project.ui.screens.*
 
 @Composable
 fun MainPagerScreen(
     pagerState: PagerState,
     viewModel: MainViewModel,
+    syncViewModel: SyncViewModel,
     navController: NavController,
     innerPadding: PaddingValues,
     businessName: String,
@@ -74,6 +76,7 @@ fun MainPagerScreen(
             )
             3 -> ProfileScreen(
                 viewModel = viewModel,
+                syncViewModel = syncViewModel,
                 navController = navController,
                 onNavigateToEdit = { navController.navigate("profile_edit") },
                 onNavigateToLanguage = { navController.navigate("profile_language") },
