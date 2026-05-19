@@ -50,6 +50,7 @@ import coil.compose.AsyncImage
 import upch.mluque.final_project.ui.MainViewModel
 import upch.mluque.final_project.ui.components.ServiceOption
 import upch.mluque.final_project.ui.components.ServiceSelectorGrid
+import java.io.ByteArrayOutputStream
 import java.io.InputStream
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,6 +67,9 @@ fun EditProfileScreen(
     var showImageSourceDialog by remember { mutableStateOf(false) }
     var editingUri by remember { mutableStateOf<Uri?>(null) }
     
+    // Estado para la imagen pendiente de guardar
+    var pendingBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    
     val context = LocalContext.current
 
     LaunchedEffect(settings) {
@@ -81,9 +85,6 @@ fun EditProfileScreen(
     ) { uri ->
         uri?.let { editingUri = it }
     }
-
-    // Nota: Para la cámara se requeriría configuración adicional de FileProvider. 
-    // Por simplicidad en este ejemplo usaremos la galería.
 
     val services = listOf(
         ServiceOption("Hospedaje", Icons.Default.Bed),
@@ -124,7 +125,15 @@ fun EditProfileScreen(
                     .clickable { showImageSourceDialog = true },
                 contentAlignment = Alignment.Center
             ) {
-                if (settings?.profilePicture != null) {
+                // Priorizar previsualización local
+                if (pendingBitmap != null) {
+                    AsyncImage(
+                        model = pendingBitmap,
+                        contentDescription = "Previsualización",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else if (settings?.profilePicture != null) {
                     AsyncImage(
                         model = settings?.profilePicture,
                         contentDescription = "Foto de perfil",
@@ -196,7 +205,12 @@ fun EditProfileScreen(
 
             Button(
                 onClick = {
-                    viewModel.saveProfile(businessName, selectedService)
+                    val byteArray = pendingBitmap?.let { bitmap ->
+                        val outputStream = ByteArrayOutputStream()
+                        bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
+                        outputStream.toByteArray()
+                    }
+                    viewModel.saveProfile(businessName, selectedService, byteArray)
                     onBack()
                 },
                 modifier = Modifier
@@ -216,7 +230,8 @@ fun EditProfileScreen(
                 uri = uri,
                 onDismiss = { editingUri = null },
                 onConfirm = { bitmap ->
-                    viewModel.updateProfilePicture(bitmap)
+                    // Solo actualizamos el estado local para previsualización
+                    pendingBitmap = bitmap
                     editingUri = null
                 }
             )
@@ -240,7 +255,6 @@ fun EditProfileScreen(
                             headlineContent = { Text("Cámara") },
                             leadingContent = { Icon(Icons.Default.AddAPhoto, contentDescription = null) },
                             modifier = Modifier.clickable {
-                                // Implementar cámara requiere FileProvider, por ahora mostramos el flujo
                                 showImageSourceDialog = false
                             }
                         )
@@ -305,7 +319,6 @@ fun ImageEditorDialog(
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        // La imagen detrás
                         Canvas(modifier = Modifier.fillMaxSize()) {
                         val imageWidth = bitmap.width.toFloat()
                         val imageHeight = bitmap.height.toFloat()
@@ -325,7 +338,6 @@ fun ImageEditorDialog(
                             }
                         }
 
-                        // Overlay con el cuadro de recorte
                         Canvas(modifier = Modifier.fillMaxSize()) {
                             val radius = cropSizePx / 2
                             val rectPath = Path().apply {
@@ -361,7 +373,6 @@ fun ImageEditorDialog(
                         }
                         Button(
                             onClick = {
-                                // Pasamos el alto del box para el cálculo
                                 val result = cropBitmap(bitmap, scale, offset, cropSizePx, Size(canvasWidth, canvasHeight - 100 * density))
                                 onConfirm(result)
                             },
@@ -382,11 +393,9 @@ fun cropBitmap(source: Bitmap, scale: Float, offset: Offset, cropSizePx: Float, 
     val baseScale = canvasSize.minDimension / max(imageWidth, imageHeight)
     val finalScale = baseScale * scale
 
-    // Centro del recorte en coordenadas del bitmap
     val centerX = (imageWidth / 2f) - (offset.x / finalScale)
     val centerY = (imageHeight / 2f) - (offset.y / finalScale)
     
-    // Tamaño del recorte en coordenadas del bitmap
     val sizeInBitmap = cropSizePx / finalScale
     
     val left = (centerX - sizeInBitmap / 2f).toInt().coerceIn(0, source.width)
@@ -398,7 +407,6 @@ fun cropBitmap(source: Bitmap, scale: Float, offset: Offset, cropSizePx: Float, 
 
     val cropped = Bitmap.createBitmap(source, left, top, width, height)
     
-    // Si es mayor a 128x128, reescalar. Si es menor, dejarlo como está para no perder calidad
     return if (width > 128 || height > 128) {
         Bitmap.createScaledBitmap(cropped, 128, 128, true)
     } else {

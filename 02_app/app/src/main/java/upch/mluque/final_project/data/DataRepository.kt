@@ -28,4 +28,9 @@ class DataRepository(
     suspend fun getVisitById(id: Int): Visit? {
         return visitDao.getVisitById(id)
     }
+
+    suspend fun clearAllData() {
+        appSettingsDao.clearSettings()
+        visitDao.deleteAllVisits()
+    }
 }

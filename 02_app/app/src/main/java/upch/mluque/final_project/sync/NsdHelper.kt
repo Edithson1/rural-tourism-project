@@ -14,6 +14,8 @@ class NsdHelper(context: Context) {
     private var discoveryListener: NsdManager.DiscoveryListener? = null
 
     fun registerService(port: Int) {
+        if (registrationListener != null) return
+
         val serviceInfo = NsdServiceInfo().apply {
             this.serviceName = this@NsdHelper.serviceName
             this.serviceType = this@NsdHelper.serviceType
@@ -27,16 +29,23 @@ class NsdHelper(context: Context) {
 
             override fun onRegistrationFailed(serviceInfo: NsdServiceInfo, errorCode: Int) {
                 Log.e("NsdHelper", "Registration failed: $errorCode")
+                registrationListener = null
             }
 
-            override fun onServiceUnregistered(arg0: NsdServiceInfo) {}
-            override fun onUnregistrationFailed(serviceInfo: NsdServiceInfo, errorCode: Int) {}
+            override fun onServiceUnregistered(arg0: NsdServiceInfo) {
+                registrationListener = null
+            }
+            override fun onUnregistrationFailed(serviceInfo: NsdServiceInfo, errorCode: Int) {
+                registrationListener = null
+            }
         }
 
         nsdManager.registerService(serviceInfo, NsdManager.PROTOCOL_DNS_SD, registrationListener)
     }
 
     fun discoverServices(onServiceFound: (NsdServiceInfo) -> Unit) {
+        if (discoveryListener != null) return
+
         discoveryListener = object : NsdManager.DiscoveryListener {
             override fun onStartDiscoveryFailed(serviceType: String, errorCode: Int) {
                 Log.e("NsdHelper", "Discovery failed: $errorCode")
@@ -80,9 +89,21 @@ class NsdHelper(context: Context) {
     }
 
     fun stop() {
-        registrationListener?.let { nsdManager.unregisterService(it) }
-        discoveryListener?.let { nsdManager.stopServiceDiscovery(it) }
+        stopRegistration()
+        stopDiscovery()
+    }
+
+    fun stopRegistration() {
+        registrationListener?.let { 
+            try { nsdManager.unregisterService(it) } catch (e: Exception) { Log.e("NsdHelper", "Unregister failed", e) }
+        }
         registrationListener = null
+    }
+
+    fun stopDiscovery() {
+        discoveryListener?.let { 
+            try { nsdManager.stopServiceDiscovery(it) } catch (e: Exception) { Log.e("NsdHelper", "Stop discovery failed", e) }
+        }
         discoveryListener = null
     }
 }

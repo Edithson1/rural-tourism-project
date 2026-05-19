@@ -26,4 +26,7 @@ sealed class SyncMessage {
     
     @Serializable
     data class Error(val message: String) : SyncMessage()
+
+    @Serializable
+    object RemoteLogout : SyncMessage()
 }

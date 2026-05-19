@@ -3,7 +3,6 @@ package upch.mluque.final_project.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -27,7 +26,8 @@ fun LinkedDevicesScreen(navController: NavController, syncViewModel: SyncViewMod
     val isConnected by syncViewModel.isConnected.collectAsState()
     val remoteDeviceName by syncViewModel.remoteDeviceName.collectAsState()
     
-    var showDisconnectDialog by remember { mutableStateOf(false) }
+    var showIndividualDisconnectDialog by remember { mutableStateOf(false) }
+    var showMassDisconnectDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -53,7 +53,8 @@ fun LinkedDevicesScreen(navController: NavController, syncViewModel: SyncViewMod
                     item {
                         DeviceItem(
                             name = remoteDeviceName ?: "Desconocido",
-                            isActive = isConnected
+                            isActive = isConnected,
+                            onDisconnect = { showIndividualDisconnectDialog = true }
                         )
                         HorizontalDivider(
                             modifier = Modifier.padding(start = 72.dp),
@@ -62,42 +63,67 @@ fun LinkedDevicesScreen(navController: NavController, syncViewModel: SyncViewMod
                     }
                 }
 
-                TextButton(
-                    onClick = { showDisconnectDialog = true },
+                Button(
+                    onClick = { showMassDisconnectDialog = true },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp),
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                    shape = MaterialTheme.shapes.medium
                 ) {
-                    Text("Cerrar sesión en este dispositivo", fontWeight = FontWeight.Bold)
+                    Text("Cerrar todas las sesiones vinculadas", fontWeight = FontWeight.Bold, color = Color.White)
                 }
             }
         }
     }
 
-    if (showDisconnectDialog) {
+    if (showIndividualDisconnectDialog) {
         AlertDialog(
-            onDismissRequest = { showDisconnectDialog = false },
-            title = { Text("¿Cerrar sesión?") },
-            text = { Text("Se desconectará el dispositivo vinculado y volverás al inicio.") },
+            onDismissRequest = { showIndividualDisconnectDialog = false },
+            title = { Text("¿Resetear servidor vinculado?") },
+            text = { Text("Se borrarán todos los datos en el servidor '${remoteDeviceName}' y este volverá a su estado inicial. ¿Estás seguro?") },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        showDisconnectDialog = false
-                        syncViewModel.logout {
-                            navController.navigate("onboarding") {
-                                popUpTo(0) { inclusive = true }
-                            }
+                        showIndividualDisconnectDialog = false
+                        syncViewModel.requestRemoteLogout {
+                            navController.popBackStack()
                         }
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = Color.Red)
                 ) {
-                    Text("Cerrar sesión")
+                    Text("RESET REMOTO")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDisconnectDialog = false }) {
-                    Text("Cancelar")
+                TextButton(onClick = { showIndividualDisconnectDialog = false }) {
+                    Text("CANCELAR")
+                }
+            }
+        )
+    }
+
+    if (showMassDisconnectDialog) {
+        AlertDialog(
+            onDismissRequest = { showMassDisconnectDialog = false },
+            title = { Text("¿Cerrar todas las sesiones?") },
+            text = { Text("Esta acción enviará una orden de reset a todos los dispositivos conectados actualmente. No podrás deshacer esta acción.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showMassDisconnectDialog = false
+                        syncViewModel.disconnectAllRemotes {
+                            navController.popBackStack()
+                        }
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color.Red)
+                ) {
+                    Text("CERRAR TODO")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showMassDisconnectDialog = false }) {
+                    Text("CANCELAR")
                 }
             }
         )
@@ -105,7 +131,7 @@ fun LinkedDevicesScreen(navController: NavController, syncViewModel: SyncViewMod
 }
 
 @Composable
-fun DeviceItem(name: String, isActive: Boolean) {
+fun DeviceItem(name: String, isActive: Boolean, onDisconnect: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -141,12 +167,14 @@ fun DeviceItem(name: String, isActive: Boolean) {
         }
 
         if (isActive) {
-            Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .clip(CircleShape)
-                    .background(Color.Green)
-            )
+            IconButton(onClick = onDisconnect) {
+                Icon(
+                    Icons.Default.ArrowBack, // Usamos ArrowBack como placeholder para "sacar" o desconectar
+                    contentDescription = "Desconectar",
+                    tint = Color.Red,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
         }
     }
 }

@@ -13,4 +13,7 @@ interface AppSettingsDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun saveSettings(settings: AppSettings)
+
+    @Query("DELETE FROM app_settings")
+    suspend fun clearSettings()
 }

@@ -25,6 +25,7 @@ class SyncManager(
     private val json = SerializationHelper.json
 
     fun startServer(port: Int) {
+        if (isRunning && serverSocket != null) return
         isRunning = true
         scope.launch {
             try {
@@ -57,6 +58,11 @@ class SyncManager(
     }
 
     private fun handleConnection(socket: Socket) {
+        // Cerrar conexión previa si existe
+        if (clientSocket != null && clientSocket != socket) {
+            try { clientSocket?.close() } catch (e: Exception) {}
+        }
+        
         clientSocket = socket
         writer = PrintWriter(socket.getOutputStream(), true)
         onConnectionStatusChanged(true)
@@ -77,8 +83,11 @@ class SyncManager(
             } catch (e: Exception) {
                 Log.e("SyncManager", "Read error", e)
             } finally {
-                onConnectionStatusChanged(false)
-                disconnect()
+                // Solo notificar desconexión si este socket sigue siendo el activo
+                if (clientSocket == socket) {
+                    onConnectionStatusChanged(false)
+                    disconnect()
+                }
             }
         }
     }
@@ -105,7 +114,9 @@ class SyncManager(
     }
 
     fun stop() {
+        if (!isRunning) return
         isRunning = false
+        onConnectionStatusChanged(false)
         disconnect()
         try {
             serverSocket?.close()
@@ -113,6 +124,7 @@ class SyncManager(
             Log.e("SyncManager", "Server socket stop error", e)
         }
         serverSocket = null
-        scope.cancel()
+        // Cancelar todos los hijos pero mantener el scope vivo para futuras conexiones
+        scope.coroutineContext.job.cancelChildren()
     }
 }

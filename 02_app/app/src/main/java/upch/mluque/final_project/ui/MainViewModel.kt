@@ -87,12 +87,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun saveProfile(name: String, category: String) {
+    fun saveProfile(name: String, category: String, profilePicture: ByteArray? = null) {
         viewModelScope.launch {
             val current = repository.getSettingsOnce() ?: AppSettings()
             repository.saveSettings(current.copy(
                 businessName = name,
                 businessCategory = category,
+                profilePicture = profilePicture ?: current.profilePicture,
                 isOnboardingCompleted = true,
                 lastModified = System.currentTimeMillis()
             ))
@@ -109,7 +110,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun updateProfilePicture(bitmap: Bitmap) {
+    fun updateProfilePicture(bitmap: Bitmap, saveImmediately: Boolean = true) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val finalWidth = if (bitmap.width > 128) 128 else bitmap.width
@@ -125,11 +126,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 resizedBitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
                 val byteArray = outputStream.toByteArray()
 
-                val current = repository.getSettingsOnce() ?: AppSettings()
-                repository.saveSettings(current.copy(
-                    profilePicture = byteArray,
-                    lastModified = System.currentTimeMillis()
-                ))
+                if (saveImmediately) {
+                    val current = repository.getSettingsOnce() ?: AppSettings()
+                    repository.saveSettings(current.copy(
+                        profilePicture = byteArray,
+                        lastModified = System.currentTimeMillis()
+                    ))
+                }
                 
                 if (resizedBitmap != bitmap) resizedBitmap.recycle()
             } catch (e: Exception) {

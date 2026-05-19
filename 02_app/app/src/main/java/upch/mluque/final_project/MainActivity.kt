@@ -62,6 +62,13 @@ fun MainNavigation(viewModel: MainViewModel, syncViewModel: SyncViewModel) {
     val mainPagerState = rememberPagerState(pageCount = { 4 })
 
     LaunchedEffect(appSettings) {
+        // Solo redirigir si el onboarding estaba completado y de pronto los ajustes son nulos (Reset remoto)
+        if (appSettings == null && currentRoute == "main_pager") {
+            navController.navigate("onboarding") {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+
         appSettings?.let {
             selectedLanguage = it.language
             businessName = it.businessName
@@ -193,7 +200,7 @@ fun MainNavigation(viewModel: MainViewModel, syncViewModel: SyncViewModel) {
                 }
             ) {
                 composable("splash") {
-                    SplashScreen {
+                    SplashScreen(isReady = appSettings != null) {
                         if (appSettings?.isOnboardingCompleted == true) {
                             navController.navigate("main_pager") {
                                 popUpTo("splash") { inclusive = true }

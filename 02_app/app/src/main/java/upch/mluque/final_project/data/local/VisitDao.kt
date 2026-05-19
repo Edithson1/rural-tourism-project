@@ -22,4 +22,7 @@ interface VisitDao {
 
     @Query("SELECT * FROM visits ORDER BY registrationDate DESC")
     suspend fun getAllOnce(): List<Visit>
+
+    @Query("DELETE FROM visits")
+    suspend fun deleteAllVisits()
 }

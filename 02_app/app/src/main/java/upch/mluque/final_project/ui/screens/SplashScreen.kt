@@ -6,8 +6,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Landscape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -17,10 +16,18 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 
 @Composable
-fun SplashScreen(onTimeout: () -> Unit) {
+fun SplashScreen(isReady: Boolean, onTimeout: () -> Unit) {
+    var timerDone by remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
         delay(2000)
-        onTimeout()
+        timerDone = true
+    }
+
+    LaunchedEffect(timerDone, isReady) {
+        if (timerDone && isReady) {
+            onTimeout()
+        }
     }
 
     Box(
@@ -40,8 +47,7 @@ fun SplashScreen(onTimeout: () -> Unit) {
                     .clip(RoundedCornerShape(16.dp)),
                 color = MaterialTheme.colorScheme.surface,
                 shadowElevation = 4.dp
-            )
- {
+            ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Default.Landscape,
