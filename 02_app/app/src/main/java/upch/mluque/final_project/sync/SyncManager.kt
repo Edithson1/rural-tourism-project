@@ -24,6 +24,9 @@ class SyncManager(
 
     private val json = SerializationHelper.json
 
+    fun isServerRunning(): Boolean = serverSocket != null && !serverSocket!!.isClosed
+    fun isConnected(): Boolean = clientSocket != null && clientSocket!!.isConnected && !clientSocket!!.isClosed
+
     fun startServer(port: Int) {
         if (isRunning && serverSocket != null) return
         isRunning = true

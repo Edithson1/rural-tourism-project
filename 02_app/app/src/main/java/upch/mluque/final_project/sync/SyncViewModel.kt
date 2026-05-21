@@ -2,6 +2,7 @@ package upch.mluque.final_project.sync
 
 import android.app.Application
 import android.content.Context
+import android.net.wifi.WifiManager
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -24,6 +25,9 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
     private val nsdHelper = NsdHelper(application)
     private val networkMonitor = NetworkMonitor(application)
     private val sharedPrefs = application.getSharedPreferences("sync_prefs", Context.MODE_PRIVATE)
+    
+    private val wifiManager = application.getSystemService(Context.WIFI_SERVICE) as WifiManager
+    private var multicastLock: WifiManager.MulticastLock? = null
 
     private val _isConnected = MutableStateFlow(false)
     val isConnected = _isConnected.asStateFlow()
@@ -59,6 +63,16 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
     init {
         val db = AppDatabase.getDatabase(application)
         repository = DataRepository(db.appSettingsDao(), db.visitDao())
+        
+        // Adquirir MulticastLock para asegurar descubrimiento NSD
+        try {
+            multicastLock = wifiManager.createMulticastLock("YupaySyncLock").apply {
+                setReferenceCounted(true)
+                acquire()
+            }
+        } catch (e: Exception) {
+            Log.e("SyncViewModel", "Could not acquire MulticastLock", e)
+        }
         
         syncManager = SyncManager(
             onMessageReceived = { handleMessage(it) },
@@ -116,28 +130,37 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
     private fun startAutoReconnectLoop() {
         viewModelScope.launch {
             while (true) {
+                val hasLocalIp = getLocalIpAddress() != "0.0.0.0"
                 // Si no hay conexión pero el dispositivo ya está vinculado, intentar reconectar
-                if (!_isConnected.value && isFullyLinked && networkMonitor.isWifiConnected.value) {
+                if (!_isConnected.value && isFullyLinked && (networkMonitor.isWifiConnected.value || hasLocalIp)) {
                     if (_role.value == "CLIENT") {
-                        nsdHelper.stopDiscovery() // Forzar reinicio de búsqueda
+                        // No detenemos discovery aquí, dejamos que NsdHelper maneje la concurrencia
+                        triggerReconnect()
+                    } else if (_role.value == "SERVER") {
+                        // Asegurar que el servidor esté vivo si tenemos IP
+                        if (!syncManager.isServerRunning()) {
+                            triggerReconnect()
+                        }
                     }
-                    triggerReconnect()
                 }
-                delay(10000) // Reintentar cada 10 segundos
+                delay(8000) // Reintentar cada 8 segundos para mayor agilidad
             }
         }
     }
 
     private fun triggerReconnect() {
-        if (!networkMonitor.isWifiConnected.value) return
+        val hasLocalIp = getLocalIpAddress() != "0.0.0.0"
+        if (!networkMonitor.isWifiConnected.value && !hasLocalIp) return
         
         when (_role.value) {
             "SERVER" -> {
                 // El servidor siempre debe estar listo y anunciándose
-                startServer(lastRemotePort)
+                if (!syncManager.isServerRunning()) {
+                    startServer(lastRemotePort)
+                }
             }
             "CLIENT" -> {
-                if (isFullyLinked) {
+                if (isFullyLinked && !_isConnected.value) {
                     discoverAndConnect()
                 }
             }
@@ -537,5 +560,10 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
         syncManager.stop()
         nsdHelper.stop()
         networkMonitor.stop()
+        try {
+            multicastLock?.let { if (it.isHeld) it.release() }
+        } catch (e: Exception) {
+            Log.e("SyncViewModel", "Error releasing MulticastLock", e)
+        }
     }
 }

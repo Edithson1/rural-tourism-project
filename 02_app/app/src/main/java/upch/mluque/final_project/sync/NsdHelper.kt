@@ -44,17 +44,20 @@ class NsdHelper(context: Context) {
     }
 
     fun discoverServices(onServiceFound: (NsdServiceInfo) -> Unit) {
-        if (discoveryListener != null) return
+        if (discoveryListener != null) {
+            Log.d("NsdHelper", "Discovery already in progress, stopping old one first")
+            stopDiscovery()
+        }
 
         discoveryListener = object : NsdManager.DiscoveryListener {
             override fun onStartDiscoveryFailed(serviceType: String, errorCode: Int) {
                 Log.e("NsdHelper", "Discovery failed: $errorCode")
-                nsdManager.stopServiceDiscovery(this)
+                stopDiscovery()
             }
 
             override fun onStopDiscoveryFailed(serviceType: String, errorCode: Int) {
                 Log.e("NsdHelper", "Stop discovery failed: $errorCode")
-                nsdManager.stopServiceDiscovery(this)
+                stopDiscovery()
             }
 
             override fun onDiscoveryStarted(serviceType: String) {
@@ -66,14 +69,19 @@ class NsdHelper(context: Context) {
             }
 
             override fun onServiceFound(serviceInfo: NsdServiceInfo) {
-                if (serviceInfo.serviceType == serviceType) {
+                Log.d("NsdHelper", "Service found: ${serviceInfo.serviceName}")
+                if (serviceInfo.serviceType.contains(serviceType.removeSuffix("."))) {
                     nsdManager.resolveService(serviceInfo, object : NsdManager.ResolveListener {
                         override fun onResolveFailed(serviceInfo: NsdServiceInfo, errorCode: Int) {
-                            Log.e("NsdHelper", "Resolve failed: $errorCode")
+                            Log.e("NsdHelper", "Resolve failed for ${serviceInfo.serviceName}: $errorCode")
+                            // Reintentar si falla la resolución (común en algunos routers)
+                            if (errorCode == NsdManager.FAILURE_ALREADY_ACTIVE) {
+                                // Ignorar si ya está activo
+                            }
                         }
 
                         override fun onServiceResolved(resolvedServiceInfo: NsdServiceInfo) {
-                            Log.d("NsdHelper", "Service resolved: ${resolvedServiceInfo.host}:${resolvedServiceInfo.port}")
+                            Log.d("NsdHelper", "Service resolved: ${resolvedServiceInfo.host.hostAddress}:${resolvedServiceInfo.port}")
                             onServiceFound(resolvedServiceInfo)
                         }
                     })
