@@ -67,16 +67,14 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
                 addLog(if (it) "Conectado" else "Desconectado")
                 if (it) {
                     syncManager.sendMessage(SyncMessage.Handshake(android.os.Build.MODEL, "SESSION"))
-                    // Al conectar por primera vez (vía QR o reconexión), marcamos como vinculado
-                    if (!isFullyLinked) {
-                        isFullyLinked = true
-                        saveSyncState()
-                    }
+                    // Solo marcamos como vinculado en el intercambio de datos (SyncData)
+                    // para poder diferenciar la "primera sincronización"
+                    
                     // Asegurar que el onboarding se marque como completado en la DB persistente
                     markOnboardingCompleted()
                     
-                    // Forzar resincronización de datos al reconectar (para cambios offline)
-                    sendAllData()
+                    // Ya no disparamos sendAllData aquí inmediatamente, 
+                    // esperamos al Handshake del otro para mayor estabilidad
                 }
             }
         )
@@ -203,7 +201,11 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun startServer(port: Int) {
-        _isConnected.value = false // Reiniciar estado para evitar saltos de UI
+        // Limpieza profunda antes de iniciar un nuevo servidor
+        syncManager.stop()
+        nsdHelper.stop()
+        
+        _isConnected.value = false 
         _role.value = "SERVER"
         lastRemotePort = port
         saveSyncState()
@@ -224,24 +226,34 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
 
     fun logout(onComplete: () -> Unit = {}) {
         viewModelScope.launch {
-            // 1. Detener servicios de red inmediatamente
+            // 1. Notificar al otro dispositivo antes de cerrar si estamos conectados
+            if (_isConnected.value) {
+                try {
+                    syncManager.sendMessage(SyncMessage.RemoteLogout)
+                    delay(300) // Dar un breve tiempo para que el mensaje se envíe
+                } catch (e: Exception) {
+                    Log.e("SyncViewModel", "Error enviando RemoteLogout", e)
+                }
+            }
+
+            // 2. Detener servicios de red inmediatamente
             syncManager.stop()
             nsdHelper.stop()
             
-            // 2. Reiniciar estados internos (Memoria)
+            // 3. Reiniciar estados internos (Memoria)
             resetInternalState()
             
-            // 3. Limpiar estado de sincronización persistente y preferencias
+            // 4. Limpiar estado de sincronización persistente y preferencias
             isFullyLinked = false
             lastRemoteIp = null
             sharedPrefs.edit().clear().apply()
             
-            // 4. Notificar navegación inmediata
+            // 5. Notificar navegación inmediata
             withContext(Dispatchers.Main) {
                 onComplete()
             }
 
-            // 5. Limpiar base de datos local en segundo plano
+            // 6. Limpiar base de datos local en segundo plano
             withContext(Dispatchers.IO) {
                 repository.clearAllData()
                 // Asegurar que Room guarde los cambios en disco inmediatamente
@@ -262,24 +274,40 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
 
     fun requestRemoteLogout(onComplete: () -> Unit = {}) {
         if (_isConnected.value) {
-            syncManager.sendMessage(SyncMessage.RemoteLogout)
-            addLog("Solicitando reset remoto al servidor...")
-            // Opcionalmente el cliente también puede limpiar su vínculo local
-            // pero mantenemos el cliente con sus datos, solo rompe el puente
             viewModelScope.launch {
-                delay(500) // Dar tiempo a enviar el mensaje
-                syncManager.stop()
-                _isConnected.value = false
-                _remoteDeviceName.value = null
-                saveSyncState()
-                onComplete()
+                try {
+                    syncManager.sendMessage(SyncMessage.RemoteLogout)
+                    delay(500) // Dar tiempo a enviar el mensaje
+                } catch (e: Exception) {
+                    Log.e("SyncViewModel", "Error enviando RemoteLogout", e)
+                }
+                
+                // Desvincular localmente sin borrar datos
+                unlink()
+                withContext(Dispatchers.Main) {
+                    onComplete()
+                }
             }
+        } else {
+            // Si no hay conexión, al menos desvinculamos localmente
+            unlink()
+            onComplete()
         }
     }
 
     fun disconnectAllRemotes(onComplete: () -> Unit = {}) {
-        // En este contexto, el cliente cierra su conexión actual de forma definitiva
         requestRemoteLogout(onComplete)
+    }
+
+    private fun unlink() {
+        syncManager.stop()
+        nsdHelper.stop()
+        isFullyLinked = false
+        _isConnected.value = false
+        _remoteDeviceName.value = null
+        lastRemoteIp = null
+        saveSyncState()
+        addLog("Dispositivo desvinculado")
     }
 
     private fun saveSyncState() {
@@ -297,35 +325,78 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
         when (message) {
             is SyncMessage.SyncData -> {
                 viewModelScope.launch {
-                    var settingsSaved = false
+                    var needsSyncBack = false
+                    isProcessingRemoteUpdate = true
                     try {
                         val localSettings = repository.getSettingsOnce()
                         val remoteSettings = message.settings
+                        val isFirstLink = !isFullyLinked
                         
-                        val shouldUpdateLocal = localSettings == null || 
-                            (remoteSettings.businessName.isNotBlank() && localSettings.businessName.isBlank()) ||
-                            (remoteSettings.lastModified > localSettings.lastModified)
-
-                        if (shouldUpdateLocal) {
-                            isProcessingRemoteUpdate = true
-                            settingsSaved = true
-                            repository.saveSettings(remoteSettings)
-                            addLog("Ajustes sincronizados desde dispositivo remoto")
-                        } else if (localSettings != null && localSettings.lastModified > remoteSettings.lastModified) {
-                            syncManager.sendMessage(SyncMessage.UpdateSettings(localSettings))
-                            addLog("Ajustes locales conservados y enviados al remoto")
+                        // Lógica de Prioridad de Ajustes (Flujo de Vinculación):
+                        val shouldUpdateLocalSettings = when {
+                            // 1. Vinculación inicial: El SERVIDOR siempre es una copia del CLIENTE
+                            isFirstLink && _role.value == "SERVER" -> {
+                                addLog("Vinculación inicial: Clonando perfil del Cliente")
+                                true
+                            }
+                            // 2. Vinculación inicial: El CLIENTE JAMÁS adopta lo del servidor (él es la fuente)
+                            isFirstLink && _role.value == "CLIENT" -> {
+                                addLog("Vinculación inicial: Ignorando datos del servidor")
+                                false
+                            }
+                            // 3. Ya vinculados: El cambio más reciente gana (por marca de tiempo)
+                            else -> localSettings == null || remoteSettings.lastModified > localSettings.lastModified
                         }
+
+                        if (shouldUpdateLocalSettings) {
+                            repository.saveSettings(remoteSettings)
+                            if (isFirstLink) {
+                                addLog("Perfil sincronizado desde el dispositivo principal")
+                            } else {
+                                addLog("Ajustes actualizados (Cambio remoto más reciente)")
+                            }
+                        } else if (localSettings != null && (isFirstLink || localSettings.lastModified > remoteSettings.lastModified)) {
+                            // En vinculación inicial (siendo cliente) o si local es más nuevo, forzamos sync de vuelta
+                            needsSyncBack = true
+                        }
+
+                        // Fusión de Visitas (Sigue siendo Unión Real)
+                        val localVisits = repository.allVisits.first()
+                        val localTimestamps = localVisits.map { it.registrationDate }.toSet()
+                        val remoteVisits = message.visits
                         
-                        message.visits.forEach { repository.insertVisit(it) }
-                        addLog("Sincronización inicial completa")
+                        val newVisitsForLocal = remoteVisits.filter { it.registrationDate !in localTimestamps }
+                        
+                        if (newVisitsForLocal.isNotEmpty()) {
+                            newVisitsForLocal.forEach { remoteVisit ->
+                                repository.insertVisit(remoteVisit.copy(id = 0))
+                            }
+                            addLog("Fusionadas ${newVisitsForLocal.size} visitas del remoto")
+                        }
+
+                        val remoteTimestamps = remoteVisits.map { it.registrationDate }.toSet()
+                        val missingInRemote = localVisits.any { it.registrationDate !in remoteTimestamps }
+                        
+                        if (missingInRemote || needsSyncBack) {
+                            addLog("Sincronizando datos locales hacia el remoto...")
+                            delay(500)
+                            sendAllData()
+                        } else {
+                            addLog("Sincronización completa: Dispositivos en equilibrio")
+                        }
+
+                        // Marcar como vinculado definitivamente al completar el primer intercambio
+                        if (!isFullyLinked) {
+                            isFullyLinked = true
+                            saveSyncState()
+                        }
+
                         _ticks.value++
                         _syncCompleted.emit(Unit)
                     } catch (e: Exception) {
-                        Log.e("SyncViewModel", "Error in SyncData", e)
+                        Log.e("SyncViewModel", "Error en SyncData", e)
                     } finally {
-                        if (settingsSaved) {
-                            delay(500)
-                        }
+                        delay(500)
                         isProcessingRemoteUpdate = false
                     }
                 }
@@ -334,9 +405,13 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
                 viewModelScope.launch {
                     isProcessingRemoteUpdate = true
                     try {
-                        repository.insertVisit(message.visit)
-                        addLog("Nueva visita recibida")
-                        _ticks.value++
+                        val localVisits = repository.allVisits.first()
+                        if (localVisits.none { it.registrationDate == message.visit.registrationDate }) {
+                            // Resetear ID para evitar sobrescribir visitas locales por colisión de ID
+                            repository.insertVisit(message.visit.copy(id = 0))
+                            addLog("Nueva visita recibida")
+                            _ticks.value++
+                        }
                     } finally {
                         delay(500)
                         isProcessingRemoteUpdate = false
@@ -345,20 +420,24 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
             }
             is SyncMessage.UpdateSettings -> {
                 viewModelScope.launch {
-                    var settingsSaved = false
                     try {
                         val localSettings = repository.getSettingsOnce()
+                        val isFirstLink = !isFullyLinked
+                        
+                        // En vinculación inicial, ignoramos ajustes que vengan del servidor
+                        if (isFirstLink && _role.value == "CLIENT") return@launch
+
                         if (localSettings == null || message.settings.lastModified > localSettings.lastModified) {
                             isProcessingRemoteUpdate = true
-                            settingsSaved = true
                             repository.saveSettings(message.settings)
                             addLog("Ajustes actualizados remotamente")
+                            _ticks.value++
+                        } else if (localSettings.lastModified > message.settings.lastModified) {
+                            // Si recibimos un ajuste viejo, forzamos el envío de nuestro ajuste nuevo
+                            syncManager.sendMessage(SyncMessage.UpdateSettings(localSettings))
                         }
-                        _ticks.value++
                     } finally {
-                        if (settingsSaved) {
-                            delay(500)
-                        }
+                        delay(500)
                         isProcessingRemoteUpdate = false
                     }
                 }
@@ -369,8 +448,9 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
                     saveSyncState()
                     addLog("Vínculo establecido con: ${message.deviceName}")
                     
-                    // Pequeña espera para asegurar que el socket esté listo para el flujo de datos
-                    delay(500)
+                    // Al recibir el Handshake del otro, enviamos nuestros datos
+                    // El Cliente inicia con prioridad, el servidor responde
+                    delay(if (_role.value == "CLIENT") 300 else 1000)
                     sendAllData()
                 }
             }
@@ -395,8 +475,14 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
                 addLog("Error remoto: ${message.message}")
             }
             is SyncMessage.RemoteLogout -> {
-                addLog("Cierre de sesión remoto solicitado")
-                logout()
+                addLog("Cierre de sesión remoto detectado")
+                if (_role.value == "SERVER") {
+                    // Si el servidor es desvinculado por el cliente, se resetea por completo
+                    logout()
+                } else {
+                    // Si el cliente detecta que el servidor se fue, solo desvincula
+                    unlink()
+                }
             }
         }
     }

@@ -90,10 +90,14 @@ fun ProfileSetupScreen(
                 )
                 OutlinedTextField(
                     value = businessName,
-                    onValueChange = { businessName = it },
+                    onValueChange = { 
+                        if (!it.contains("\n")) businessName = it 
+                    },
                     placeholder = { Text("Ej. Artesanías del Valle") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    maxLines = 1,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
                         unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f),

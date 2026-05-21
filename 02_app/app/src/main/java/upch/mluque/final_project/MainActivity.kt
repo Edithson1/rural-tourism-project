@@ -365,7 +365,8 @@ fun MainNavigation(viewModel: MainViewModel, syncViewModel: SyncViewModel) {
             }
 
             if (appSettings == null && currentRoute != null && currentRoute != "splash" && 
-                currentRoute != "onboarding" && currentRoute != "profile_setup") {
+                currentRoute != "onboarding" && currentRoute != "profile_setup" && 
+                currentRoute != "show_qr" && currentRoute != "scan_qr" && currentRoute != "linked_devices") {
                 LoadingOverlay(message = "Cargando configuración...")
             }
         }

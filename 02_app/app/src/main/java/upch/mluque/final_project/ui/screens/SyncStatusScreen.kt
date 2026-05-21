@@ -197,8 +197,10 @@ fun SyncStatusScreen(
             confirmButton = {
                 Button(onClick = {
                     showDisconnectDialog = false
-                    navController.navigate("main_pager") {
-                        popUpTo("main_pager") { inclusive = true }
+                    syncViewModel.disconnectAllRemotes {
+                        navController.navigate("main_pager") {
+                            popUpTo("main_pager") { inclusive = true }
+                        }
                     }
                 }) {
                     Text("Desconectar")
