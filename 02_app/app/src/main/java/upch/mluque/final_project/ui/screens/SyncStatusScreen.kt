@@ -21,6 +21,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import kotlinx.coroutines.delay
 import upch.mluque.final_project.sync.SyncViewModel
+import upch.mluque.final_project.ui.components.ConnectionRequiredDialog
 import kotlin.random.Random
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -40,6 +41,7 @@ fun SyncStatusScreen(
     val latency by syncViewModel.latency.collectAsState()
     val acks by syncViewModel.acks.collectAsState()
     var showDisconnectDialog by remember { mutableStateOf(false) }
+    var showConnectionRequiredDialog by remember { mutableStateOf(false) }
 
     val successRate = if (acks.second > 0) (acks.first * 100 / acks.second) else 100
 
@@ -181,7 +183,13 @@ fun SyncStatusScreen(
             }
 
             Button(
-                onClick = { showDisconnectDialog = true },
+                onClick = {
+                    if (isConnected) {
+                        showDisconnectDialog = true
+                    } else {
+                        showConnectionRequiredDialog = true
+                    }
+                },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
             ) {
@@ -212,6 +220,10 @@ fun SyncStatusScreen(
                 }
             }
         )
+    }
+
+    if (showConnectionRequiredDialog) {
+        ConnectionRequiredDialog(onDismiss = { showConnectionRequiredDialog = false })
     }
 }
 

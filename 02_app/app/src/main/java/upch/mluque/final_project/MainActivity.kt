@@ -27,6 +27,7 @@ import upch.mluque.final_project.sync.SyncViewModel
 import upch.mluque.final_project.ui.screens.*
 import upch.mluque.final_project.ui.theme.Final_projectTheme
 import upch.mluque.final_project.ui.components.BottomNavigationBar
+import upch.mluque.final_project.ui.components.MainNavigationRail
 import upch.mluque.final_project.ui.components.LoadingOverlay
 
 class MainActivity : ComponentActivity() {
@@ -91,9 +92,12 @@ fun MainNavigation(viewModel: MainViewModel, syncViewModel: SyncViewModel) {
     val isMainRoute = currentRoute == "main_pager" || currentRoute in mainRoutes
     val showBottomBar = isMainRoute
 
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val isLandscape = configuration.screenWidthDp > 600
+
     Scaffold(
         bottomBar = {
-            if (showBottomBar) {
+            if (showBottomBar && !isLandscape) {
                 val currentPagerIndex = if (currentRoute == "main_pager") mainPagerState.currentPage else {
                     mainRoutes.indexOf(currentRoute).takeIf { it != -1 } ?: 0
                 }
@@ -110,7 +114,6 @@ fun MainNavigation(viewModel: MainViewModel, syncViewModel: SyncViewModel) {
                                 popUpTo("main_pager") { inclusive = true }
                                 launchSingleTop = true
                             }
-                            // We need to wait for the pager to be available or use a side effect
                         }
                     }
                 )
@@ -118,18 +121,46 @@ fun MainNavigation(viewModel: MainViewModel, syncViewModel: SyncViewModel) {
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
-        Box(
+        Row(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            NavHost(
-                navController = navController,
-                startDestination = "splash",
-                modifier = Modifier.padding(
-                    top = if (showBottomBar) 0.dp else 0.dp, // Screens will handle their own top padding
-                    bottom = if (showBottomBar) innerPadding.calculateBottomPadding() else 0.dp
-                ),
+            if (showBottomBar && isLandscape) {
+                val currentPagerIndex = if (currentRoute == "main_pager") mainPagerState.currentPage else {
+                    mainRoutes.indexOf(currentRoute).takeIf { it != -1 } ?: 0
+                }
+                MainNavigationRail(
+                    currentRoute = mainRoutes[currentPagerIndex],
+                    onNavigate = { route ->
+                        val targetIndex = mainRoutes.indexOf(route)
+                        if (currentRoute == "main_pager") {
+                            coroutineScope.launch {
+                                mainPagerState.animateScrollToPage(targetIndex)
+                            }
+                        } else {
+                            navController.navigate("main_pager") {
+                                popUpTo("main_pager") { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
+                    }
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+            ) {
+                NavHost(
+                    navController = navController,
+                    startDestination = "splash",
+                    modifier = Modifier.padding(
+                        top = 0.dp,
+                        bottom = if (showBottomBar && !isLandscape) innerPadding.calculateBottomPadding() else 0.dp,
+                        start = if (showBottomBar && isLandscape) 0.dp else 0.dp // Rail is outside NavHost Box
+                    ),
                 enterTransition = {
                     val target = targetState.destination.route
                     val initial = initialState.destination.route
@@ -371,6 +402,7 @@ fun MainNavigation(viewModel: MainViewModel, syncViewModel: SyncViewModel) {
             }
         }
     }
+}
 }
 
 fun isSecondaryRoute(route: String?): Boolean {

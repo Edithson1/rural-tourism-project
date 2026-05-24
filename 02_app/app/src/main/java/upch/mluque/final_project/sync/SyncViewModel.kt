@@ -57,6 +57,9 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
     private var lastRemotePort: Int = sharedPrefs.getInt("last_port", 51234)
     private var isProcessingRemoteUpdate = false
     
+    // Heartbeat tracking
+    private var lastResponseTimestamp: Long = 0L
+    
     // Indica si el dispositivo ya ha sido vinculado mediante QR alguna vez
     private var isFullyLinked: Boolean = sharedPrefs.getBoolean("is_fully_linked", false)
 
@@ -125,6 +128,29 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
 
         // Bucle de reconexión automática (tipo WhatsApp)
         startAutoReconnectLoop()
+
+        // Bucle de Heartbeat (Detección activa de desconexión)
+        startHeartbeatLoop()
+    }
+
+    private fun startHeartbeatLoop() {
+        viewModelScope.launch {
+            while (true) {
+                if (_isConnected.value) {
+                    // 1. Enviar Ping cada 2 segundos
+                    sendPing()
+                    
+                    // 2. Verificar timeout (5 segundos)
+                    val now = System.currentTimeMillis()
+                    if (lastResponseTimestamp > 0 && (now - lastResponseTimestamp) > 5000) {
+                        addLog("Timeout detectado (5s sin respuesta)")
+                        _isConnected.value = false
+                        syncManager.stop() // Forzar cierre de socket
+                    }
+                }
+                delay(2000)
+            }
+        }
     }
 
     private fun startAutoReconnectLoop() {
@@ -345,6 +371,9 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun handleMessage(message: SyncMessage) {
+        // Cualquier mensaje recibido actualiza el timestamp de "vida"
+        lastResponseTimestamp = System.currentTimeMillis()
+
         when (message) {
             is SyncMessage.SyncData -> {
                 viewModelScope.launch {

@@ -112,7 +112,7 @@ fun AddVisitScreen(
                 )
 
                 Surface(
-                    color = if (isSystemInDarkTheme()) Color.DarkGray else Color(0xFFF0F0F0),
+                    color = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surfaceVariant,
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Text(

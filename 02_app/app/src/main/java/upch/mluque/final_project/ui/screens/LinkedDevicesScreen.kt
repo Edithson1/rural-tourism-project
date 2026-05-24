@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import upch.mluque.final_project.sync.SyncViewModel
+import upch.mluque.final_project.ui.components.ConnectionRequiredDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,6 +29,7 @@ fun LinkedDevicesScreen(navController: NavController, syncViewModel: SyncViewMod
     
     var showIndividualDisconnectDialog by remember { mutableStateOf(false) }
     var showMassDisconnectDialog by remember { mutableStateOf(false) }
+    var showConnectionRequiredDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -54,7 +56,13 @@ fun LinkedDevicesScreen(navController: NavController, syncViewModel: SyncViewMod
                         DeviceItem(
                             name = remoteDeviceName ?: "Desconocido",
                             isActive = isConnected,
-                            onDisconnect = { showIndividualDisconnectDialog = true }
+                            onDisconnect = {
+                                if (isConnected) {
+                                    showIndividualDisconnectDialog = true
+                                } else {
+                                    showConnectionRequiredDialog = true
+                                }
+                            }
                         )
                         HorizontalDivider(
                             modifier = Modifier.padding(start = 72.dp),
@@ -64,7 +72,13 @@ fun LinkedDevicesScreen(navController: NavController, syncViewModel: SyncViewMod
                 }
 
                 Button(
-                    onClick = { showMassDisconnectDialog = true },
+                    onClick = {
+                        if (isConnected) {
+                            showMassDisconnectDialog = true
+                        } else {
+                            showConnectionRequiredDialog = true
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp),
@@ -127,6 +141,10 @@ fun LinkedDevicesScreen(navController: NavController, syncViewModel: SyncViewMod
                 }
             }
         )
+    }
+
+    if (showConnectionRequiredDialog) {
+        ConnectionRequiredDialog(onDismiss = { showConnectionRequiredDialog = false })
     }
 }
 

@@ -3,30 +3,30 @@ package upch.mluque.final_project.ui.theme
 import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = DarkBluePrimary,
-    secondary = DarkBlueSecondary,
-    tertiary = DarkBlueTertiary,
-    background = DarkBlueBackground,
-    surface = DarkBlueSurface,
-    onPrimary = DarkBlueBackground,
-    onSecondary = DarkBlueBackground,
-    onTertiary = DarkBlueBackground,
-    onBackground = DarkBlueOnBackground,
-    onSurface = DarkBlueOnSurface,
-    primaryContainer = DarkBluePrimaryContainer,
-    onPrimaryContainer = DarkBlueOnPrimaryContainer,
-    surfaceVariant = Color(0xFF334155),
-    onSurfaceVariant = Color(0xFFCBD5E1)
+    primary = HighContrastBlue,
+    secondary = ColdGray,
+    tertiary = ColdBlueTertiary,
+    background = DeepBlackBackground,
+    surface = DeepBlackSurface,
+    onPrimary = DeepBlackBackground,
+    onSecondary = DeepBlackBackground,
+    onTertiary = DeepBlackBackground,
+    onBackground = ColdBlueOnBackground,
+    onSurface = ColdBlueOnSurface,
+    primaryContainer = ColdBluePrimaryContainer,
+    onPrimaryContainer = ColdBlueOnPrimaryContainer,
+    surfaceVariant = DeepBlackSurfaceVariant,
+    onSurfaceVariant = ColdGray
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -40,7 +40,9 @@ private val LightColorScheme = lightColorScheme(
     onTertiary = Color.White,
     onBackground = DarkGreenText,
     onSurface = DarkGreenText,
-    surfaceVariant = Color(0xFFF0F0F0),
+    primaryContainer = WarmPrimaryContainer,
+    onPrimaryContainer = WarmOnPrimaryContainer,
+    surfaceVariant = WarmSurfaceVariant,
     onSurfaceVariant = Color.Gray
 )
 
@@ -66,4 +68,42 @@ fun Final_projectTheme(
         typography = Typography,
         content = content
     )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun DarkThemePreview() {
+    Final_projectTheme(darkTheme = true) {
+        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text("Modo Oscuro Deep Black", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.headlineMedium)
+                Spacer(modifier = Modifier.height(8.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Text("Superficie de alto contraste", modifier = Modifier.padding(16.dp))
+                }
+            }
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun LightThemePreview() {
+    Final_projectTheme(darkTheme = false) {
+        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text("Modo Claro Cálido", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.headlineMedium)
+                Spacer(modifier = Modifier.height(8.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Text("Superficie cálida", modifier = Modifier.padding(16.dp))
+                }
+            }
+        }
+    }
 }

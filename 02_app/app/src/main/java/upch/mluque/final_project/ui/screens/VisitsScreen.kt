@@ -1,4 +1,4 @@
-package upch.mluque.final_project.ui.screens
+ package upch.mluque.final_project.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -49,7 +49,7 @@ fun VisitsPreview() {
                 FloatingActionButton(
                     onClick = {},
                     containerColor = MaterialTheme.colorScheme.secondary,
-                    contentColor = Color.White,
+                    contentColor = MaterialTheme.colorScheme.onSecondary,
                     shape = CircleShape
                 ) {
                     Icon(Icons.Default.Add, contentDescription = "Add")
@@ -102,8 +102,8 @@ fun VisitsScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onNavigateToAdd,
-                containerColor = MaterialTheme.colorScheme.secondary,
-                contentColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.onSecondary else Color.White,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
                 shape = CircleShape
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Add")
