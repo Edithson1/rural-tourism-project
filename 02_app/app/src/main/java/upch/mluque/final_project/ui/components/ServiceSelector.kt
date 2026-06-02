@@ -30,9 +30,16 @@ fun ServiceCard(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp && configuration.screenWidthDp > 600
+    
+    val cardSize = if (isLandscape) 120.dp else 140.dp // Example reduction, adjusting internal elements next
+    val iconBoxSize = if (isLandscape) 48.dp else 60.dp
+    val iconSize = if (isLandscape) 24.dp else 32.dp
+
     Card(
         modifier = modifier
-            .aspectRatio(1f)
+            .then(if (isLandscape) Modifier.height(cardSize) else Modifier.aspectRatio(1f))
             .clickable { onClick() }
             .border(
                 width = 2.dp,
@@ -46,13 +53,13 @@ fun ServiceCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().padding(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             Box(
                 modifier = Modifier
-                    .size(60.dp)
+                    .size(iconBoxSize)
                     .clip(CircleShape)
                     .background(
                         if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
@@ -63,14 +70,14 @@ fun ServiceCard(
                 Icon(
                     imageVector = service.icon,
                     contentDescription = null,
-                    modifier = Modifier.size(32.dp),
+                    modifier = Modifier.size(iconSize),
                     tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(if (isLandscape) 8.dp else 12.dp))
             Text(
                 text = service.name,
-                fontSize = 14.sp,
+                fontSize = if (isLandscape) 12.sp else 14.sp,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                 color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
             )

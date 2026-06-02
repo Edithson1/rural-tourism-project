@@ -22,14 +22,16 @@ fun MainPagerScreen(
     businessName: String,
     selectedService: String,
     entrepreneurTips: String,
-    profilePicture: ByteArray?
+    profilePicture: ByteArray?,
+    userScrollEnabled: Boolean = true
 ) {
     val visits by viewModel.allVisits.collectAsState()
 
     HorizontalPager(
         state = pagerState,
         modifier = Modifier.fillMaxSize().padding(innerPadding),
-        beyondViewportPageCount = 1
+        beyondViewportPageCount = 1,
+        userScrollEnabled = userScrollEnabled
     ) { page ->
         when (page) {
             0 -> HomeScreen(

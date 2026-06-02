@@ -30,49 +30,93 @@ fun SplashScreen(isReady: Boolean, onTimeout: () -> Unit) {
         }
     }
 
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp && configuration.screenWidthDp > 600
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
         contentAlignment = Alignment.Center
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            // Logo Placeholder
-            Surface(
-                modifier = Modifier
-                    .size(120.dp)
-                    .clip(RoundedCornerShape(16.dp)),
-                color = MaterialTheme.colorScheme.surface,
-                shadowElevation = 4.dp
+        if (isLandscape) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Default.Landscape,
-                        contentDescription = "Logo",
-                        modifier = Modifier.size(80.dp),
-                        tint = MaterialTheme.colorScheme.primary
+                // Logo Placeholder
+                Surface(
+                    modifier = Modifier
+                        .size(100.dp)
+                        .clip(RoundedCornerShape(16.dp)),
+                    color = MaterialTheme.colorScheme.surface,
+                    shadowElevation = 4.dp
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.Landscape,
+                            contentDescription = "Logo",
+                            modifier = Modifier.size(60.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(32.dp))
+
+                Column(horizontalAlignment = Alignment.Start) {
+                    Text(
+                        text = "Yupay Turismo",
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(32.dp)
                     )
                 }
             }
-            
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            Text(
-                text = "Yupay Turismo",
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            
-            Spacer(modifier = Modifier.height(100.dp))
-            
-            CircularProgressIndicator(
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(40.dp)
-            )
+        } else {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                // Logo Placeholder
+                Surface(
+                    modifier = Modifier
+                        .size(120.dp)
+                        .clip(RoundedCornerShape(16.dp)),
+                    color = MaterialTheme.colorScheme.surface,
+                    shadowElevation = 4.dp
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.Landscape,
+                            contentDescription = "Logo",
+                            modifier = Modifier.size(80.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                Text(
+                    text = "Yupay Turismo",
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                
+                Spacer(modifier = Modifier.height(100.dp))
+                
+                CircularProgressIndicator(
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(40.dp)
+                )
+            }
         }
     }
 }

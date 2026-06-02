@@ -70,95 +70,203 @@ fun ProfileSetupScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 24.dp)
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Spacer(modifier = Modifier.height(6.dp))
+        val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+        val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp && configuration.screenWidthDp > 600
 
-            // Business Name Input
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = "Nombre de la tienda o emprendimiento",
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                OutlinedTextField(
-                    value = businessName,
-                    onValueChange = { 
-                        if (!it.contains("\n")) businessName = it 
-                    },
-                    placeholder = { Text("Ej. Artesanías del Valle") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    singleLine = true,
-                    maxLines = 1,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f),
-                        focusedContainerColor = if (isSystemInDarkTheme()) Color.Transparent else Color.White,
-                        unfocusedContainerColor = if (isSystemInDarkTheme()) Color.Transparent else Color.White
-                    )
-                )
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Text(
-                text = "¿Qué servicio ofreces principalmente?",
-                fontSize = 16.sp,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Service Grid
-            ServiceSelectorGrid(
-                services = services,
-                selectedServices = if (selectedService.isEmpty()) emptySet() else setOf(selectedService),
-                onServiceToggle = { selectedService = it }
-            )
-
-            Spacer(modifier = Modifier.weight(1f))
-            Spacer(modifier = Modifier.height(40.dp))
-
-            Button(
-                onClick = { onSave(businessName, selectedService) },
+        if (isLandscape) {
+            Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(28.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                ),
-                enabled = businessName.isNotBlank() && selectedService.isNotBlank()
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(24.dp),
+                verticalAlignment = Alignment.Top
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
+                // Left Column: Business Name Input
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .verticalScroll(rememberScrollState())
+                        .padding(vertical = 16.dp)
                 ) {
+                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        "GUARDAR Y ENTRAR",
+                        text = "Nombre de la tienda o emprendimiento",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    OutlinedTextField(
+                        value = businessName,
+                        onValueChange = { 
+                            if (!it.contains("\n")) businessName = it 
+                        },
+                        placeholder = { Text("Ej. Artesanías del Valle") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true,
+                        maxLines = 1,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f),
+                            focusedContainerColor = if (isSystemInDarkTheme()) Color.Transparent else Color.White,
+                            unfocusedContainerColor = if (isSystemInDarkTheme()) Color.Transparent else Color.White
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    Button(
+                        onClick = { onSave(businessName, selectedService) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        shape = RoundedCornerShape(28.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        ),
+                        enabled = businessName.isNotBlank() && selectedService.isNotBlank()
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                "GUARDAR Y ENTRAR",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Icon(
+                                imageVector = Icons.Default.ArrowForward,
+                                contentDescription = null,
+                                tint = Color.White
+                            )
+                        }
+                    }
+                }
+
+                // Right Column: Service Selection
+                Column(
+                    modifier = Modifier
+                        .weight(1.2f)
+                        .fillMaxHeight()
+                        .verticalScroll(rememberScrollState())
+                        .padding(vertical = 16.dp)
+                ) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "¿Qué servicio ofreces principalmente?",
                         fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        textAlign = TextAlign.Start,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Icon(
-                        imageVector = Icons.Default.ArrowForward,
-                        contentDescription = null,
-                        tint = Color.White
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Service Grid
+                    ServiceSelectorGrid(
+                        services = services,
+                        selectedServices = if (selectedService.isEmpty()) emptySet() else setOf(selectedService),
+                        onServiceToggle = { selectedService = it }
                     )
+                    
+                    Spacer(modifier = Modifier.height(24.dp))
                 }
             }
-            
-            Spacer(modifier = Modifier.height(24.dp))
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = 24.dp)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // Business Name Input
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "Nombre de la tienda o emprendimiento",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    OutlinedTextField(
+                        value = businessName,
+                        onValueChange = { 
+                            if (!it.contains("\n")) businessName = it 
+                        },
+                        placeholder = { Text("Ej. Artesanías del Valle") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true,
+                        maxLines = 1,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f),
+                            focusedContainerColor = if (isSystemInDarkTheme()) Color.Transparent else Color.White,
+                            unfocusedContainerColor = if (isSystemInDarkTheme()) Color.Transparent else Color.White
+                        )
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                Text(
+                    text = "¿Qué servicio ofreces principalmente?",
+                    fontSize = 16.sp,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Service Grid
+                ServiceSelectorGrid(
+                    services = services,
+                    selectedServices = if (selectedService.isEmpty()) emptySet() else setOf(selectedService),
+                    onServiceToggle = { selectedService = it }
+                )
+
+                Spacer(modifier = Modifier.weight(1f))
+                Spacer(modifier = Modifier.height(40.dp))
+
+                Button(
+                    onClick = { onSave(businessName, selectedService) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(28.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    ),
+                    enabled = businessName.isNotBlank() && selectedService.isNotBlank()
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            "GUARDAR Y ENTRAR",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Icon(
+                            imageVector = Icons.Default.ArrowForward,
+                            contentDescription = null,
+                            tint = Color.White
+                        )
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(24.dp))
+            }
         }
     }
 }

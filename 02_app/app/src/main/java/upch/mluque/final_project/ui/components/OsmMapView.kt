@@ -53,6 +53,7 @@ fun OsmMapView(
     isInteractive: Boolean = true,
     zoomLevel: Double = 2.0,
     center: GeoPoint = GeoPoint(0.0, 0.0),
+    showLabels: Boolean = false
 ) {
     val context = LocalContext.current
     val isDark = isSystemInDarkTheme()
@@ -158,8 +159,8 @@ fun OsmMapView(
                 
                 // Re-calculate zoom on orientation change or initial load
                 if (mapView.height > 0 && (!hasZoomedToFit || mapView.tag != configuration.orientation)) {
-                    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-                    val targetPixelWidth = if (isLandscape) {
+                    val isLandscapeOrientation = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+                    val targetPixelWidth = if (isLandscapeOrientation) {
                         mapView.height.toDouble()
                     } else {
                         mapView.width.toDouble()
@@ -257,7 +258,7 @@ fun OsmMapView(
                             }
                         }
 
-                        if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE && mapView.zoomLevelDouble >= zoomLevelThreshold) {
+                        if (showLabels && configuration.orientation == Configuration.ORIENTATION_LANDSCAPE && mapView.zoomLevelDouble >= zoomLevelThreshold) {
                             countryFeatures.forEach { feature ->
                                 feature.centroid?.let { centroid ->
                                     val point = mapView.projection.toPixels(centroid, null)

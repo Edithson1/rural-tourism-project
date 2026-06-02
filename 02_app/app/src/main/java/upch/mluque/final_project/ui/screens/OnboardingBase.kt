@@ -3,8 +3,10 @@ package upch.mluque.final_project.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -30,124 +32,246 @@ fun OnboardingBase(
     onNext: () -> Unit,
     extraContent: @Composable ColumnScope.() -> Unit = {}
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceBetween
-    ) {
-        Spacer(modifier = Modifier.height(40.dp))
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp && configuration.screenWidthDp > 600
 
-        // Illustration Area
-        Surface(
+    if (isLandscape) {
+        Row(
             modifier = Modifier
-                .fillMaxWidth(0.8f)
-                .aspectRatio(1f)
-                .clip(RoundedCornerShape(24.dp)),
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        )
- {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(120.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-        }
-
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(24.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(32.dp)
         ) {
-            Text(
-                text = title,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = description,
-                fontSize = 16.sp,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // Page Indicator
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            // Illustration Area
+            Surface(
+                modifier = Modifier
+                    .weight(1f)
+                    .aspectRatio(1f)
+                    .clip(RoundedCornerShape(24.dp)),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
             ) {
-                repeat(3) { index ->
-                    Box(
-                        modifier = Modifier
-                            .size(10.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (index == pageIndex) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                            )
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(120.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+
+            Column(
+                modifier = Modifier
+                    .weight(1.2f)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = title,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = description,
+                    fontSize = 16.sp,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Page Indicator
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    repeat(3) { index ->
+                        Box(
+                            modifier = Modifier
+                                .size(10.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    if (index == pageIndex) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                                )
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                Button(
+                    onClick = onNext,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    ),
+                    shape = RoundedCornerShape(28.dp)
+                ) {
+                    Text(
+                        text = buttonText,
+                        fontSize = 18.sp,
+                        color = Color.White
+                    )
+                }
+
+                extraContent()
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Language Selector
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    LanguageOption(
+                        text = "Español",
+                        isSelected = selectedLanguage == "Español",
+                        onClick = { onLanguageChange("Español") }
+                    )
+                    Text(
+                        text = "|",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
+                    )
+                    LanguageOption(
+                        text = "Quechua",
+                        isSelected = selectedLanguage == "Quechua",
+                        onClick = { onLanguageChange("Quechua") }
                     )
                 }
             }
         }
-
+    } else {
         Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth()
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Button(
-                onClick = onNext,
+            Spacer(modifier = Modifier.height(40.dp))
+
+            // Illustration Area
+            Surface(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                ),
-                shape = RoundedCornerShape(28.dp)
+                    .fillMaxWidth(0.8f)
+                    .aspectRatio(1f)
+                    .clip(RoundedCornerShape(24.dp)),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
             ) {
-                Text(
-                    text = buttonText,
-                    fontSize = 18.sp,
-                    color = Color.White
-                )
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(120.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
 
-            extraContent()
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Language Selector
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                LanguageOption(
-                    text = "Español",
-                    isSelected = selectedLanguage == "Español",
-                    onClick = { onLanguageChange("Español") }
-                )
                 Text(
-                    text = "|",
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
+                    text = title,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onBackground
                 )
-                LanguageOption(
-                    text = "Quechua",
-                    isSelected = selectedLanguage == "Quechua",
-                    onClick = { onLanguageChange("Quechua") }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = description,
+                    fontSize = 16.sp,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(horizontal = 16.dp)
                 )
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                // Page Indicator
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    repeat(3) { index ->
+                        Box(
+                            modifier = Modifier
+                                .size(10.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    if (index == pageIndex) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                                )
+                        )
+                    }
+                }
             }
-            
-            Spacer(modifier = Modifier.height(16.dp))
+
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Button(
+                    onClick = onNext,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    ),
+                    shape = RoundedCornerShape(28.dp)
+                ) {
+                    Text(
+                        text = buttonText,
+                        fontSize = 18.sp,
+                        color = Color.White
+                    )
+                }
+
+                extraContent()
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Language Selector
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    LanguageOption(
+                        text = "Español",
+                        isSelected = selectedLanguage == "Español",
+                        onClick = { onLanguageChange("Español") }
+                    )
+                    Text(
+                        text = "|",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
+                    )
+                    LanguageOption(
+                        text = "Quechua",
+                        isSelected = selectedLanguage == "Quechua",
+                        onClick = { onLanguageChange("Quechua") }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+            }
         }
     }
 }

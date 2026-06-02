@@ -92,209 +92,418 @@ fun AddVisitScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 24.dp)
-                .verticalScroll(rememberScrollState())
-        ) {
+        val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+        val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp && configuration.screenWidthDp > 600
+
+        if (isLandscape) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(24.dp),
+                verticalAlignment = Alignment.Top
             ) {
+                // Left Column: Nationality and Expense
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .verticalScroll(rememberScrollState())
+                        .padding(vertical = 16.dp)
+                ) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Nuevo Registro",
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Nationality Selector
+                    Text(
+                        text = "Procedencia / Nacionalidad *",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    ExposedDropdownMenuBox(
+                        expanded = isNationalityExpanded,
+                        onExpandedChange = { isNationalityExpanded = !isNationalityExpanded }
+                    ) {
+                        OutlinedTextField(
+                            value = if (selectedNationality != null && !isNationalityExpanded) 
+                                        "${selectedNationality?.flag} ${selectedNationality?.name}" 
+                                    else nationalitySearch,
+                            onValueChange = { 
+                                nationalitySearch = it
+                                isNationalityExpanded = true
+                            },
+                            placeholder = { Text("Seleccione una opción") },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor(MenuAnchorType.PrimaryEditable, true),
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isNationalityExpanded) },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+
+                        ExposedDropdownMenu(
+                            expanded = isNationalityExpanded,
+                            onDismissRequest = { isNationalityExpanded = false },
+                            modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                        ) {
+                            filteredCountries.forEach { country ->
+                                DropdownMenuItem(
+                                    text = { 
+                                        Row {
+                                            Text(text = country.flag)
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(text = country.name)
+                                        }
+                                    },
+                                    onClick = {
+                                        selectedNationality = country
+                                        nationalitySearch = ""
+                                        isNationalityExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Expense Selector
+                    Text(
+                        text = "Gasto aproximado *",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    ExposedDropdownMenuBox(
+                        expanded = isRangeExpanded,
+                        onExpandedChange = { isRangeExpanded = !isRangeExpanded }
+                    ) {
+                        OutlinedTextField(
+                            value = selectedRange,
+                            onValueChange = { },
+                            readOnly = true,
+                            placeholder = { Text("Seleccione rango") },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor(MenuAnchorType.PrimaryNotEditable, true),
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isRangeExpanded) },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+
+                        ExposedDropdownMenu(
+                            expanded = isRangeExpanded,
+                            onDismissRequest = { isRangeExpanded = false },
+                            modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                        ) {
+                            ranges.forEach { range ->
+                                DropdownMenuItem(
+                                    text = { Text(text = range) },
+                                    onClick = {
+                                        selectedRange = range
+                                        isRangeExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Right Column: Services and Save Button
+                Column(
+                    modifier = Modifier
+                        .weight(1.2f)
+                        .fillMaxHeight()
+                        .verticalScroll(rememberScrollState())
+                        .padding(vertical = 16.dp)
+                ) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    // Services
+                    Text(
+                        text = "Servicios consumidos",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    ServiceSelectorGrid(
+                        services = availableServices,
+                        selectedServices = selectedServices,
+                        onServiceToggle = { serviceName ->
+                            if (selectedServices.contains(serviceName)) {
+                                selectedServices = selectedServices - serviceName
+                            } else {
+                                selectedServices = selectedServices + serviceName
+                            }
+                        }
+                    )
+
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    // Save Button
+                    Button(
+                        onClick = {
+                            val nationality = selectedNationality?.name ?: ""
+                            val flag = selectedNationality?.flag ?: ""
+                            val servicesString = selectedServices.joinToString(", ")
+                            onSave(nationality, flag, selectedRange, servicesString)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(60.dp),
+                        shape = RoundedCornerShape(30.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                        ),
+                        enabled = selectedNationality != null && selectedRange.isNotEmpty() && selectedServices.isNotEmpty()
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Save,
+                                contentDescription = null,
+                                tint = Color.White
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Guardar Registro",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = 24.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Nuevo Registro",
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+
+                    Surface(
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Text(
+                            text = "Registro #${visitCount + 1}",
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                            fontSize = 12.sp,
+                            color = if (isSystemInDarkTheme()) Color.LightGray else Color.Gray
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                // Nationality Selector
                 Text(
-                    text = "Nuevo Registro",
-                    fontSize = 28.sp,
+                    text = "Procedencia / Nacionalidad *",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                ExposedDropdownMenuBox(
+                    expanded = isNationalityExpanded,
+                    onExpandedChange = { isNationalityExpanded = !isNationalityExpanded }
+                ) {
+                    OutlinedTextField(
+                        value = if (selectedNationality != null && !isNationalityExpanded) 
+                                    "${selectedNationality?.flag} ${selectedNationality?.name}" 
+                                else nationalitySearch,
+                        onValueChange = { 
+                            nationalitySearch = it
+                            isNationalityExpanded = true
+                        },
+                        placeholder = { Text("Seleccione una opción") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(MenuAnchorType.PrimaryEditable, true),
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isNationalityExpanded) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                            focusedContainerColor = MaterialTheme.colorScheme.surface,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+
+                    ExposedDropdownMenu(
+                        expanded = isNationalityExpanded,
+                        onDismissRequest = { isNationalityExpanded = false },
+                        modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                    ) {
+                        filteredCountries.forEach { country ->
+                            DropdownMenuItem(
+                                text = { 
+                                    Row {
+                                        Text(text = country.flag)
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(text = country.name)
+                                    }
+                                },
+                                onClick = {
+                                    selectedNationality = country
+                                    nationalitySearch = ""
+                                    isNationalityExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Expense Selector
+                Text(
+                    text = "Gasto aproximado *",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                ExposedDropdownMenuBox(
+                    expanded = isRangeExpanded,
+                    onExpandedChange = { isRangeExpanded = !isRangeExpanded }
+                ) {
+                    OutlinedTextField(
+                        value = selectedRange,
+                        onValueChange = { },
+                        readOnly = true,
+                        placeholder = { Text("Seleccione rango") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(MenuAnchorType.PrimaryNotEditable, true),
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isRangeExpanded) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                            focusedContainerColor = MaterialTheme.colorScheme.surface,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+
+                    ExposedDropdownMenu(
+                        expanded = isRangeExpanded,
+                        onDismissRequest = { isRangeExpanded = false },
+                        modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                    ) {
+                        ranges.forEach { range ->
+                            DropdownMenuItem(
+                                text = { Text(text = range) },
+                                onClick = {
+                                    selectedRange = range
+                                    isRangeExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                // Services
+                Text(
+                    text = "Servicios consumidos",
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
                 )
+                Spacer(modifier = Modifier.height(16.dp))
 
-                Surface(
-                    color = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surfaceVariant,
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Text(
-                        text = "Registro #${visitCount + 1}",
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                        fontSize = 12.sp,
-                        color = if (isSystemInDarkTheme()) Color.LightGray else Color.Gray
-                    )
-                }
-            }
+                ServiceSelectorGrid(
+                    services = availableServices,
+                    selectedServices = selectedServices,
+                    onServiceToggle = { serviceName ->
+                        if (selectedServices.contains(serviceName)) {
+                            selectedServices = selectedServices - serviceName
+                        } else {
+                            selectedServices = selectedServices + serviceName
+                        }
+                    }
+                )
 
-            Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(48.dp))
 
-            // Nationality Selector
-            Text(
-                text = "Procedencia / Nacionalidad *",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            ExposedDropdownMenuBox(
-                expanded = isNationalityExpanded,
-                onExpandedChange = { isNationalityExpanded = !isNationalityExpanded }
-            ) {
-                OutlinedTextField(
-                    value = if (selectedNationality != null && !isNationalityExpanded) 
-                                "${selectedNationality?.flag} ${selectedNationality?.name}" 
-                            else nationalitySearch,
-                    onValueChange = { 
-                        nationalitySearch = it
-                        isNationalityExpanded = true
+                // Save Button
+                Button(
+                    onClick = {
+                        val nationality = selectedNationality?.name ?: ""
+                        val flag = selectedNationality?.flag ?: ""
+                        val servicesString = selectedServices.joinToString(", ")
+                        onSave(nationality, flag, selectedRange, servicesString)
                     },
-                    placeholder = { Text("Seleccione una opción") },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .menuAnchor(MenuAnchorType.PrimaryEditable, true),
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isNationalityExpanded) },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                        focusedContainerColor = MaterialTheme.colorScheme.surface,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                        .height(60.dp),
+                    shape = RoundedCornerShape(30.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                     ),
-                    shape = RoundedCornerShape(12.dp)
-                )
-
-                ExposedDropdownMenu(
-                    expanded = isNationalityExpanded,
-                    onDismissRequest = { isNationalityExpanded = false },
-                    modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                    enabled = selectedNationality != null && selectedRange.isNotEmpty() && selectedServices.isNotEmpty()
                 ) {
-                    filteredCountries.forEach { country ->
-                        DropdownMenuItem(
-                            text = { 
-                                Row {
-                                    Text(text = country.flag)
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(text = country.name)
-                                }
-                            },
-                            onClick = {
-                                selectedNationality = country
-                                nationalitySearch = ""
-                                isNationalityExpanded = false
-                            }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Save,
+                            contentDescription = null,
+                            tint = Color.White
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Guardar Registro",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
                         )
                     }
                 }
+                
+                Spacer(modifier = Modifier.height(24.dp))
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Expense Selector
-            Text(
-                text = "Gasto aproximado *",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            ExposedDropdownMenuBox(
-                expanded = isRangeExpanded,
-                onExpandedChange = { isRangeExpanded = !isRangeExpanded }
-            ) {
-                OutlinedTextField(
-                    value = selectedRange,
-                    onValueChange = { },
-                    readOnly = true,
-                    placeholder = { Text("Seleccione rango") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor(MenuAnchorType.PrimaryNotEditable, true),
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isRangeExpanded) },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                        focusedContainerColor = MaterialTheme.colorScheme.surface,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                    ),
-                    shape = RoundedCornerShape(12.dp)
-                )
-
-                ExposedDropdownMenu(
-                    expanded = isRangeExpanded,
-                    onDismissRequest = { isRangeExpanded = false },
-                    modifier = Modifier.background(MaterialTheme.colorScheme.surface)
-                ) {
-                    ranges.forEach { range ->
-                        DropdownMenuItem(
-                            text = { Text(text = range) },
-                            onClick = {
-                                selectedRange = range
-                                isRangeExpanded = false
-                            }
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // Services
-            Text(
-                text = "Servicios consumidos",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-
-            ServiceSelectorGrid(
-                services = availableServices,
-                selectedServices = selectedServices,
-                onServiceToggle = { serviceName ->
-                    if (selectedServices.contains(serviceName)) {
-                        selectedServices = selectedServices - serviceName
-                    } else {
-                        selectedServices = selectedServices + serviceName
-                    }
-                }
-            )
-
-            Spacer(modifier = Modifier.height(48.dp))
-
-            // Save Button
-            Button(
-                onClick = {
-                    val nationality = selectedNationality?.name ?: ""
-                    val flag = selectedNationality?.flag ?: ""
-                    val servicesString = selectedServices.joinToString(", ")
-                    onSave(nationality, flag, selectedRange, servicesString)
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp),
-                shape = RoundedCornerShape(30.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = BrownPrimary,
-                    disabledContainerColor = BrownPrimary.copy(alpha = 0.5f)
-                ),
-                enabled = selectedNationality != null && selectedRange.isNotEmpty() && selectedServices.isNotEmpty()
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Save,
-                        contentDescription = null,
-                        tint = Color.White
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Guardar Registro",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }

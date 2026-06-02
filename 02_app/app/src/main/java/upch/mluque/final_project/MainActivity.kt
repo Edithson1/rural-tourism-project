@@ -93,7 +93,7 @@ fun MainNavigation(viewModel: MainViewModel, syncViewModel: SyncViewModel) {
     val showBottomBar = isMainRoute
 
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
-    val isLandscape = configuration.screenWidthDp > 600
+    val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp && configuration.screenWidthDp > 600
 
     Scaffold(
         bottomBar = {
@@ -247,7 +247,8 @@ fun MainNavigation(viewModel: MainViewModel, syncViewModel: SyncViewModel) {
                     val onboardingPagerState = rememberPagerState(pageCount = { 3 })
                     HorizontalPager(
                         state = onboardingPagerState,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
+                        userScrollEnabled = !isLandscape
                     ) { page ->
                         when (page) {
                             0 -> OnboardingScreen1(
@@ -309,7 +310,8 @@ fun MainNavigation(viewModel: MainViewModel, syncViewModel: SyncViewModel) {
                         businessName = businessName,
                         selectedService = selectedService,
                         entrepreneurTips = entrepreneurTips,
-                        profilePicture = profilePicture
+                        profilePicture = profilePicture,
+                        userScrollEnabled = !isLandscape
                     )
                 }
                 composable("visit_detail/{visitId}") { backStackEntry ->

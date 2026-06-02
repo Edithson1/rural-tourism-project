@@ -106,127 +106,268 @@ fun EditProfileScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 24.dp)
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Spacer(modifier = Modifier.height(24.dp))
+        val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+        val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp && configuration.screenWidthDp > 600
 
-            // Profile Picture Circle
-            Box(
+        if (isLandscape) {
+            Row(
                 modifier = Modifier
-                    .size(100.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer)
-                    .clickable { showImageSourceDialog = true },
-                contentAlignment = Alignment.Center
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(24.dp),
+                verticalAlignment = Alignment.Top
             ) {
-                // Priorizar previsualización local
-                if (pendingBitmap != null) {
-                    AsyncImage(
-                        model = pendingBitmap,
-                        contentDescription = "Previsualización",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else if (settings?.profilePicture != null) {
-                    AsyncImage(
-                        model = settings?.profilePicture,
-                        contentDescription = "Foto de perfil",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Default.AccountCircle,
-                        contentDescription = null,
-                        modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-                
-                // Overlay icon
-                Box(
+                // Left Column: Photo and Name
+                Column(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.2f)),
-                    contentAlignment = Alignment.Center
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .verticalScroll(rememberScrollState())
+                        .padding(vertical = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.AddAPhoto,
-                        contentDescription = null,
-                        tint = Color.White.copy(alpha = 0.8f)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    // Profile Picture Circle
+                    Box(
+                        modifier = Modifier
+                            .size(120.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primaryContainer)
+                            .clickable { showImageSourceDialog = true },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (pendingBitmap != null) {
+                            AsyncImage(
+                                model = pendingBitmap,
+                                contentDescription = "Previsualización",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else if (settings?.profilePicture != null) {
+                            AsyncImage(
+                                model = settings?.profilePicture,
+                                contentDescription = "Foto de perfil",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.AccountCircle,
+                                contentDescription = null,
+                                modifier = Modifier.size(80.dp),
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                        
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.2f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AddAPhoto,
+                                contentDescription = null,
+                                tint = Color.White.copy(alpha = 0.8f)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            text = "Nombre del emprendimiento",
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = businessName,
+                            onValueChange = { 
+                                if (!it.contains("\n")) businessName = it 
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            singleLine = true,
+                            maxLines = 1,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+                            )
+                        )
+                    }
+                }
+
+                // Right Column: Services and Save Button
+                Column(
+                    modifier = Modifier
+                        .weight(1.2f)
+                        .fillMaxHeight()
+                        .verticalScroll(rememberScrollState())
+                        .padding(vertical = 16.dp)
+                ) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Sector o Rubro",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                     )
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    ServiceSelectorGrid(
+                        services = services,
+                        selectedServices = if (selectedService.isEmpty()) emptySet() else setOf(selectedService),
+                        onServiceToggle = { selectedService = it }
+                    )
+
+                    Spacer(modifier = Modifier.height(40.dp))
+
+                    Button(
+                        onClick = {
+                            val byteArray = pendingBitmap?.let { bitmap ->
+                                val outputStream = ByteArrayOutputStream()
+                                bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
+                                outputStream.toByteArray()
+                            }
+                            viewModel.saveProfile(businessName, selectedService, byteArray)
+                            onBack()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        shape = RoundedCornerShape(28.dp),
+                        enabled = businessName.isNotBlank() && selectedService.isNotBlank()
+                    ) {
+                        Text("GUARDAR CAMBIOS", fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(modifier = Modifier.height(24.dp))
                 }
             }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = 24.dp)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Spacer(modifier = Modifier.height(24.dp))
 
-            Spacer(modifier = Modifier.height(32.dp))
+                // Profile Picture Circle
+                Box(
+                    modifier = Modifier
+                        .size(100.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer)
+                        .clickable { showImageSourceDialog = true },
+                    contentAlignment = Alignment.Center
+                ) {
+                    // Priorizar previsualización local
+                    if (pendingBitmap != null) {
+                        AsyncImage(
+                            model = pendingBitmap,
+                            contentDescription = "Previsualización",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else if (settings?.profilePicture != null) {
+                        AsyncImage(
+                            model = settings?.profilePicture,
+                            contentDescription = "Foto de perfil",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.AccountCircle,
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                    
+                    // Overlay icon
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AddAPhoto,
+                            contentDescription = null,
+                            tint = Color.White.copy(alpha = 0.8f)
+                        )
+                    }
+                }
 
-            Column(modifier = Modifier.fillMaxWidth()) {
+                Spacer(modifier = Modifier.height(32.dp))
+
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "Nombre del emprendimiento",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = businessName,
+                        onValueChange = { 
+                            if (!it.contains("\n")) businessName = it 
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true,
+                        maxLines = 1,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+                        )
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(32.dp))
+
                 Text(
-                    text = "Nombre del emprendimiento",
+                    text = "Sector o Rubro",
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = businessName,
-                    onValueChange = { 
-                        if (!it.contains("\n")) businessName = it 
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    singleLine = true,
-                    maxLines = 1,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
-                    )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                ServiceSelectorGrid(
+                    services = services,
+                    selectedServices = if (selectedService.isEmpty()) emptySet() else setOf(selectedService),
+                    onServiceToggle = { selectedService = it }
                 )
+
+                Spacer(modifier = Modifier.weight(1f))
+                Spacer(modifier = Modifier.height(40.dp))
+
+                Button(
+                    onClick = {
+                        val byteArray = pendingBitmap?.let { bitmap ->
+                            val outputStream = ByteArrayOutputStream()
+                            bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
+                            outputStream.toByteArray()
+                        }
+                        viewModel.saveProfile(businessName, selectedService, byteArray)
+                        onBack()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(28.dp),
+                    enabled = businessName.isNotBlank() && selectedService.isNotBlank()
+                ) {
+                    Text("GUARDAR CAMBIOS", fontWeight = FontWeight.Bold)
+                }
+                
+                Spacer(modifier = Modifier.height(24.dp))
             }
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Text(
-                text = "Sector o Rubro",
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-
-            ServiceSelectorGrid(
-                services = services,
-                selectedServices = if (selectedService.isEmpty()) emptySet() else setOf(selectedService),
-                onServiceToggle = { selectedService = it }
-            )
-
-            Spacer(modifier = Modifier.weight(1f))
-            Spacer(modifier = Modifier.height(40.dp))
-
-            Button(
-                onClick = {
-                    val byteArray = pendingBitmap?.let { bitmap ->
-                        val outputStream = ByteArrayOutputStream()
-                        bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
-                        outputStream.toByteArray()
-                    }
-                    viewModel.saveProfile(businessName, selectedService, byteArray)
-                    onBack()
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(28.dp),
-                enabled = businessName.isNotBlank() && selectedService.isNotBlank()
-            ) {
-                Text("GUARDAR CAMBIOS", fontWeight = FontWeight.Bold)
-            }
-            
-            Spacer(modifier = Modifier.height(24.dp))
         }
 
         editingUri?.let { uri ->

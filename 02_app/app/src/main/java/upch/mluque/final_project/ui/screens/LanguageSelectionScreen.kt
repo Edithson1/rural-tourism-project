@@ -3,6 +3,8 @@ package upch.mluque.final_project.ui.screens
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -49,7 +51,12 @@ fun LanguageSelectionScreen(
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-            Column(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(androidx.compose.foundation.rememberScrollState())
+                    .padding(bottom = 80.dp)
+            ) {
                 languages.forEach { lang ->
                     Row(
                         modifier = Modifier

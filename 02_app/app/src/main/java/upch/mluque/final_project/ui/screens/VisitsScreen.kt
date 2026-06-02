@@ -93,6 +93,8 @@ fun VisitsScreen(
     onNavigate: (String) -> Unit
 ) {
     val visits by viewModel.allVisits.collectAsState()
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp && configuration.screenWidthDp > 600
 
     val groupedVisits = remember(visits) {
         groupVisits(visits)
@@ -115,7 +117,7 @@ fun VisitsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 24.dp)
+                .padding(horizontal = if (isLandscape) 48.dp else 24.dp)
         ) {
             Spacer(modifier = Modifier.height(8.dp))
             
@@ -126,7 +128,7 @@ fun VisitsScreen(
             ) {
                 Text(
                     text = "Tus Registros",
-                    fontSize = 28.sp,
+                    fontSize = if (isLandscape) 32.sp else 28.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
                 )
@@ -157,7 +159,8 @@ fun VisitsScreen(
             } else {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(bottom = 80.dp)
+                    contentPadding = PaddingValues(bottom = 80.dp),
+                    modifier = Modifier.fillMaxWidth(if (isLandscape) 0.8f else 1f).align(Alignment.CenterHorizontally)
                 ) {
                     groupedVisits.forEach { entry ->
                         val category = entry.key

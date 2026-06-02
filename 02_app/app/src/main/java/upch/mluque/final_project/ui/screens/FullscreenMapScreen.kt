@@ -79,7 +79,8 @@ fun FullscreenMapScreen(
             viewModel = viewModel,
             visits = visits,
             isInteractive = true,
-            zoomLevel = 4.0
+            zoomLevel = 4.0,
+            showLabels = true
         )
 
         // Top Controls: Back Button and Legend

@@ -529,7 +529,11 @@ fun VoiceSpeedModal(
         onDismissRequest = onDismiss,
         title = { Text("Velocidad de voz") },
         text = {
-            Column {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+            ) {
                 val speeds = listOf(0.25f, 0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 2.0f)
                 speeds.forEach { speed ->
                     Row(

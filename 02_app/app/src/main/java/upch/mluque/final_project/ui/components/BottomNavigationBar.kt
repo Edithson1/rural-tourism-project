@@ -7,7 +7,7 @@ import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
-bimport androidx.compose.runtime.Composable
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -19,9 +19,18 @@ fun BottomNavigationBar(
     currentRoute: String,
     onNavigate: (String) -> Unit
 ) {
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp
+    val horizontalPadding = if (isLandscape && configuration.screenWidthDp > 600) {
+        (configuration.screenWidthDp * 0.2f).dp
+    } else {
+        0.dp
+    }
+
     NavigationBar(
         containerColor = MaterialTheme.colorScheme.surface,
-        tonalElevation = 8.dp
+        tonalElevation = 8.dp,
+        modifier = Modifier.padding(horizontal = horizontalPadding)
     ) {
         val items = getNavItems()
 
