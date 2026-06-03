@@ -1,4 +1,4 @@
-package upch.mluque.final_project.ui.screens
+package upch.mluque.final_project.ui.features.sync
 
 import android.app.Activity
 import androidx.compose.foundation.layout.*
@@ -122,3 +122,4 @@ fun ScanQrScreen(navController: NavController) {
         }
     }
 }
+

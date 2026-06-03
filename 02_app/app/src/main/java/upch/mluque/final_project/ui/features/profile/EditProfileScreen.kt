@@ -1,4 +1,4 @@
-package upch.mluque.final_project.ui.screens
+package upch.mluque.final_project.ui.features.profile
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -561,3 +561,4 @@ fun cropBitmap(source: Bitmap, scale: Float, offset: Offset, cropSizePx: Float, 
 
 fun Offset.toIntOffset() = androidx.compose.ui.unit.IntOffset(x.toInt(), y.toInt())
 fun Size.toIntSize() = androidx.compose.ui.unit.IntSize(width.toInt(), height.toInt())
+

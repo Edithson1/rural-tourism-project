@@ -1,4 +1,4 @@
-package upch.mluque.final_project.ui.screens
+package upch.mluque.final_project.ui.features.sync
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -234,3 +234,4 @@ fun MetricItem(label: String, value: String) {
         Text(value, fontWeight = FontWeight.Bold, fontSize = 16.sp)
     }
 }
+

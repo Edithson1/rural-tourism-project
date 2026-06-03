@@ -15,19 +15,13 @@ import upch.mluque.final_project.data.DataRepository
 import upch.mluque.final_project.data.local.AppDatabase
 import upch.mluque.final_project.data.local.AppSettings
 import upch.mluque.final_project.data.local.Visit
+import upch.mluque.final_project.data.model.CountryFeature
 import kotlinx.coroutines.flow.*
 import org.json.JSONObject
 import org.osmdroid.util.GeoPoint
 import java.io.ByteArrayOutputStream
 
-// Data class to cache parsed country data
-data class CountryFeature(
-    val name: String,
-    val polygons: List<List<GeoPoint>>,
-    val centroid: GeoPoint?,
-    val displayPoint: GeoPoint? = null
-)
-
+// Data ViewModel handling app-wide state
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: DataRepository
     val appSettings: StateFlow<AppSettings?>

@@ -1,4 +1,4 @@
-package upch.mluque.final_project.ui.screens
+package upch.mluque.final_project.ui.features.visits
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -152,3 +152,4 @@ fun formatDate(timestamp: Long): String {
     val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
     return sdf.format(Date(timestamp))
 }
+

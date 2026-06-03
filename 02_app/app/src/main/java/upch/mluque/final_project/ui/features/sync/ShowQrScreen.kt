@@ -1,4 +1,4 @@
-package upch.mluque.final_project.ui.screens
+package upch.mluque.final_project.ui.features.sync
 
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
@@ -135,3 +135,4 @@ fun ShowQrScreen(navController: NavController, syncViewModel: SyncViewModel) {
         }
     }
 }
+

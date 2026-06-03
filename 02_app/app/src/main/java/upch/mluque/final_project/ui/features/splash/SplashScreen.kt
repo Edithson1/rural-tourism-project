@@ -1,4 +1,4 @@
-package upch.mluque.final_project.ui.screens
+package upch.mluque.final_project.ui.features.splash
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -120,3 +120,4 @@ fun SplashScreen(isReady: Boolean, onTimeout: () -> Unit) {
         }
     }
 }
+

@@ -1,4 +1,4 @@
-package upch.mluque.final_project.ui.screens
+package upch.mluque.final_project.ui.features.onboarding
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lightbulb
@@ -21,3 +21,4 @@ fun OnboardingScreen3(
         onNext = onNext
     )
 }
+

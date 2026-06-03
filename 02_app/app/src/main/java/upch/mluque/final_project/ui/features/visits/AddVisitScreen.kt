@@ -1,4 +1,4 @@
-package upch.mluque.final_project.ui.screens
+package upch.mluque.final_project.ui.features.visits
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -525,3 +525,4 @@ fun AddVisitDarkPreview() {
         AddVisitScreen(visitCount = 11, onBack = {}, onSave = { _, _, _, _ -> })
     }
 }
+

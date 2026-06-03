@@ -1,4 +1,4 @@
-package upch.mluque.final_project.ui.screens
+package upch.mluque.final_project.ui.features.map
 
 import android.app.Activity
 import android.content.Context
@@ -23,7 +23,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import upch.mluque.final_project.ui.MainViewModel
-import upch.mluque.final_project.ui.components.OsmMapView
 
 @Composable
 fun FullscreenMapScreen(
@@ -199,3 +198,4 @@ private fun Context.findActivity(): Activity? {
     }
     return null
 }
+

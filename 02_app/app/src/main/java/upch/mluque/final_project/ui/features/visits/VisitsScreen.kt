@@ -1,4 +1,4 @@
- package upch.mluque.final_project.ui.screens
+ package upch.mluque.final_project.ui.features.visits
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -329,3 +329,4 @@ fun getTimeAgo(timestamp: Long): String {
         else -> SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(timestamp))
     }
 }
+

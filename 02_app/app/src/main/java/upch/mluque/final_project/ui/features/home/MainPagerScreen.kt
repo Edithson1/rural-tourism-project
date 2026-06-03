@@ -1,4 +1,4 @@
-package upch.mluque.final_project.ui.components
+package upch.mluque.final_project.ui.features.home
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,7 +10,10 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavController
 import upch.mluque.final_project.ui.MainViewModel
 import upch.mluque.final_project.sync.SyncViewModel
-import upch.mluque.final_project.ui.screens.*
+import upch.mluque.final_project.ui.features.map.MapScreen
+import upch.mluque.final_project.ui.features.profile.ProfileScreen
+import upch.mluque.final_project.ui.features.visits.VisitsScreen
+import upch.mluque.final_project.ui.navigation.Routes
 
 @Composable
 fun MainPagerScreen(
@@ -40,11 +43,11 @@ fun MainPagerScreen(
                 entrepreneurTips = entrepreneurTips,
                 profilePicture = profilePicture,
                 visits = visits,
-                onNavigateToTip = { navController.navigate("tip_detail") },
-                onNavigateToAdd = { navController.navigate("add_visit") },
+                onNavigateToTip = { navController.navigate(Routes.TIP_DETAIL) },
+                onNavigateToAdd = { navController.navigate(Routes.ADD_VISIT) },
                 onNavigate = { route ->
                     navController.navigate(route) {
-                        popUpTo("main_pager") { saveState = true }
+                        popUpTo(Routes.MAIN_PAGER) { saveState = true }
                         launchSingleTop = true
                         restoreState = true
                     }
@@ -52,11 +55,11 @@ fun MainPagerScreen(
             )
             1 -> VisitsScreen(
                 viewModel = viewModel,
-                onNavigateToAdd = { navController.navigate("add_visit") },
-                onNavigateToDetail = { id -> navController.navigate("visit_detail/$id") },
+                onNavigateToAdd = { navController.navigate(Routes.ADD_VISIT) },
+                onNavigateToDetail = { id -> navController.navigate(Routes.visitDetail(id)) },
                 onNavigate = { route ->
                     navController.navigate(route) {
-                        popUpTo("main_pager") { saveState = true }
+                        popUpTo(Routes.MAIN_PAGER) { saveState = true }
                         launchSingleTop = true
                         restoreState = true
                     }
@@ -66,10 +69,10 @@ fun MainPagerScreen(
                 viewModel = viewModel,
                 onNavigate = { route ->
                     if (route == "fullscreen_map_action") {
-                        navController.navigate("fullscreen_map")
+                        navController.navigate(Routes.FULLSCREEN_MAP)
                     } else {
                         navController.navigate(route) {
-                            popUpTo("main_pager") { saveState = true }
+                            popUpTo(Routes.MAIN_PAGER) { saveState = true }
                             launchSingleTop = true
                             restoreState = true
                         }
@@ -80,10 +83,10 @@ fun MainPagerScreen(
                 viewModel = viewModel,
                 syncViewModel = syncViewModel,
                 navController = navController,
-                onNavigateToEdit = { navController.navigate("profile_edit") },
-                onNavigateToLanguage = { navController.navigate("profile_language") },
-                onNavigateToHelp = { navController.navigate("profile_help") },
-                onNavigateToPrivacy = { navController.navigate("profile_privacy") }
+                onNavigateToEdit = { navController.navigate(Routes.PROFILE_EDIT) },
+                onNavigateToLanguage = { navController.navigate(Routes.PROFILE_LANGUAGE) },
+                onNavigateToHelp = { navController.navigate(Routes.PROFILE_HELP) },
+                onNavigateToPrivacy = { navController.navigate(Routes.PROFILE_PRIVACY) }
             )
         }
     }

@@ -1,4 +1,4 @@
-package upch.mluque.final_project.ui.screens
+package upch.mluque.final_project.ui.features.map
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -20,7 +20,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import upch.mluque.final_project.ui.MainViewModel
 import upch.mluque.final_project.ui.components.BottomNavigationBar
-import upch.mluque.final_project.ui.components.OsmMapView
 
 @Composable
 fun MapScreen(
@@ -360,3 +359,4 @@ fun LegendItem(label: String, color: Color, count: Int) {
         )
     }
 }
+

@@ -1,4 +1,4 @@
-package upch.mluque.final_project.ui.screens
+package upch.mluque.final_project.ui.features.profile
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -286,3 +286,4 @@ fun ProfileSetupDarkPreview() {
         ProfileSetupScreen(onBack = {}, onSave = { _, _ -> })
     }
 }
+

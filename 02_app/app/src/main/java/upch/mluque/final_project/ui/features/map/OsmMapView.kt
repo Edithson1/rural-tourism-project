@@ -1,4 +1,4 @@
-package upch.mluque.final_project.ui.components
+package upch.mluque.final_project.ui.features.map
 
 import android.content.res.Configuration
 import android.graphics.Canvas
@@ -36,7 +36,7 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Overlay
 import org.osmdroid.views.overlay.Polygon
 import upch.mluque.final_project.data.local.Visit
-import upch.mluque.final_project.ui.CountryFeature
+import upch.mluque.final_project.data.model.CountryFeature
 import upch.mluque.final_project.ui.MainViewModel
 import kotlin.math.ln
 import kotlin.math.max
@@ -382,4 +382,5 @@ private fun getStablePointForVisit(visit: Visit, feature: CountryFeature): GeoPo
         v.longitude * weightVertex + c.longitude * weightCentroid
     )
 }
+
 

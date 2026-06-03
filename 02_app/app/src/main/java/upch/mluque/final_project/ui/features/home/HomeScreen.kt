@@ -1,4 +1,4 @@
-package upch.mluque.final_project.ui.screens
+package upch.mluque.final_project.ui.features.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -562,3 +562,4 @@ fun HomeLandscapePreview() {
         )
     }
 }
+

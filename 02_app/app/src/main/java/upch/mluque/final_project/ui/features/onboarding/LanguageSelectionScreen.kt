@@ -1,4 +1,4 @@
-package upch.mluque.final_project.ui.screens
+package upch.mluque.final_project.ui.features.onboarding
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
@@ -123,3 +123,4 @@ fun LanguageSelectionScreen(
         }
     }
 }
+
