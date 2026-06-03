@@ -28,6 +28,7 @@ import upch.mluque.final_project.ui.features.map.*
 import upch.mluque.final_project.ui.features.sync.*
 import upch.mluque.final_project.ui.features.info.*
 import upch.mluque.final_project.ui.features.splash.*
+import upch.mluque.final_project.utils.UiTranslations
 
 @Composable
 fun MainNavigation(
@@ -270,6 +271,7 @@ fun MainNavigation(
                     }
                     composable(Routes.PROFILE_SETUP) {
                         ProfileSetupScreen(
+                            selectedLanguage = selectedLanguage,
                             onBack = { navController.popBackStack() },
                             onSave = { name, service ->
                                 syncViewModel.saveProfile(name, service)
@@ -350,22 +352,25 @@ fun MainNavigation(
                     }
                     composable(Routes.PROFILE_HELP) {
                         InfoTextScreen(
-                            title = "Ayuda y Soporte",
-                            content = "Aquí puedes encontrar información sobre cómo usar la aplicación Yupay Turismo. \n\n1. Registro de visitas: Ve a la pestaña de Visitas o Home y presiona el botón +.\n2. Mapa: Visualiza el origen de tus visitantes en tiempo real.\n3. Perfil: Configura tus datos y preferencias de la aplicación.",
+                            title = UiTranslations.getString("profile_help", selectedLanguage),
+                            content = UiTranslations.getString("help_content", selectedLanguage),
                             onBack = { navController.popBackStack() }
                         )
                     }
                     composable(Routes.PROFILE_PRIVACY) {
                         InfoTextScreen(
-                            title = "Política de Privacidad",
-                            content = "Tu privacidad es importante para nosotros. Los datos recolectados en esta aplicación se guardan de forma local en tu dispositivo.\n\nNo compartimos información personal con terceros sin tu consentimiento explícito. Los datos de visitas son utilizados únicamente para generar tus reportes estadísticos.",
+                            title = UiTranslations.getString("profile_privacy", selectedLanguage),
+                            content = UiTranslations.getString("privacy_content", selectedLanguage),
                             onBack = { navController.popBackStack() }
                         )
                     }
                     composable(Routes.ADD_VISIT) {
                         val visits by viewModel.allVisits.collectAsState()
+                        val settings by viewModel.appSettings.collectAsState()
+                        val language = settings?.language ?: "Español"
                         AddVisitScreen(
                             visitCount = visits.size,
+                            language = language,
                             onBack = { navController.popBackStack() },
                             onSave = { nationality, flag, price, services ->
                                 syncViewModel.addVisit(nationality, flag, price, services)

@@ -21,6 +21,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import upch.mluque.final_project.ui.theme.Final_projectTheme
+import upch.mluque.final_project.utils.UiTranslations
 
 @Composable
 fun OnboardingScreen(
@@ -29,28 +30,14 @@ fun OnboardingScreen(
     onLanguageSelected: (String) -> Unit,
     onNext: () -> Unit
 ) {
-    val title = when (pageIndex) {
-        0 -> "Registra visitas sin internet"
-        1 -> "Mira tus resultados"
-        else -> "Recibe consejos"
-    }
-
-    val description = when (pageIndex) {
-        0 -> "Lleva el control de tus visitantes en cualquier lugar, incluso sin conexión a datos o Wi-Fi."
-        1 -> "Entiende cómo le va a tu emprendimiento con gráficos sencillos y fáciles de leer."
-        else -> "Escucha recomendaciones personalizadas en voz alta en quechua o español para mejorar tus servicios."
-    }
+    val title = UiTranslations.getString("onboarding_title_$pageIndex", selectedLanguage)
+    val description = UiTranslations.getString("onboarding_desc_$pageIndex", selectedLanguage)
+    val buttonText = UiTranslations.getString("onboarding_btn_$pageIndex", selectedLanguage)
 
     val icon = when (pageIndex) {
         0 -> Icons.Default.WifiOff
         1 -> Icons.Default.AutoGraph
         else -> Icons.Default.Lightbulb
-    }
-
-    val buttonText = when (pageIndex) {
-        0 -> "Comenzar"
-        1 -> "Siguiente"
-        else -> "Crear mi perfil"
     }
 
     Column(

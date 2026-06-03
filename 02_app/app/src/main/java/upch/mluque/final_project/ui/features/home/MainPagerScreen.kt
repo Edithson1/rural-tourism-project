@@ -29,6 +29,8 @@ fun MainPagerScreen(
     userScrollEnabled: Boolean = true
 ) {
     val visits by viewModel.allVisits.collectAsState()
+    val settings by viewModel.appSettings.collectAsState()
+    val language = settings?.language ?: "Español"
 
     HorizontalPager(
         state = pagerState,
@@ -43,6 +45,7 @@ fun MainPagerScreen(
                 entrepreneurTips = entrepreneurTips,
                 profilePicture = profilePicture,
                 visits = visits,
+                language = language,
                 onNavigateToTip = { navController.navigate(Routes.TIP_DETAIL) },
                 onNavigateToAdd = { navController.navigate(Routes.ADD_VISIT) },
                 onNavigate = { route ->

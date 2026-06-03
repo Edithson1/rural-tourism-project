@@ -31,6 +31,7 @@ import upch.mluque.final_project.data.local.Visit
 import upch.mluque.final_project.ui.MainViewModel
 import upch.mluque.final_project.ui.components.BottomNavigationBar
 import upch.mluque.final_project.ui.theme.Final_projectTheme
+import upch.mluque.final_project.utils.UiTranslations
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -73,11 +74,13 @@ fun VisitsPreview() {
                 
                 VisitItem(
                     visit = Visit(1, "Francia", "🇫🇷", "S/ 51 - 100", "Hospedaje", System.currentTimeMillis() - 86400000, true, System.currentTimeMillis()),
+                    language = "Español",
                     onClick = {}
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 VisitItem(
                     visit = Visit(2, "Estados Unidos", "🇺🇸", "S/ 201 - 500", "Alimentación", System.currentTimeMillis() - 172800000, false, null),
+                    language = "Español",
                     onClick = {}
                 )
             }
@@ -93,11 +96,14 @@ fun VisitsScreen(
     onNavigate: (String) -> Unit
 ) {
     val visits by viewModel.allVisits.collectAsState()
+    val settings by viewModel.appSettings.collectAsState()
+    val language = settings?.language ?: "Español"
+    
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp && configuration.screenWidthDp > 600
 
-    val groupedVisits = remember(visits) {
-        groupVisits(visits)
+    val groupedVisits = remember(visits, language) {
+        groupVisits(visits, language)
     }
 
     Scaffold(
@@ -108,7 +114,7 @@ fun VisitsScreen(
                 contentColor = MaterialTheme.colorScheme.onPrimary,
                 shape = CircleShape
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add")
+                Icon(Icons.Default.Add, contentDescription = UiTranslations.getString("visits_add", language))
             }
         },
         containerColor = Color.Transparent
@@ -127,7 +133,7 @@ fun VisitsScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Tus Registros",
+                    text = UiTranslations.getString("visits_title", language),
                     fontSize = if (isLandscape) 32.sp else 28.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
@@ -138,7 +144,7 @@ fun VisitsScreen(
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Text(
-                        text = "${visits.size} total",
+                        text = UiTranslations.getString("total_records", language, visits.size),
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
@@ -152,7 +158,7 @@ fun VisitsScreen(
             if (visits.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
-                        text = "No hay registros aún",
+                        text = UiTranslations.getString("no_records_yet", language),
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
                     )
                 }
@@ -178,6 +184,7 @@ fun VisitsScreen(
                         items(visitsInCategory) { visit ->
                             VisitItem(
                                 visit = visit,
+                                language = language,
                                 onClick = { onNavigateToDetail(visit.id) }
                             )
                         }
@@ -188,7 +195,7 @@ fun VisitsScreen(
     }
 }
 
-private fun groupVisits(visits: List<Visit>): Map<String, List<Visit>> {
+private fun groupVisits(visits: List<Visit>, language: String): Map<String, List<Visit>> {
     val grouped = mutableMapOf<String, MutableList<Visit>>()
     val now = Calendar.getInstance()
     
@@ -197,20 +204,22 @@ private fun groupVisits(visits: List<Visit>): Map<String, List<Visit>> {
     sortedVisits.forEach { visit ->
         val visitDate = Calendar.getInstance().apply { timeInMillis = visit.registrationDate }
         
-        val category = when {
-            isSameDay(now, visitDate) -> "Hoy"
-            isYesterday(now, visitDate) -> "Ayer"
-            isSameWeek(now, visitDate) -> "Esta semana"
-            isSameMonth(now, visitDate) -> "Este mes"
-            isSameYear(now, visitDate) -> "Este año"
-            else -> "Más de un año"
+        val categoryKey = when {
+            isSameDay(now, visitDate) -> "cat_today"
+            isYesterday(now, visitDate) -> "cat_yesterday"
+            isSameWeek(now, visitDate) -> "cat_this_week"
+            isSameMonth(now, visitDate) -> "cat_this_month"
+            isSameYear(now, visitDate) -> "cat_this_year"
+            else -> "cat_older"
         }
+        val category = UiTranslations.getString(categoryKey, language)
         
         grouped.getOrPut(category) { mutableListOf() }.add(visit)
     }
     
     val result = LinkedHashMap<String, List<Visit>>()
-    listOf("Hoy", "Ayer", "Esta semana", "Este mes", "Este año", "Más de un año").forEach { cat ->
+    listOf("cat_today", "cat_yesterday", "cat_this_week", "cat_this_month", "cat_this_year", "cat_older").forEach { key ->
+        val cat = UiTranslations.getString(key, language)
         grouped[cat]?.let { result[cat] = it }
     }
     return result
@@ -244,7 +253,7 @@ private fun isSameYear(today: Calendar, date: Calendar): Boolean {
 }
 
 @Composable
-fun VisitItem(visit: Visit, onClick: () -> Unit) {
+fun VisitItem(visit: Visit, language: String, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -280,13 +289,13 @@ fun VisitItem(visit: Visit, onClick: () -> Unit) {
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Turista - ${visit.nationality}",
+                    text = "${UiTranslations.getString("tourist_label", language)} - ${visit.nationality}",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = getTimeAgo(visit.registrationDate),
+                    text = getTimeAgo(visit.registrationDate, language),
                     fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
@@ -312,7 +321,7 @@ fun VisitItem(visit: Visit, onClick: () -> Unit) {
     }
 }
 
-fun getTimeAgo(timestamp: Long): String {
+fun getTimeAgo(timestamp: Long, language: String): String {
     val now = System.currentTimeMillis()
     val diff = now - timestamp
     
@@ -321,11 +330,11 @@ fun getTimeAgo(timestamp: Long): String {
     val days = TimeUnit.MILLISECONDS.toDays(diff)
 
     return when {
-        minutes < 1 -> "Ahora mismo"
-        minutes < 60 -> "Hace $minutes min"
-        hours < 24 -> if (hours == 1L) "Hace 1 hora" else "Hace $hours horas"
-        days == 1L -> "Ayer"
-        days < 7 -> "Hace $days días"
+        minutes < 1 -> UiTranslations.getString("time_now", language)
+        minutes < 60 -> UiTranslations.getString("time_min_ago", language, minutes.toInt())
+        hours < 24 -> if (hours == 1L) UiTranslations.getString("time_hour_ago", language) else UiTranslations.getString("time_hours_ago", language, hours.toInt())
+        days == 1L -> UiTranslations.getString("time_yesterday", language)
+        days < 7 -> UiTranslations.getString("time_days_ago", language, days.toInt())
         else -> SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(timestamp))
     }
 }

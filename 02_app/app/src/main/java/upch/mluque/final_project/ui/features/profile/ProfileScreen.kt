@@ -30,6 +30,7 @@ import upch.mluque.final_project.ui.components.ConnectionRequiredDialog
 import upch.mluque.final_project.ui.theme.Final_projectTheme
 import upch.mluque.final_project.utils.PermissionRequester
 import upch.mluque.final_project.utils.getSyncPermissions
+import upch.mluque.final_project.utils.UiTranslations
 
 @Composable
 fun ProfileScreen(
@@ -42,6 +43,7 @@ fun ProfileScreen(
     onNavigateToPrivacy: () -> Unit
 ) {
     val settings by viewModel.appSettings.collectAsState()
+    val language = settings?.language ?: "Español"
     val role by syncViewModel.role.collectAsState()
     val isConnected by syncViewModel.isConnected.collectAsState()
     val remoteDeviceName by syncViewModel.remoteDeviceName.collectAsState()
@@ -74,7 +76,7 @@ fun ProfileScreen(
                 LandscapeProfileContent(
                     paddingValues, settings, role, isConnected, remoteDeviceName,
                     navController, onNavigateToEdit, onNavigateToLanguage,
-                    onNavigateToHelp, onNavigateToPrivacy,
+                    onNavigateToHelp, onNavigateToPrivacy, language,
                     onVoiceSpeedClick = { showVoiceSpeedModal = true },
                     onLinkDeviceClick = { triggerPermissions = true },
                     onLogoutClick = {
@@ -89,7 +91,7 @@ fun ProfileScreen(
                 PortraitProfileContent(
                     paddingValues, settings, role, isConnected, remoteDeviceName,
                     navController, onNavigateToEdit, onNavigateToLanguage,
-                    onNavigateToHelp, onNavigateToPrivacy,
+                    onNavigateToHelp, onNavigateToPrivacy, language,
                     onVoiceSpeedClick = { showVoiceSpeedModal = true },
                     onLinkDeviceClick = { triggerPermissions = true },
                     onLogoutClick = {
@@ -124,7 +126,7 @@ fun ProfileScreen(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = if (isConnected) "En línea" else "Desconectado",
+                            text = if (isConnected) UiTranslations.getString("profile_online", language) else UiTranslations.getString("profile_offline", language),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = if (isConnected) Color(0xFF2E7D32) else Color.Red
@@ -137,6 +139,7 @@ fun ProfileScreen(
         if (showVoiceSpeedModal) {
             VoiceSpeedModal(
                 currentSpeed = settings?.voiceSpeed ?: 1.0f,
+                language = language,
                 onDismiss = { showVoiceSpeedModal = false },
                 onSelectSpeed = { 
                     viewModel.updateVoiceSpeed(it)
@@ -148,8 +151,8 @@ fun ProfileScreen(
         if (showLogoutDialog) {
             AlertDialog(
                 onDismissRequest = { showLogoutDialog = false },
-                title = { Text("¿Cerrar sesión?") },
-                text = { Text("Se cerrará la sesión actual y el dispositivo volverá a la pantalla inicial. Deberás volver a vincularte para sincronizar datos.") },
+                title = { Text(UiTranslations.getString("profile_logout_confirm_title", language)) },
+                text = { Text(UiTranslations.getString("profile_logout_confirm_desc", language)) },
                 confirmButton = {
                     TextButton(
                         onClick = {
@@ -162,12 +165,12 @@ fun ProfileScreen(
                         },
                         colors = ButtonDefaults.textButtonColors(contentColor = Color.Red)
                     ) {
-                        Text("CERRAR SESIÓN")
+                        Text(UiTranslations.getString("profile_logout", language))
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showLogoutDialog = false }) {
-                        Text("CANCELAR")
+                        Text(UiTranslations.getString("btn_cancel", language))
                     }
                 }
             )
@@ -191,6 +194,7 @@ fun PortraitProfileContent(
     onNavigateToLanguage: () -> Unit,
     onNavigateToHelp: () -> Unit,
     onNavigateToPrivacy: () -> Unit,
+    language: String,
     onVoiceSpeedClick: () -> Unit,
     onLinkDeviceClick: () -> Unit,
     onLogoutClick: () -> Unit
@@ -204,13 +208,13 @@ fun PortraitProfileContent(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(6.dp))
-        ProfileTitle()
+        ProfileTitle(language)
         Spacer(modifier = Modifier.height(24.dp))
-        ProfileHeaderCard(settings, onNavigateToEdit)
+        ProfileHeaderCard(settings, language, onNavigateToEdit)
         Spacer(modifier = Modifier.height(32.dp))
-        SettingsSection(settings, role, remoteDeviceName, onNavigateToLanguage, onVoiceSpeedClick, onLinkDeviceClick, onLogoutClick, navController)
+        SettingsSection(settings, role, remoteDeviceName, language, onNavigateToLanguage, onVoiceSpeedClick, onLinkDeviceClick, onLogoutClick, navController)
         Spacer(modifier = Modifier.height(24.dp))
-        InfoSection(onNavigateToHelp, onNavigateToPrivacy)
+        InfoSection(language, onNavigateToHelp, onNavigateToPrivacy)
         Spacer(modifier = Modifier.height(40.dp))
     }
 }
@@ -227,6 +231,7 @@ fun LandscapeProfileContent(
     onNavigateToLanguage: () -> Unit,
     onNavigateToHelp: () -> Unit,
     onNavigateToPrivacy: () -> Unit,
+    language: String,
     onVoiceSpeedClick: () -> Unit,
     onLinkDeviceClick: () -> Unit,
     onLogoutClick: () -> Unit
@@ -245,9 +250,9 @@ fun LandscapeProfileContent(
                 .padding(vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            ProfileTitle()
+            ProfileTitle(language)
             Spacer(modifier = Modifier.height(24.dp))
-            ProfileHeaderCard(settings, onNavigateToEdit)
+            ProfileHeaderCard(settings, language, onNavigateToEdit)
         }
         
         Spacer(modifier = Modifier.width(24.dp))
@@ -259,18 +264,18 @@ fun LandscapeProfileContent(
                 .verticalScroll(rememberScrollState())
                 .padding(vertical = 16.dp)
         ) {
-            SettingsSection(settings, role, remoteDeviceName, onNavigateToLanguage, onVoiceSpeedClick, onLinkDeviceClick, onLogoutClick, navController)
+            SettingsSection(settings, role, remoteDeviceName, language, onNavigateToLanguage, onVoiceSpeedClick, onLinkDeviceClick, onLogoutClick, navController)
             Spacer(modifier = Modifier.height(24.dp))
-            InfoSection(onNavigateToHelp, onNavigateToPrivacy)
+            InfoSection(language, onNavigateToHelp, onNavigateToPrivacy)
             Spacer(modifier = Modifier.height(40.dp))
         }
     }
 }
 
 @Composable
-fun ProfileTitle() {
+fun ProfileTitle(language: String) {
     Text(
-        text = "Mi Perfil",
+        text = UiTranslations.getString("profile_title", language),
         fontSize = 28.sp,
         fontWeight = FontWeight.Bold,
         color = MaterialTheme.colorScheme.onBackground
@@ -278,7 +283,7 @@ fun ProfileTitle() {
 }
 
 @Composable
-fun ProfileHeaderCard(settings: upch.mluque.final_project.data.local.AppSettings?, onNavigateToEdit: () -> Unit) {
+fun ProfileHeaderCard(settings: upch.mluque.final_project.data.local.AppSettings?, language: String, onNavigateToEdit: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -348,7 +353,7 @@ fun ProfileHeaderCard(settings: upch.mluque.final_project.data.local.AppSettings
                 shape = RoundedCornerShape(18.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp)
             ) {
-                Text("Editar", fontSize = 14.sp)
+                Text(UiTranslations.getString("profile_edit", language), fontSize = 14.sp)
             }
         }
     }
@@ -359,13 +364,14 @@ fun SettingsSection(
     settings: upch.mluque.final_project.data.local.AppSettings?,
     role: String,
     remoteDeviceName: String?,
+    language: String,
     onNavigateToLanguage: () -> Unit,
     onVoiceSpeedClick: () -> Unit,
     onLinkDeviceClick: () -> Unit,
     onLogoutClick: () -> Unit,
     navController: NavController
 ) {
-    SectionTitle("Configuración de la App")
+    SectionTitle(UiTranslations.getString("profile_settings_title", language))
     
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -376,14 +382,14 @@ fun SettingsSection(
         Column {
             SettingsItem(
                 icon = Icons.Default.Language,
-                title = "Idioma",
+                title = UiTranslations.getString("profile_language", language),
                 value = settings?.language ?: "",
                 onClick = onNavigateToLanguage
             )
             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
             SettingsItem(
                 icon = Icons.Default.VolumeUp,
-                title = "Velocidad de voz",
+                title = UiTranslations.getString("profile_voice_speed", language),
                 value = "x${settings?.voiceSpeed ?: 1.0f}",
                 onClick = onVoiceSpeedClick
             )
@@ -392,20 +398,20 @@ fun SettingsSection(
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
                 SettingsItem(
                     icon = Icons.Default.QrCodeScanner,
-                    title = "Vincular nuevo dispositivo",
+                    title = UiTranslations.getString("profile_link_device", language),
                     onClick = onLinkDeviceClick
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
                 SettingsItem(
                     icon = Icons.Default.Devices,
-                    title = if (remoteDeviceName != null) "Dispositivos vinculados (1)" else "Dispositivos vinculados",
+                    title = if (remoteDeviceName != null) "${UiTranslations.getString("profile_linked_devices", language)} (1)" else UiTranslations.getString("profile_linked_devices", language),
                     onClick = { navController.navigate("linked_devices") }
                 )
             } else if (role == "SERVER") {
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
                 SettingsItem(
                     icon = Icons.Default.ExitToApp,
-                    title = "Cerrar sesión",
+                    title = UiTranslations.getString("profile_logout", language),
                     titleColor = Color.Red,
                     onClick = onLogoutClick
                 )
@@ -415,8 +421,8 @@ fun SettingsSection(
 }
 
 @Composable
-fun InfoSection(onNavigateToHelp: () -> Unit, onNavigateToPrivacy: () -> Unit) {
-    SectionTitle("Información")
+fun InfoSection(language: String, onNavigateToHelp: () -> Unit, onNavigateToPrivacy: () -> Unit) {
+    SectionTitle(UiTranslations.getString("profile_info_title", language))
     
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -427,13 +433,13 @@ fun InfoSection(onNavigateToHelp: () -> Unit, onNavigateToPrivacy: () -> Unit) {
         Column {
             SettingsItem(
                 icon = Icons.Default.HelpOutline,
-                title = "Ayuda y Soporte",
+                title = UiTranslations.getString("profile_help", language),
                 onClick = onNavigateToHelp
             )
             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
             SettingsItem(
                 icon = Icons.Default.Security,
-                title = "Política de Privacidad",
+                title = UiTranslations.getString("profile_privacy", language),
                 onClick = onNavigateToPrivacy
             )
         }
@@ -513,6 +519,7 @@ fun ProfileLandscapePreview() {
             onNavigateToLanguage = {},
             onNavigateToHelp = {},
             onNavigateToPrivacy = {},
+            language = "Español",
             onVoiceSpeedClick = {},
             onLinkDeviceClick = {},
             onLogoutClick = {}
@@ -522,12 +529,13 @@ fun ProfileLandscapePreview() {
 @Composable
 fun VoiceSpeedModal(
     currentSpeed: Float,
+    language: String,
     onDismiss: () -> Unit,
     onSelectSpeed: (Float) -> Unit
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Velocidad de voz") },
+        title = { Text(UiTranslations.getString("profile_voice_speed", language)) },
         text = {
             Column(
                 modifier = Modifier
@@ -558,7 +566,7 @@ fun VoiceSpeedModal(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("CERRAR")
+                Text(UiTranslations.getString("btn_close", language))
             }
         }
     )

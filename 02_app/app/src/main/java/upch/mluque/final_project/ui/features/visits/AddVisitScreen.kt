@@ -19,14 +19,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import upch.mluque.final_project.ui.components.ServiceOption
 import upch.mluque.final_project.ui.components.ServiceSelectorGrid
-import upch.mluque.final_project.ui.theme.DarkGreenText
 import upch.mluque.final_project.ui.theme.BrownPrimary
 import upch.mluque.final_project.ui.theme.Final_projectTheme
+import upch.mluque.final_project.utils.UiTranslations
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddVisitScreen(
     visitCount: Int,
+    language: String,
     onBack: () -> Unit,
     onSave: (String, String, String, String) -> Unit
 ) {
@@ -69,7 +70,7 @@ fun AddVisitScreen(
     val availableServices = listOf(
         ServiceOption("Hospedaje", Icons.Default.Bed),
         ServiceOption("Alimentación", Icons.Default.Restaurant),
-        ServiceOption("Artesanía", Icons.Default.LocalMall) // LocalMall is closer to shopping bag
+        ServiceOption("Artesanía", Icons.Default.LocalMall)
     )
 
     Scaffold(
@@ -80,7 +81,7 @@ fun AddVisitScreen(
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Atrás",
+                            contentDescription = null,
                             tint = MaterialTheme.colorScheme.onBackground
                         )
                     }
@@ -114,7 +115,7 @@ fun AddVisitScreen(
                 ) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Nuevo Registro",
+                        text = UiTranslations.getString("add_visit_title", language),
                         fontSize = 28.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
@@ -123,7 +124,7 @@ fun AddVisitScreen(
 
                     // Nationality Selector
                     Text(
-                        text = "Procedencia / Nacionalidad *",
+                        text = UiTranslations.getString("add_visit_country_label", language) + " *",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
@@ -142,7 +143,7 @@ fun AddVisitScreen(
                                 nationalitySearch = it
                                 isNationalityExpanded = true
                             },
-                            placeholder = { Text("Seleccione una opción") },
+                            placeholder = { Text(UiTranslations.getString("select_option", language)) },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .menuAnchor(MenuAnchorType.PrimaryEditable, true),
@@ -184,7 +185,7 @@ fun AddVisitScreen(
 
                     // Expense Selector
                     Text(
-                        text = "Gasto aproximado *",
+                        text = UiTranslations.getString("add_visit_price_label", language) + " *",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
@@ -199,7 +200,7 @@ fun AddVisitScreen(
                             value = selectedRange,
                             onValueChange = { },
                             readOnly = true,
-                            placeholder = { Text("Seleccione rango") },
+                            placeholder = { Text(UiTranslations.getString("select_range", language)) },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .menuAnchor(MenuAnchorType.PrimaryNotEditable, true),
@@ -242,7 +243,7 @@ fun AddVisitScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     // Services
                     Text(
-                        text = "Servicios consumidos",
+                        text = UiTranslations.getString("add_visit_services_label", language),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
@@ -250,13 +251,15 @@ fun AddVisitScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     ServiceSelectorGrid(
-                        services = availableServices,
-                        selectedServices = selectedServices,
-                        onServiceToggle = { serviceName ->
-                            if (selectedServices.contains(serviceName)) {
-                                selectedServices = selectedServices - serviceName
+                        services = availableServices.map { it.copy(name = UiTranslations.translateService(it.name, language)) },
+                        selectedServices = selectedServices.map { UiTranslations.translateService(it, language) }.toSet(),
+                        onServiceToggle = { serviceNameTranslated ->
+                            // Map back to original name
+                            val originalName = availableServices.find { UiTranslations.translateService(it.name, language) == serviceNameTranslated }?.name ?: serviceNameTranslated
+                            if (selectedServices.contains(originalName)) {
+                                selectedServices = selectedServices - originalName
                             } else {
-                                selectedServices = selectedServices + serviceName
+                                selectedServices = selectedServices + originalName
                             }
                         }
                     )
@@ -289,7 +292,7 @@ fun AddVisitScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Guardar Registro",
+                                text = UiTranslations.getString("add_visit_save", language),
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
@@ -313,7 +316,7 @@ fun AddVisitScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Nuevo Registro",
+                        text = UiTranslations.getString("add_visit_title", language),
                         fontSize = 28.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
@@ -324,7 +327,7 @@ fun AddVisitScreen(
                         shape = RoundedCornerShape(16.dp)
                     ) {
                         Text(
-                            text = "Registro #${visitCount + 1}",
+                            text = "${UiTranslations.getString("record_label", language)} #${visitCount + 1}",
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                             fontSize = 12.sp,
                             color = if (isSystemInDarkTheme()) Color.LightGray else Color.Gray
@@ -336,7 +339,7 @@ fun AddVisitScreen(
 
                 // Nationality Selector
                 Text(
-                    text = "Procedencia / Nacionalidad *",
+                    text = UiTranslations.getString("add_visit_country_label", language) + " *",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
@@ -355,7 +358,7 @@ fun AddVisitScreen(
                             nationalitySearch = it
                             isNationalityExpanded = true
                         },
-                        placeholder = { Text("Seleccione una opción") },
+                        placeholder = { Text(UiTranslations.getString("select_option", language)) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .menuAnchor(MenuAnchorType.PrimaryEditable, true),
@@ -397,7 +400,7 @@ fun AddVisitScreen(
 
                 // Expense Selector
                 Text(
-                    text = "Gasto aproximado *",
+                    text = UiTranslations.getString("add_visit_price_label", language) + " *",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
@@ -412,7 +415,7 @@ fun AddVisitScreen(
                         value = selectedRange,
                         onValueChange = { },
                         readOnly = true,
-                        placeholder = { Text("Seleccione rango") },
+                        placeholder = { Text(UiTranslations.getString("select_range", language)) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .menuAnchor(MenuAnchorType.PrimaryNotEditable, true),
@@ -447,7 +450,7 @@ fun AddVisitScreen(
 
                 // Services
                 Text(
-                    text = "Servicios consumidos",
+                    text = UiTranslations.getString("add_visit_services_label", language),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
@@ -455,13 +458,14 @@ fun AddVisitScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 ServiceSelectorGrid(
-                    services = availableServices,
-                    selectedServices = selectedServices,
-                    onServiceToggle = { serviceName ->
-                        if (selectedServices.contains(serviceName)) {
-                            selectedServices = selectedServices - serviceName
+                    services = availableServices.map { it.copy(name = UiTranslations.translateService(it.name, language)) },
+                    selectedServices = selectedServices.map { UiTranslations.translateService(it, language) }.toSet(),
+                    onServiceToggle = { serviceNameTranslated ->
+                        val originalName = availableServices.find { UiTranslations.translateService(it.name, language) == serviceNameTranslated }?.name ?: serviceNameTranslated
+                        if (selectedServices.contains(originalName)) {
+                            selectedServices = selectedServices - originalName
                         } else {
-                            selectedServices = selectedServices + serviceName
+                            selectedServices = selectedServices + originalName
                         }
                     }
                 )
@@ -494,7 +498,7 @@ fun AddVisitScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Guardar Registro",
+                            text = UiTranslations.getString("add_visit_save", language),
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
@@ -514,7 +518,7 @@ data class Country(val name: String, val flag: String)
 @Composable
 fun AddVisitPreview() {
     Final_projectTheme {
-        AddVisitScreen(visitCount = 11, onBack = {}, onSave = { _, _, _, _ -> })
+        AddVisitScreen(visitCount = 11, language = "Español", onBack = {}, onSave = { _, _, _, _ -> })
     }
 }
 
@@ -522,7 +526,7 @@ fun AddVisitPreview() {
 @Composable
 fun AddVisitDarkPreview() {
     Final_projectTheme {
-        AddVisitScreen(visitCount = 11, onBack = {}, onSave = { _, _, _, _ -> })
+        AddVisitScreen(visitCount = 11, language = "Español", onBack = {}, onSave = { _, _, _, _ -> })
     }
 }
 

@@ -22,7 +22,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import upch.mluque.final_project.ui.MainViewModel
+import upch.mluque.final_project.ui.components.AudioPlayerUI
+import upch.mluque.final_project.ui.components.MapSubtitles
 
 @Composable
 fun FullscreenMapScreen(
@@ -32,6 +35,23 @@ fun FullscreenMapScreen(
     val visits by viewModel.allVisits.collectAsState()
     val settings by viewModel.appSettings.collectAsState()
     val currentSummary = settings?.let { it.mapSummary[it.language] ?: it.mapSummary["Español"] ?: "" } ?: ""
+
+    // Estados para la simulación de audio
+    var currentTime by remember { mutableLongStateOf(0L) }
+    var isPlaying by remember { mutableStateOf(false) }
+    val readingTimePerLine = 4000L
+    val lines = remember(currentSummary) { currentSummary.split("\n", ". ").filter { it.isNotBlank() } }
+    val totalDuration = remember(lines) { (lines.size * readingTimePerLine).coerceAtLeast(1000L) }
+
+    LaunchedEffect(isPlaying) {
+        if (isPlaying) {
+            while (currentTime < totalDuration) {
+                delay(100)
+                currentTime += 100
+            }
+            isPlaying = false
+        }
+    }
 
     val serviceCounts = remember(visits) {
         val counts = mutableMapOf(
@@ -82,6 +102,16 @@ fun FullscreenMapScreen(
             showLabels = true
         )
 
+        // Subtítulos flotantes
+        if (isPlaying) {
+            MapSubtitles(
+                text = lines.joinToString("\n"),
+                currentTime = currentTime,
+                readingTimePerLine = readingTimePerLine,
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 100.dp)
+            )
+        }
+
         // Top Controls: Back Button and Legend
         Row(
             modifier = Modifier
@@ -124,39 +154,29 @@ fun FullscreenMapScreen(
             }
         }
 
-        // Bottom Control: Small Play Button
+        // Bottom Control: Audio Player
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 24.dp)
+                .padding(bottom = 16.dp)
                 .navigationBarsPadding()
         ) {
             Surface(
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
                 shape = RoundedCornerShape(24.dp),
-                modifier = Modifier.height(44.dp)
+                modifier = Modifier.width(300.dp)
             ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    IconButton(
-                        onClick = { /* TTS Implementation */ },
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(Icons.Default.PlayArrow, "Play", tint = Color.White)
-                    }
-                    if (currentSummary.isNotEmpty()) {
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            "Escuchar Resumen",
-                            color = Color.White,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
+                AudioPlayerUI(
+                    currentTime = currentTime,
+                    totalDuration = totalDuration,
+                    isPlaying = isPlaying,
+                    onPlayPauseClick = { isPlaying = !isPlaying },
+                    onSeek = { fraction -> currentTime = (totalDuration * fraction).toLong() },
+                    onFastForward = { currentTime = (currentTime + 10000L).coerceAtMost(totalDuration) },
+                    onRewind = { currentTime = (currentTime - 10000L).coerceAtLeast(0L) },
+                    compact = true,
+                    modifier = Modifier.padding(8.dp)
+                )
             }
         }
     }

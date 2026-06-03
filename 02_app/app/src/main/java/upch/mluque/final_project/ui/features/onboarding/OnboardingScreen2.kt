@@ -3,6 +3,7 @@ package upch.mluque.final_project.ui.features.onboarding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoGraph
 import androidx.compose.runtime.Composable
+import upch.mluque.final_project.utils.UiTranslations
 
 @Composable
 fun OnboardingScreen2(
@@ -11,10 +12,10 @@ fun OnboardingScreen2(
     onNext: () -> Unit
 ) {
     OnboardingBase(
-        title = "Mira tus resultados",
-        description = "Entiende cómo le va a tu emprendimiento con gráficos sencillos y fáciles de leer.",
+        title = UiTranslations.getString("onboarding_title_1", selectedLanguage),
+        description = UiTranslations.getString("onboarding_desc_1", selectedLanguage),
         icon = Icons.Default.AutoGraph,
-        buttonText = "Siguiente",
+        buttonText = UiTranslations.getString("onboarding_btn_1", selectedLanguage),
         pageIndex = 1,
         selectedLanguage = selectedLanguage,
         onLanguageChange = onLanguageChange,

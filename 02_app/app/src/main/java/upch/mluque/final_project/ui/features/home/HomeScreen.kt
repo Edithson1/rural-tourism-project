@@ -20,6 +20,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -27,6 +28,7 @@ import coil.compose.AsyncImage
 import upch.mluque.final_project.data.local.Visit
 import upch.mluque.final_project.ui.components.BottomNavigationBar
 import upch.mluque.final_project.ui.theme.Final_projectTheme
+import upch.mluque.final_project.utils.UiTranslations
 import java.util.Calendar
 
 enum class TimeView { DAY, WEEK, MONTH, YEAR }
@@ -38,6 +40,7 @@ fun HomeScreen(
     entrepreneurTips: String,
     profilePicture: ByteArray?,
     visits: List<Visit>,
+    language: String,
     onNavigateToTip: () -> Unit,
     onNavigateToAdd: () -> Unit,
     onNavigate: (String) -> Unit
@@ -69,14 +72,14 @@ fun HomeScreen(
         if (isLandscape) {
             LandscapeHomeContent(
                 paddingValues, businessName, selectedService, entrepreneurTips,
-                profilePicture, visits, selectedView, chartData, maxCount,
+                profilePicture, visits, selectedView, chartData, maxCount, language,
                 onViewChange = { selectedView = it },
                 onNavigateToTip = onNavigateToTip
             )
         } else {
             PortraitHomeContent(
                 paddingValues, businessName, selectedService, entrepreneurTips,
-                profilePicture, visits, selectedView, chartData, maxCount,
+                profilePicture, visits, selectedView, chartData, maxCount, language,
                 onViewChange = { selectedView = it },
                 onNavigateToTip = onNavigateToTip
             )
@@ -95,6 +98,7 @@ fun PortraitHomeContent(
     selectedView: TimeView,
     chartData: List<Pair<String, Int>>,
     maxCount: Int,
+    language: String,
     onViewChange: (TimeView) -> Unit,
     onNavigateToTip: () -> Unit
 ) {
@@ -106,14 +110,14 @@ fun PortraitHomeContent(
             .verticalScroll(rememberScrollState())
     ) {
         Spacer(modifier = Modifier.height(6.dp))
-        HomeHeader(businessName, selectedService, profilePicture)
+        HomeHeader(businessName, selectedService, profilePicture, language)
         Spacer(modifier = Modifier.height(24.dp))
-        TimeViewSelector(selectedView, onViewChange)
-        ChartCard(selectedView, chartData, maxCount)
+        TimeViewSelector(selectedView, onViewChange, language)
+        ChartCard(selectedView, chartData, maxCount, language)
         Spacer(modifier = Modifier.height(24.dp))
-        TipCard(entrepreneurTips, onNavigateToTip)
+        TipCard(entrepreneurTips, language, onNavigateToTip)
         Spacer(modifier = Modifier.height(24.dp))
-        RecentVisitsCard(visits)
+        RecentVisitsCard(visits, language)
         Spacer(modifier = Modifier.height(100.dp))
     }
 }
@@ -129,6 +133,7 @@ fun LandscapeHomeContent(
     selectedView: TimeView,
     chartData: List<Pair<String, Int>>,
     maxCount: Int,
+    language: String,
     onViewChange: (TimeView) -> Unit,
     onNavigateToTip: () -> Unit
 ) {
@@ -145,10 +150,10 @@ fun LandscapeHomeContent(
                 .verticalScroll(rememberScrollState())
                 .padding(vertical = 16.dp)
         ) {
-            HomeHeader(businessName, selectedService, profilePicture)
+            HomeHeader(businessName, selectedService, profilePicture, language)
             Spacer(modifier = Modifier.height(24.dp))
-            TimeViewSelector(selectedView, onViewChange)
-            ChartCard(selectedView, chartData, maxCount)
+            TimeViewSelector(selectedView, onViewChange, language)
+            ChartCard(selectedView, chartData, maxCount, language)
             Spacer(modifier = Modifier.height(24.dp))
         }
         
@@ -161,16 +166,16 @@ fun LandscapeHomeContent(
                 .verticalScroll(rememberScrollState())
                 .padding(vertical = 16.dp)
         ) {
-            TipCard(entrepreneurTips, onNavigateToTip)
+            TipCard(entrepreneurTips, language, onNavigateToTip)
             Spacer(modifier = Modifier.height(24.dp))
-            RecentVisitsCard(visits)
+            RecentVisitsCard(visits, language)
             Spacer(modifier = Modifier.height(100.dp))
         }
     }
 }
 
 @Composable
-fun HomeHeader(businessName: String, selectedService: String, profilePicture: ByteArray?) {
+fun HomeHeader(businessName: String, selectedService: String, profilePicture: ByteArray?, language: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(
             modifier = Modifier
@@ -200,14 +205,14 @@ fun HomeHeader(businessName: String, selectedService: String, profilePicture: By
         
         Column {
             Text(
-                text = "¡Hola, $businessName!",
+                text = UiTranslations.getString("home_greeting", language, businessName),
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
             )
 
             Text(
-                text = "Rubro: $selectedService",
+                text = UiTranslations.getString("home_category", language, selectedService),
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
             )
@@ -216,7 +221,7 @@ fun HomeHeader(businessName: String, selectedService: String, profilePicture: By
 }
 
 @Composable
-fun TimeViewSelector(selectedView: TimeView, onViewChange: (TimeView) -> Unit) {
+fun TimeViewSelector(selectedView: TimeView, onViewChange: (TimeView) -> Unit, language: String) {
     SingleChoiceSegmentedButtonRow(
         modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
     ) {
@@ -228,10 +233,10 @@ fun TimeViewSelector(selectedView: TimeView, onViewChange: (TimeView) -> Unit) {
                 label = { 
                     Text(
                         when(view) {
-                            TimeView.DAY -> "Día"
-                            TimeView.WEEK -> "Sem"
-                            TimeView.MONTH -> "Mes"
-                            TimeView.YEAR -> "Año"
+                            TimeView.DAY -> UiTranslations.getString("time_day", language)
+                            TimeView.WEEK -> UiTranslations.getString("time_week", language)
+                            TimeView.MONTH -> UiTranslations.getString("time_month", language)
+                            TimeView.YEAR -> UiTranslations.getString("time_year", language)
                         },
                         fontSize = 12.sp
                     ) 
@@ -242,7 +247,7 @@ fun TimeViewSelector(selectedView: TimeView, onViewChange: (TimeView) -> Unit) {
 }
 
 @Composable
-fun ChartCard(selectedView: TimeView, chartData: List<Pair<String, Int>>, maxCount: Int) {
+fun ChartCard(selectedView: TimeView, chartData: List<Pair<String, Int>>, maxCount: Int, language: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -252,10 +257,10 @@ fun ChartCard(selectedView: TimeView, chartData: List<Pair<String, Int>>, maxCou
         Column(modifier = Modifier.padding(20.dp)) {
             Text(
                 text = when(selectedView) {
-                    TimeView.DAY -> "Visitas de hoy"
-                    TimeView.WEEK -> "Visitas de la semana"
-                    TimeView.MONTH -> "Visitas por semana (Mes)"
-                    TimeView.YEAR -> "Visitas por mes (Año)"
+                    TimeView.DAY -> UiTranslations.getString("chart_today", language)
+                    TimeView.WEEK -> UiTranslations.getString("chart_week", language)
+                    TimeView.MONTH -> UiTranslations.getString("chart_month", language)
+                    TimeView.YEAR -> UiTranslations.getString("chart_year", language)
                 },
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
@@ -286,7 +291,7 @@ fun ChartCard(selectedView: TimeView, chartData: List<Pair<String, Int>>, maxCou
 }
 
 @Composable
-fun TipCard(entrepreneurTips: String, onNavigateToTip: () -> Unit) {
+fun TipCard(entrepreneurTips: String, language: String, onNavigateToTip: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -319,7 +324,7 @@ fun TipCard(entrepreneurTips: String, onNavigateToTip: () -> Unit) {
                     .padding(horizontal = 16.dp)
             ) {
                 Text(
-                    text = "Tip de Emprendedor",
+                    text = UiTranslations.getString("home_tip_title", language),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -327,7 +332,9 @@ fun TipCard(entrepreneurTips: String, onNavigateToTip: () -> Unit) {
                 Text(
                     text = if (entrepreneurTips.isEmpty()) "Optimiza tus perfiles sociales para atraer más..." else entrepreneurTips,
                     fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
@@ -348,10 +355,10 @@ fun TipCard(entrepreneurTips: String, onNavigateToTip: () -> Unit) {
 }
 
 @Composable
-fun RecentVisitsCard(visits: List<Visit>) {
+fun RecentVisitsCard(visits: List<Visit>, language: String) {
     Column {
         Text(
-            text = "Registros Recientes",
+            text = UiTranslations.getString("home_recent_visits", language),
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground,
@@ -372,14 +379,14 @@ fun RecentVisitsCard(visits: List<Visit>) {
                         .padding(bottom = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Turista / País", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                    Text("Gasto Est.", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Text(UiTranslations.getString("home_tourist_country", language), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Text(UiTranslations.getString("home_est_expense", language), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
                 
                 if (visits.isEmpty()) {
                     Text(
-                        text = "No hay registros disponibles",
+                        text = UiTranslations.getString("home_no_records", language),
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
@@ -405,7 +412,7 @@ fun RecentVisitsCard(visits: List<Visit>) {
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
-                                        text = visit.services.split(", ").firstOrNull() ?: "",
+                                        text = UiTranslations.translateServicesList(visit.services, language),
                                         fontSize = 12.sp,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -556,6 +563,7 @@ fun HomeLandscapePreview() {
             entrepreneurTips = "Usa el modo horizontal para ver más datos a la vez.",
             profilePicture = null,
             visits = emptyList(),
+            language = "Español",
             onNavigateToTip = {},
             onNavigateToAdd = {},
             onNavigate = {}

@@ -18,8 +18,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import upch.mluque.final_project.ui.MainViewModel
-import upch.mluque.final_project.ui.components.BottomNavigationBar
+import upch.mluque.final_project.ui.components.AudioPlayerUI
+import upch.mluque.final_project.ui.components.MapSubtitles
+import upch.mluque.final_project.utils.UiTranslations
 
 @Composable
 fun MapScreen(
@@ -28,8 +31,26 @@ fun MapScreen(
 ) {
     val visits by viewModel.allVisits.collectAsState()
     val settings by viewModel.appSettings.collectAsState()
+    val language = settings?.language ?: "Español"
     
     val currentSummary = settings?.let { it.mapSummary[it.language] ?: it.mapSummary["Español"] ?: "" } ?: ""
+
+    // Estados para la simulación de audio
+    var currentTime by remember { mutableLongStateOf(0L) }
+    var isPlaying by remember { mutableStateOf(false) }
+    val readingTimePerLine = 4000L // Un poco más lento para el resumen
+    val lines = remember(currentSummary) { currentSummary.split("\n", ". ").filter { it.isNotBlank() } }
+    val totalDuration = remember(lines) { (lines.size * readingTimePerLine).coerceAtLeast(1000L) }
+
+    LaunchedEffect(isPlaying) {
+        if (isPlaying) {
+            while (currentTime < totalDuration) {
+                delay(100)
+                currentTime += 100
+            }
+            isPlaying = false
+        }
+    }
 
     val serviceCounts = remember(visits) {
         val counts = mutableMapOf(
@@ -70,7 +91,7 @@ fun MapScreen(
                 Column(modifier = Modifier.weight(1.5f)) {
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Mapa de Visitas",
+                        text = UiTranslations.getString("map_title", language),
                         fontSize = 28.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
@@ -94,6 +115,16 @@ fun MapScreen(
                                 isInteractive = false,
                                 showLabels = false
                             )
+
+                            // Subtítulos sobre el mapa
+                            if (isPlaying) {
+                                MapSubtitles(
+                                    text = lines.joinToString("\n"),
+                                    currentTime = currentTime,
+                                    readingTimePerLine = readingTimePerLine,
+                                    modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp)
+                                )
+                            }
 
                             // Fullscreen button
                             IconButton(
@@ -130,16 +161,16 @@ fun MapScreen(
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
-                                text = "Leyenda de Servicios",
+                                text = UiTranslations.getString("map_legend", language),
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(bottom = 12.dp)
                             )
                             
-                            LegendItemRow("Hospedaje", colorPrimary, serviceCounts["Hospedaje"] ?: 0)
-                            LegendItemRow("Alimentación", colorSecondary, serviceCounts["Alimentación"] ?: 0)
-                            LegendItemRow("Artesanía", colorTertiary, serviceCounts["Artesanía"] ?: 0)
+                            LegendItemRow(UiTranslations.translateService("Hospedaje", language), colorPrimary, serviceCounts["Hospedaje"] ?: 0)
+                            LegendItemRow(UiTranslations.translateService("Alimentación", language), colorSecondary, serviceCounts["Alimentación"] ?: 0)
+                            LegendItemRow(UiTranslations.translateService("Artesanía", language), colorTertiary, serviceCounts["Artesanía"] ?: 0)
                         }
                     }
 
@@ -150,32 +181,24 @@ fun MapScreen(
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp).fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            IconButton(
-                                onClick = { /* Implement TTS */ },
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .background(MaterialTheme.colorScheme.primary, CircleShape)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.PlayArrow,
-                                    contentDescription = "Reproducir",
-                                    tint = MaterialTheme.colorScheme.onPrimary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                            
-                            Spacer(modifier = Modifier.width(12.dp))
-                            
+                        Column(modifier = Modifier.padding(16.dp)) {
                             Text(
-                                text = if (currentSummary.isEmpty()) "Resumen del mapa" else "Resumen: $currentSummary",
+                                text = UiTranslations.getString("map_summary_title", language),
                                 fontSize = 14.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                maxLines = 3
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+                            
+                            AudioPlayerUI(
+                                currentTime = currentTime,
+                                totalDuration = totalDuration,
+                                isPlaying = isPlaying,
+                                onPlayPauseClick = { isPlaying = !isPlaying },
+                                onSeek = { fraction -> currentTime = (totalDuration * fraction).toLong() },
+                                onFastForward = { currentTime = (currentTime + 10000L).coerceAtMost(totalDuration) },
+                                onRewind = { currentTime = (currentTime - 10000L).coerceAtLeast(0L) },
+                                compact = true
                             )
                         }
                     }
@@ -192,7 +215,7 @@ fun MapScreen(
                 Spacer(modifier = Modifier.height(6.dp))
 
                 Text(
-                    text = "Mapa de Visitas",
+                    text = UiTranslations.getString("map_title", language),
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
@@ -223,6 +246,16 @@ fun MapScreen(
                                 showLabels = false
                             )
 
+                            // Subtítulos sobre el mapa
+                            if (isPlaying) {
+                                MapSubtitles(
+                                    text = lines.joinToString("\n"),
+                                    currentTime = currentTime,
+                                    readingTimePerLine = readingTimePerLine,
+                                    modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp)
+                                )
+                            }
+
                             // Fullscreen button
                             IconButton(
                                 onClick = { onNavigate("fullscreen_map") },
@@ -243,7 +276,7 @@ fun MapScreen(
 
                         // Legend Box - Improved
                         Text(
-                            text = "Leyenda de Servicios",
+                            text = UiTranslations.getString("map_legend", language),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -254,9 +287,9 @@ fun MapScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            LegendItem("Hospedaje", colorPrimary, serviceCounts["Hospedaje"] ?: 0)
-                            LegendItem("Alimentación", colorSecondary, serviceCounts["Alimentación"] ?: 0)
-                            LegendItem("Artesanía", colorTertiary, serviceCounts["Artesanía"] ?: 0)
+                            LegendItem(UiTranslations.translateService("Hospedaje", language), colorPrimary, serviceCounts["Hospedaje"] ?: 0)
+                            LegendItem(UiTranslations.translateService("Alimentación", language), colorSecondary, serviceCounts["Alimentación"] ?: 0)
+                            LegendItem(UiTranslations.translateService("Artesanía", language), colorTertiary, serviceCounts["Artesanía"] ?: 0)
                         }
                     }
                 }
@@ -270,33 +303,24 @@ fun MapScreen(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(
-                            onClick = { /* Implement TTS */ },
-                            modifier = Modifier
-                                .size(56.dp)
-                                .background(MaterialTheme.colorScheme.primary, CircleShape)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.PlayArrow,
-                                contentDescription = "Reproducir",
-                                tint = MaterialTheme.colorScheme.onPrimary
-                            )
-                        }
-                        
-                        Spacer(modifier = Modifier.width(16.dp))
-                        
+                    Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            text = if (currentSummary.isEmpty()) "Escuchar resumen del mapa" else "Resumen: $currentSummary",
+                            text = UiTranslations.getString("map_summary_title", language),
                             fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 2
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = 12.dp)
+                        )
+                        
+                        AudioPlayerUI(
+                            currentTime = currentTime,
+                            totalDuration = totalDuration,
+                            isPlaying = isPlaying,
+                            onPlayPauseClick = { isPlaying = !isPlaying },
+                            onSeek = { fraction -> currentTime = (totalDuration * fraction).toLong() },
+                            onFastForward = { currentTime = (currentTime + 10000L).coerceAtMost(totalDuration) },
+                            onRewind = { currentTime = (currentTime - 10000L).coerceAtLeast(0L) },
+                            compact = false
                         )
                     }
                 }

@@ -50,6 +50,7 @@ import coil.compose.AsyncImage
 import upch.mluque.final_project.ui.MainViewModel
 import upch.mluque.final_project.ui.components.ServiceOption
 import upch.mluque.final_project.ui.components.ServiceSelectorGrid
+import upch.mluque.final_project.utils.UiTranslations
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 
@@ -60,6 +61,7 @@ fun EditProfileScreen(
     onBack: () -> Unit
 ) {
     val settings by viewModel.appSettings.collectAsState()
+    val language = settings?.language ?: "Español"
     
     var businessName by remember { mutableStateOf("") }
     var selectedService by remember { mutableStateOf("") }
@@ -96,10 +98,10 @@ fun EditProfileScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Editar Perfil", fontWeight = FontWeight.Bold) },
+                title = { Text(UiTranslations.getString("profile_edit_title", language), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Atrás")
+                        Icon(Icons.Default.ArrowBack, contentDescription = UiTranslations.getString("btn_back", language))
                     }
                 }
             )
@@ -178,7 +180,7 @@ fun EditProfileScreen(
 
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Text(
-                            text = "Nombre del emprendimiento",
+                            text = UiTranslations.getString("profile_business_name", language),
                             fontSize = 14.sp,
                             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                         )
@@ -210,7 +212,7 @@ fun EditProfileScreen(
                 ) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Sector o Rubro",
+                        text = UiTranslations.getString("profile_sector", language),
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                     )
@@ -240,7 +242,7 @@ fun EditProfileScreen(
                         shape = RoundedCornerShape(28.dp),
                         enabled = businessName.isNotBlank() && selectedService.isNotBlank()
                     ) {
-                        Text("GUARDAR CAMBIOS", fontWeight = FontWeight.Bold)
+                        Text(UiTranslations.getString("profile_save_changes", language), fontWeight = FontWeight.Bold)
                     }
                     Spacer(modifier = Modifier.height(24.dp))
                 }
@@ -308,7 +310,7 @@ fun EditProfileScreen(
 
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Text(
-                        text = "Nombre del emprendimiento",
+                        text = UiTranslations.getString("profile_business_name", language),
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                     )
@@ -332,7 +334,7 @@ fun EditProfileScreen(
                 Spacer(modifier = Modifier.height(32.dp))
 
                 Text(
-                    text = "Sector o Rubro",
+                    text = UiTranslations.getString("profile_sector", language),
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                 )
@@ -363,7 +365,7 @@ fun EditProfileScreen(
                     shape = RoundedCornerShape(28.dp),
                     enabled = businessName.isNotBlank() && selectedService.isNotBlank()
                 ) {
-                    Text("GUARDAR CAMBIOS", fontWeight = FontWeight.Bold)
+                    Text(UiTranslations.getString("profile_save_changes", language), fontWeight = FontWeight.Bold)
                 }
                 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -373,6 +375,7 @@ fun EditProfileScreen(
         editingUri?.let { uri ->
             ImageEditorDialog(
                 uri = uri,
+                language = language,
                 onDismiss = { editingUri = null },
                 onConfirm = { bitmap ->
                     // Solo actualizamos el estado local para previsualización
@@ -385,7 +388,7 @@ fun EditProfileScreen(
         if (showImageSourceDialog) {
             AlertDialog(
                 onDismissRequest = { showImageSourceDialog = false },
-                title = { Text("Cambiar foto de perfil") },
+                title = { Text(UiTranslations.getString("profile_photo_change", language)) },
                 text = {
                     Column {
                         ListItem(
@@ -407,7 +410,7 @@ fun EditProfileScreen(
                 },
                 confirmButton = {
                     TextButton(onClick = { showImageSourceDialog = false }) {
-                        Text("CANCELAR")
+                        Text(UiTranslations.getString("btn_cancel", language))
                     }
                 }
             )
@@ -418,6 +421,7 @@ fun EditProfileScreen(
 @Composable
 fun ImageEditorDialog(
     uri: Uri,
+    language: String,
     onDismiss: () -> Unit,
     onConfirm: (Bitmap) -> Unit
 ) {
@@ -514,7 +518,7 @@ fun ImageEditorDialog(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         TextButton(onClick = onDismiss, colors = ButtonDefaults.textButtonColors(contentColor = Color.White)) {
-                            Text("CANCELAR")
+                            Text(UiTranslations.getString("btn_cancel", language))
                         }
                         Button(
                             onClick = {
@@ -523,7 +527,7 @@ fun ImageEditorDialog(
                             },
                             shape = RoundedCornerShape(24.dp)
                         ) {
-                            Text("CONFIRMAR")
+                            Text(UiTranslations.getString("btn_confirm", language))
                         }
                     }
                 }

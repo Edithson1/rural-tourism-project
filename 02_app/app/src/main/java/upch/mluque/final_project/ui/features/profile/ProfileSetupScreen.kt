@@ -27,10 +27,12 @@ import upch.mluque.final_project.ui.theme.Final_projectTheme
 import upch.mluque.final_project.ui.components.ServiceOption
 import upch.mluque.final_project.ui.components.ServiceCard
 import upch.mluque.final_project.ui.components.ServiceSelectorGrid
+import upch.mluque.final_project.utils.UiTranslations
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileSetupScreen(
+    selectedLanguage: String,
     onBack: () -> Unit,
     onSave: (String, String) -> Unit
 ) {
@@ -49,7 +51,7 @@ fun ProfileSetupScreen(
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        "Configura tu perfil",
+                        UiTranslations.getString("setup_title", selectedLanguage),
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
                     )
@@ -92,7 +94,7 @@ fun ProfileSetupScreen(
                 ) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Nombre de la tienda o emprendimiento",
+                        text = UiTranslations.getString("setup_business_name_label", selectedLanguage),
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                         modifier = Modifier.padding(bottom = 8.dp)
@@ -102,7 +104,7 @@ fun ProfileSetupScreen(
                         onValueChange = { 
                             if (!it.contains("\n")) businessName = it 
                         },
-                        placeholder = { Text("Ej. Artesanías del Valle") },
+                        placeholder = { Text(UiTranslations.getString("setup_business_name_hint", selectedLanguage)) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
@@ -133,7 +135,7 @@ fun ProfileSetupScreen(
                             horizontalArrangement = Arrangement.Center
                         ) {
                             Text(
-                                "GUARDAR Y ENTRAR",
+                                UiTranslations.getString("setup_save_btn", selectedLanguage),
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
@@ -158,7 +160,7 @@ fun ProfileSetupScreen(
                 ) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "¿Qué servicio ofreces principalmente?",
+                        text = UiTranslations.getString("setup_service_question", selectedLanguage),
                         fontSize = 16.sp,
                         textAlign = TextAlign.Start,
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
@@ -190,7 +192,7 @@ fun ProfileSetupScreen(
                 // Business Name Input
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Text(
-                        text = "Nombre de la tienda o emprendimiento",
+                        text = UiTranslations.getString("setup_business_name_label", selectedLanguage),
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                         modifier = Modifier.padding(bottom = 8.dp)
@@ -200,7 +202,7 @@ fun ProfileSetupScreen(
                         onValueChange = { 
                             if (!it.contains("\n")) businessName = it 
                         },
-                        placeholder = { Text("Ej. Artesanías del Valle") },
+                        placeholder = { Text(UiTranslations.getString("setup_business_name_hint", selectedLanguage)) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
@@ -217,7 +219,7 @@ fun ProfileSetupScreen(
                 Spacer(modifier = Modifier.height(32.dp))
 
                 Text(
-                    text = "¿Qué servicio ofreces principalmente?",
+                    text = UiTranslations.getString("setup_service_question", selectedLanguage),
                     fontSize = 16.sp,
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
@@ -251,7 +253,7 @@ fun ProfileSetupScreen(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            "GUARDAR Y ENTRAR",
+                            UiTranslations.getString("setup_save_btn", selectedLanguage),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
@@ -275,7 +277,7 @@ fun ProfileSetupScreen(
 @Composable
 fun ProfileSetupPreview() {
     Final_projectTheme {
-        ProfileSetupScreen(onBack = {}, onSave = { _, _ -> })
+        ProfileSetupScreen(selectedLanguage = "Español", onBack = {}, onSave = { _, _ -> })
     }
 }
 
@@ -283,7 +285,7 @@ fun ProfileSetupPreview() {
 @Composable
 fun ProfileSetupDarkPreview() {
     Final_projectTheme {
-        ProfileSetupScreen(onBack = {}, onSave = { _, _ -> })
+        ProfileSetupScreen(selectedLanguage = "Español", onBack = {}, onSave = { _, _ -> })
     }
 }
 

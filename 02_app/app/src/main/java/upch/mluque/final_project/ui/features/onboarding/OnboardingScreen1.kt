@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import upch.mluque.final_project.utils.PermissionRequester
+import upch.mluque.final_project.utils.UiTranslations
 import upch.mluque.final_project.utils.getSyncPermissions
 
 @Composable
@@ -28,17 +29,17 @@ fun OnboardingScreen1(
             navController.navigate("show_qr")
         },
         onDenied = { /* Handled by Snackbar/Dialog in PermissionRequester */ },
-        explanationTitle = "Permisos de Red",
-        explanationMessage = "Para vincular este dispositivo, necesitamos permisos para gestionar la conexión WiFi.",
+        explanationTitle = UiTranslations.getString("onboarding_perm_title", selectedLanguage),
+        explanationMessage = UiTranslations.getString("onboarding_perm_desc", selectedLanguage),
         trigger = triggerPermissions,
         onTriggerReset = { triggerPermissions = false }
     )
 
     OnboardingBase(
-        title = "Registra visitas sin internet",
-        description = "Lleva el control de tus visitantes en cualquier lugar, incluso sin conexión a datos o Wi-Fi.",
+        title = UiTranslations.getString("onboarding_title_0", selectedLanguage),
+        description = UiTranslations.getString("onboarding_desc_0", selectedLanguage),
         icon = Icons.Default.WifiOff,
-        buttonText = "Comenzar",
+        buttonText = UiTranslations.getString("onboarding_btn_0", selectedLanguage),
         pageIndex = 0,
         selectedLanguage = selectedLanguage,
         onLanguageChange = onLanguageChange,
@@ -56,7 +57,7 @@ fun OnboardingScreen1(
                 shape = RoundedCornerShape(28.dp)
             ) {
                 Text(
-                    text = "vincular como dispositivo adicional",
+                    text = UiTranslations.getString("onboarding_link_device", selectedLanguage),
                     fontSize = 16.sp
                 )
             }
