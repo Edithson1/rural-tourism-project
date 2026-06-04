@@ -319,10 +319,14 @@ fun MainNavigation(
                         ShowQrScreen(navController = navController, syncViewModel = syncViewModel)
                     }
                     composable(Routes.SCAN_QR) {
-                        ScanQrScreen(navController = navController)
+                        val settings by viewModel.appSettings.collectAsState()
+                        val language = settings?.language ?: "Español"
+                        ScanQrScreen(navController = navController, language = language)
                     }
                     composable(Routes.LINKED_DEVICES) {
-                        LinkedDevicesScreen(navController = navController, syncViewModel = syncViewModel)
+                        val settings by viewModel.appSettings.collectAsState()
+                        val language = settings?.language ?: "Español"
+                        LinkedDevicesScreen(navController = navController, syncViewModel = syncViewModel, language = language)
                     }
                     composable(
                         Routes.SYNC_STATUS,
@@ -351,16 +355,14 @@ fun MainNavigation(
                         )
                     }
                     composable(Routes.PROFILE_HELP) {
-                        InfoTextScreen(
-                            title = UiTranslations.getString("profile_help", selectedLanguage),
-                            content = UiTranslations.getString("help_content", selectedLanguage),
+                        HelpScreen(
+                            language = selectedLanguage,
                             onBack = { navController.popBackStack() }
                         )
                     }
                     composable(Routes.PROFILE_PRIVACY) {
-                        InfoTextScreen(
-                            title = UiTranslations.getString("profile_privacy", selectedLanguage),
-                            content = UiTranslations.getString("privacy_content", selectedLanguage),
+                        PrivacyPolicyScreen(
+                            language = selectedLanguage,
                             onBack = { navController.popBackStack() }
                         )
                     }
@@ -372,8 +374,8 @@ fun MainNavigation(
                             visitCount = visits.size,
                             language = language,
                             onBack = { navController.popBackStack() },
-                            onSave = { nationality, flag, price, services ->
-                                syncViewModel.addVisit(nationality, flag, price, services)
+                            onSave = { nationality, flag, pType, pValue, pCurr, services ->
+                                syncViewModel.addVisit(nationality, flag, pType, pValue, pCurr, services)
                                 navController.popBackStack()
                             }
                         )

@@ -80,12 +80,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         "Portugués" to "Este mapa mostra a distribuição das suas visitas.\nOs pontos azuis representam hospedagem.\nOs pontos verdes são de alimentação.\nOs pontos vermelhos indicam artesanato.\nUse o zoom para ver mais detalhes."
     )
 
-    fun addVisit(nationality: String, flag: String, price: String, services: String) {
+    fun addVisit(nationality: String, flag: String, priceType: String, priceValue: String, priceCurrency: String, services: String) {
         viewModelScope.launch {
             val visit = Visit(
                 nationality = nationality,
                 nationalityFlag = flag,
-                priceApprox = price,
+                priceType = priceType,
+                priceValue = priceValue,
+                priceCurrency = priceCurrency,
                 services = services
             )
             repository.insertVisit(visit)

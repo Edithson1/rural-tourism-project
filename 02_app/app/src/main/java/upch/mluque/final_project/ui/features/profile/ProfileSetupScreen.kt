@@ -23,6 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import upch.mluque.final_project.ui.theme.Final_projectTheme
 import upch.mluque.final_project.ui.components.ServiceOption
 import upch.mluque.final_project.ui.components.ServiceCard
@@ -36,14 +37,15 @@ fun ProfileSetupScreen(
     onBack: () -> Unit,
     onSave: (String, String) -> Unit
 ) {
+    val context = LocalContext.current
     var businessName by remember { mutableStateOf("") }
     var selectedService by remember { mutableStateOf("") }
 
     val services = listOf(
-        ServiceOption("Hospedaje", Icons.Default.Bed),
-        ServiceOption("Alimentación", Icons.Default.Restaurant),
-        ServiceOption("Artesanía", Icons.Default.Checkroom),
-        ServiceOption("Varios", Icons.Default.Storefront)
+        ServiceOption(UiTranslations.translateService("Hospedaje", selectedLanguage, context), Icons.Default.Bed),
+        ServiceOption(UiTranslations.translateService("Alimentación", selectedLanguage, context), Icons.Default.Restaurant),
+        ServiceOption(UiTranslations.translateService("Artesanía", selectedLanguage, context), Icons.Default.Checkroom),
+        ServiceOption(UiTranslations.translateService("Varios", selectedLanguage, context), Icons.Default.Storefront)
     )
 
     Scaffold(
@@ -51,7 +53,7 @@ fun ProfileSetupScreen(
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        UiTranslations.getString("setup_title", selectedLanguage),
+                        UiTranslations.getString(context, "setup_title", selectedLanguage),
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
                     )
@@ -94,7 +96,7 @@ fun ProfileSetupScreen(
                 ) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = UiTranslations.getString("setup_business_name_label", selectedLanguage),
+                        text = UiTranslations.getString(context, "setup_business_name_label", selectedLanguage),
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                         modifier = Modifier.padding(bottom = 8.dp)
@@ -104,7 +106,7 @@ fun ProfileSetupScreen(
                         onValueChange = { 
                             if (!it.contains("\n")) businessName = it 
                         },
-                        placeholder = { Text(UiTranslations.getString("setup_business_name_hint", selectedLanguage)) },
+                        placeholder = { Text(UiTranslations.getString(context, "setup_business_name_hint", selectedLanguage)) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
@@ -135,7 +137,7 @@ fun ProfileSetupScreen(
                             horizontalArrangement = Arrangement.Center
                         ) {
                             Text(
-                                UiTranslations.getString("setup_save_btn", selectedLanguage),
+                                UiTranslations.getString(context, "setup_save_btn", selectedLanguage),
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
@@ -160,7 +162,7 @@ fun ProfileSetupScreen(
                 ) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = UiTranslations.getString("setup_service_question", selectedLanguage),
+                        text = UiTranslations.getString(context, "setup_service_question", selectedLanguage),
                         fontSize = 16.sp,
                         textAlign = TextAlign.Start,
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
@@ -171,8 +173,19 @@ fun ProfileSetupScreen(
                     // Service Grid
                     ServiceSelectorGrid(
                         services = services,
-                        selectedServices = if (selectedService.isEmpty()) emptySet() else setOf(selectedService),
-                        onServiceToggle = { selectedService = it }
+                        selectedServices = if (selectedService.isEmpty()) emptySet() else setOf(selectedService.let { 
+                            UiTranslations.translateService(it, selectedLanguage, context)
+                        }),
+                        onServiceToggle = { serviceNameTranslated ->
+                            val originalName = when(serviceNameTranslated) {
+                                UiTranslations.translateService("Hospedaje", selectedLanguage, context) -> "Hospedaje"
+                                UiTranslations.translateService("Alimentación", selectedLanguage, context) -> "Alimentación"
+                                UiTranslations.translateService("Artesanía", selectedLanguage, context) -> "Artesanía"
+                                UiTranslations.translateService("Varios", selectedLanguage, context) -> "Varios"
+                                else -> serviceNameTranslated
+                            }
+                            selectedService = originalName
+                        }
                     )
                     
                     Spacer(modifier = Modifier.height(24.dp))
@@ -192,7 +205,7 @@ fun ProfileSetupScreen(
                 // Business Name Input
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Text(
-                        text = UiTranslations.getString("setup_business_name_label", selectedLanguage),
+                        text = UiTranslations.getString(context, "setup_business_name_label", selectedLanguage),
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                         modifier = Modifier.padding(bottom = 8.dp)
@@ -202,7 +215,7 @@ fun ProfileSetupScreen(
                         onValueChange = { 
                             if (!it.contains("\n")) businessName = it 
                         },
-                        placeholder = { Text(UiTranslations.getString("setup_business_name_hint", selectedLanguage)) },
+                        placeholder = { Text(UiTranslations.getString(context, "setup_business_name_hint", selectedLanguage)) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
@@ -219,7 +232,7 @@ fun ProfileSetupScreen(
                 Spacer(modifier = Modifier.height(32.dp))
 
                 Text(
-                    text = UiTranslations.getString("setup_service_question", selectedLanguage),
+                    text = UiTranslations.getString(context, "setup_service_question", selectedLanguage),
                     fontSize = 16.sp,
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
@@ -230,8 +243,19 @@ fun ProfileSetupScreen(
                 // Service Grid
                 ServiceSelectorGrid(
                     services = services,
-                    selectedServices = if (selectedService.isEmpty()) emptySet() else setOf(selectedService),
-                    onServiceToggle = { selectedService = it }
+                    selectedServices = if (selectedService.isEmpty()) emptySet() else setOf(selectedService.let { 
+                        UiTranslations.translateService(it, selectedLanguage, context)
+                    }),
+                    onServiceToggle = { serviceNameTranslated ->
+                        val originalName = when(serviceNameTranslated) {
+                            UiTranslations.translateService("Hospedaje", selectedLanguage, context) -> "Hospedaje"
+                            UiTranslations.translateService("Alimentación", selectedLanguage, context) -> "Alimentación"
+                            UiTranslations.translateService("Artesanía", selectedLanguage, context) -> "Artesanía"
+                            UiTranslations.translateService("Varios", selectedLanguage, context) -> "Varios"
+                            else -> serviceNameTranslated
+                        }
+                        selectedService = originalName
+                    }
                 )
 
                 Spacer(modifier = Modifier.weight(1f))
@@ -253,7 +277,7 @@ fun ProfileSetupScreen(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            UiTranslations.getString("setup_save_btn", selectedLanguage),
+                            UiTranslations.getString(context, "setup_save_btn", selectedLanguage),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White

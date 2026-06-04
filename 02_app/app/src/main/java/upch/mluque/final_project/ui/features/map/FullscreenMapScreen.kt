@@ -26,6 +26,7 @@ import kotlinx.coroutines.delay
 import upch.mluque.final_project.ui.MainViewModel
 import upch.mluque.final_project.ui.components.AudioPlayerUI
 import upch.mluque.final_project.ui.components.MapSubtitles
+import upch.mluque.final_project.utils.UiTranslations
 
 @Composable
 fun FullscreenMapScreen(
@@ -35,6 +36,8 @@ fun FullscreenMapScreen(
     val visits by viewModel.allVisits.collectAsState()
     val settings by viewModel.appSettings.collectAsState()
     val currentSummary = settings?.let { it.mapSummary[it.language] ?: it.mapSummary["Español"] ?: "" } ?: ""
+    val context = LocalContext.current
+    val language = settings?.language ?: "Español"
 
     // Estados para la simulación de audio
     var currentTime by remember { mutableLongStateOf(0L) }
@@ -73,8 +76,6 @@ fun FullscreenMapScreen(
     val colorSecondary = MaterialTheme.colorScheme.secondary
     val colorTertiary = MaterialTheme.colorScheme.tertiary
 
-    val context = LocalContext.current
-    
     // Handle system back button
     BackHandler {
         val activity = context.findActivity()
@@ -108,7 +109,7 @@ fun FullscreenMapScreen(
                 text = lines.joinToString("\n"),
                 currentTime = currentTime,
                 readingTimePerLine = readingTimePerLine,
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 100.dp)
+                modifier = Modifier.align(Alignment.TopCenter).padding(top = 80.dp)
             )
         }
 
@@ -141,15 +142,15 @@ fun FullscreenMapScreen(
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
                     Text(
-                        "Servicios",
+                        UiTranslations.getString(context, "map_legend", language),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(bottom = 4.dp)
                     )
-                    LegendItemFullScreen("Hospedaje", colorPrimary, serviceCounts["Hospedaje"] ?: 0)
-                    LegendItemFullScreen("Alimentación", colorSecondary, serviceCounts["Alimentación"] ?: 0)
-                    LegendItemFullScreen("Artesanía", colorTertiary, serviceCounts["Artesanía"] ?: 0)
+                    LegendItemFullScreen(UiTranslations.translateService("Hospedaje", language, context), colorPrimary, serviceCounts["Hospedaje"] ?: 0)
+                    LegendItemFullScreen(UiTranslations.translateService("Alimentación", language, context), colorSecondary, serviceCounts["Alimentación"] ?: 0)
+                    LegendItemFullScreen(UiTranslations.translateService("Artesanía", language, context), colorTertiary, serviceCounts["Artesanía"] ?: 0)
                 }
             }
         }

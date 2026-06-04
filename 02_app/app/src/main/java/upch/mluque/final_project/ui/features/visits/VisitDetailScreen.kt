@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import upch.mluque.final_project.data.local.Visit
 import upch.mluque.final_project.ui.MainViewModel
 import upch.mluque.final_project.utils.UiTranslations
@@ -36,6 +37,7 @@ fun VisitDetailScreen(
     var visit by remember { mutableStateOf<Visit?>(null) }
     val settings by viewModel.appSettings.collectAsState()
     val language = settings?.language ?: "Español"
+    val context = LocalContext.current
     
     LaunchedEffect(visitId) {
         visit = viewModel.getVisitDetail(visitId)
@@ -44,7 +46,7 @@ fun VisitDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(UiTranslations.getString("visits_detail_title", language)) },
+                title = { Text(UiTranslations.getString(context, "visits_detail_title", language)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = null)
@@ -82,7 +84,7 @@ fun VisitDetailScreen(
                             color = MaterialTheme.colorScheme.onBackground
                         )
                         Text(
-                            text = UiTranslations.getString("tourist_label", language),
+                            text = UiTranslations.getString(context, "tourist_label", language),
                             fontSize = 16.sp,
                             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                         )
@@ -91,9 +93,9 @@ fun VisitDetailScreen(
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                DetailItem(UiTranslations.getString("visits_price", language), v.priceApprox)
-                DetailItem(UiTranslations.getString("visits_services", language), UiTranslations.translateServicesList(v.services, language))
-                DetailItem(UiTranslations.getString("visits_date", language), formatDate(v.registrationDate))
+                DetailItem(UiTranslations.getString(context, "visits_price", language), v.getFormattedPrice())
+                DetailItem(UiTranslations.getString(context, "visits_services", language), UiTranslations.translateServicesList(v.services, language, context))
+                DetailItem(UiTranslations.getString(context, "visits_date", language), formatDate(v.registrationDate))
                 
                 Spacer(modifier = Modifier.height(16.dp))
                 
@@ -111,7 +113,7 @@ fun VisitDetailScreen(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = if (v.isSent) UiTranslations.getString("sent_record", language) else UiTranslations.getString("pending_record", language),
+                        text = if (v.isSent) UiTranslations.getString(context, "sent_record", language) else UiTranslations.getString(context, "pending_record", language),
                         fontWeight = FontWeight.Medium,
                         color = if (v.isSent) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
                     )
@@ -119,7 +121,7 @@ fun VisitDetailScreen(
                 
                 if (v.isSent && v.sentDate != null) {
                     Text(
-                        text = "${UiTranslations.getString("sent_on", language)}: ${formatDate(v.sentDate)}",
+                        text = "${UiTranslations.getString(context, "sent_on", language)}: ${formatDate(v.sentDate)}",
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
                         modifier = Modifier.padding(start = 28.dp, top = 4.dp)

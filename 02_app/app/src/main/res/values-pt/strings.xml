@@ -1,0 +1,178 @@
+<resources>
+    <!-- Onboarding -->
+    <string name="onboarding_title_0">Registre visitas sem internet</string>
+    <string name="onboarding_desc_0">Mantenha o controle de seus visitantes em qualquer lugar, mesmo sem conexão de dados ou Wi-Fi.</string>
+    <string name="onboarding_btn_0">Começar</string>
+    <string name="onboarding_title_1">Veja seus resultados</string>
+    <string name="onboarding_desc_1">Entenda como está indo o seu negócio com gráficos simples e fáceis de ler.</string>
+    <string name="onboarding_btn_1">Próximo</string>
+    <string name="onboarding_title_2">Receba conselhos</string>
+    <string name="onboarding_desc_2">Ouça recomendações personalizadas em quechua ou espanhol para melhorar seus serviços.</string>
+    <string name="onboarding_btn_2">Criar meu perfil</string>
+    <string name="onboarding_link_device">vincular como dispositivo adicional</string>
+    <string name="onboarding_perm_title">Permissões de Rede</string>
+    <string name="onboarding_perm_desc">Para vincular este dispositivo, precisamos de permissões para gerenciar a conexão WiFi.</string>
+
+    <!-- Home -->
+    <string name="home_greeting">Olá, %s!</string>
+    <string name="home_category">Categoria: %s</string>
+    <string name="home_tip_title">Dica do Empreendedor</string>
+    <string name="home_recent_visits">Registros Recentes</string>
+    <string name="home_tourist_country">Turista / País</string>
+    <string name="home_est_expense">Gasto Est.</string>
+    <string name="home_no_records">Nenhum registro disponível</string>
+    <string name="time_day">Dia</string>
+    <string name="time_week">Sem</string>
+    <string name="time_month">Mês</string>
+    <string name="time_year">Ano</string>
+    <string name="chart_today">Visitas de hoje</string>
+    <string name="chart_week">Visitas da semana</string>
+    <string name="chart_month">Visitas por semana (Mês)</string>
+    <string name="chart_year">Visitas por mês (Ano)</string>
+    <string name="day_mon">Seg</string>
+    <string name="day_tue">Ter</string>
+    <string name="day_wed">Qua</string>
+    <string name="day_thu">Qui</string>
+    <string name="day_fri">Sex</string>
+    <string name="day_sat">Sáb</string>
+    <string name="day_sun">Dom</string>
+    <string name="month_jan">Jan</string>
+    <string name="month_feb">Fev</string>
+    <string name="month_mar">Mar</string>
+    <string name="month_apr">Abr</string>
+    <string name="month_may">Mai</string>
+    <string name="month_jun">Jun</string>
+    <string name="month_jul">Jul</string>
+    <string name="month_aug">Ago</string>
+    <string name="month_sep">Set</string>
+    <string name="month_oct">Out</string>
+    <string name="month_nov">Nov</string>
+    <string name="month_dec">Dez</string>
+    <string name="chart_week_label">Sem %d</string>
+
+    <!-- Profile Setup -->
+    <string name="setup_title">Configure seu perfil</string>
+    <string name="setup_business_name_label">Nome da loja ou empreendimento</string>
+    <string name="setup_business_name_hint">Ex. Artesanatos do Vale</string>
+    <string name="setup_service_question">Qual serviço você oferece principalmente?</string>
+    <string name="setup_save_btn">SALVAR E ENTRAR</string>
+
+    <!-- Map -->
+    <string name="map_title">Mapa de Visitas</string>
+    <string name="map_legend">Legenda de Serviços</string>
+    <string name="map_summary_title">Resumo do Mapa</string>
+    <string name="map_listen_summary">Ouvir Resumo</string>
+    <string name="map_expand">Expandir</string>
+
+    <!-- Tip Detail -->
+    <string name="tip_detail_title">Dica do Empreendedor</string>
+    <string name="tip_detail_subtitle">Sua dica do dia</string>
+
+    <!-- Profile -->
+    <string name="profile_title">Meu Perfil</string>
+    <string name="profile_edit">Editar</string>
+    <string name="profile_settings_title">Configurações do App</string>
+    <string name="profile_language">Idioma</string>
+    <string name="profile_voice_speed">Velocidade da voz</string>
+    <string name="profile_link_device">Vincular novo dispositivo</string>
+    <string name="profile_linked_devices">Dispositivos vinculados</string>
+    <string name="profile_logout">Sair</string>
+    <string name="profile_info_title">Informação</string>
+    <string name="profile_help">Ajuda e Suporte</string>
+    <string name="profile_privacy">Política de Privacidade</string>
+    <string name="profile_edit_title">Editar Perfil</string>
+    <string name="profile_photo_change">Alterar foto de perfil</string>
+    <string name="profile_business_name">Nome do empreendimento</string>
+    <string name="profile_sector">Setor ou Categoria</string>
+    <string name="profile_save_changes">SALVAR ALTERAÇÕES</string>
+    <string name="profile_logout_confirm_title">Sair?</string>
+    <string name="profile_logout_confirm_desc">A sessão atual será encerrada e o dispositivo voltará à tela inicial. Você precisará se vincular novamente para sincronizar os dados.</string>
+    <string name="profile_online">Online</string>
+    <string name="profile_offline">Desconectado</string>
+
+    <!-- Services -->
+    <string name="service_lodging">Hospedagem</string>
+    <string name="service_food">Alimentação</string>
+    <string name="service_handicraft">Artesanato</string>
+    <string name="service_others">Vários</string>
+
+    <!-- Visits -->
+    <string name="visits_title">Registros de Visitas</string>
+    <string name="visits_add">Adicionar Visita</string>
+    <string name="visits_search_hint">Pesquisar por país…</string>
+    <string name="visits_detail_title">Detalhe da Visita</string>
+    <string name="visits_date">Data</string>
+    <string name="visits_country">País</string>
+    <string name="visits_price">Gasto Estimado</string>
+    <string name="visits_services">Servicios Prestados</string>
+    <string name="add_visit_title">Registrar Nova Visita</string>
+    <string name="add_visit_country_label">País de origem</string>
+    <string name="add_visit_price_label">Gasto estimado</string>
+    <string name="add_visit_services_label">Serviços prestados</string>
+    <string name="add_visit_save">SALVAR REGISTRO</string>
+    <string name="select_option">Selecionar opção</string>
+    <string name="select_range">Selecionar faixa</string>
+    <string name="price_type_range">Faixa</string>
+    <string name="price_type_fixed">Fixo</string>
+    <string name="price_type_custom">Personalizado</string>
+    <string name="record_label">Registro</string>
+    <string name="sent_record">Registro Enviado</string>
+    <string name="pending_record">Pendente de Envio</string>
+    <string name="sent_on">Enviado em</string>
+
+    <!-- Time Ago & Categories -->
+    <string name="time_now">Agora mesmo</string>
+    <string name="time_min_ago">Há %d min</string>
+    <string name="time_hours_ago">Há %d horas</string>
+    <string name="time_hour_ago">Há 1 hora</string>
+    <string name="time_yesterday">Ontem</string>
+    <string name="time_days_ago">Há %d dias</string>
+    <string name="cat_today">Hoje</string>
+    <string name="cat_yesterday">Ontem</string>
+    <string name="cat_this_week">Esta semana</string>
+    <string name="cat_this_month">Este mês</string>
+    <string name="cat_this_year">Este ano</string>
+    <string name="cat_older">Há mais de um año</string>
+    <string name="total_records">%d total</string>
+    <string name="no_records_yet">Nenhum registro ainda</string>
+    <string name="tourist_label">Turista</string>
+
+    <!-- Info Screens -->
+    <string name="help_content">Aqui você encontra informações detalhadas sobre como usar o aplicativo Yupay Turismo para impulsionar seu negócio rural.\n\n1. Registro de visitas: Vá para a guia Visitas ou Home e pressione o botão +. Você pode registrar o país de origem, o gasto estimado (como faixa, valor fixo ou valor exato) e os serviços prestados.\n\n2. Gráficos de Gestão: No Home, use os seletores de Dia, Semana, Mês e Ano para ver a evolução de suas visitas e entender quais épocas são melhores para o seu negócio.\n\n3. Mapa Interativo: Visualize de quais países vêm seus turistas. Isso ajuda você a saber qual público atingir ou em quais idiomas se preparar melhor.\n\n4. Sincronização: Você pode vincular vários dispositivos (celular e tablet) usando o código QR no seu perfil para que todos os registros fiquem atualizados sem a necessidade de internet no momento.\n\n5. Dicas do Empreendedor: Ouça todos os dias uma recomendação personalizada no seu idioma para melhorar a hospitalidade e a qualidade dos seus serviços.</string>
+    <string name="privacy_content">No Yupay Turismo, sua privacidade e a de seus dados comerciais são nossa prioridade máxima.\n\n1. Armazenamento Local: Todas as informações que você registra (visitas, nomes, perfis) são armazenadas de forma segura e privada diretamente na memória do seu dispositivo. Não são enviadas para nenhuma "nuvem" pública sem o seu controle.\n\n2. Sincronização Direta: Quando você vincula dois dispositivos, a transferência de dados ocorre diretamente entre eles através da sua rede local (WiFi ou Ponto de Acesso), garantindo que seus registros não saiam do seu ambiente de trabalho.\n\n3. Uso de Dados: Os dados de visitas são usados exclusivamente para gerar seus relatórios estatísticos e gráficos de gestão pessoal. O Yupay Turismo não compartilha, vende ou utiliza suas informações para fins publicitários ou comerciais de terceiros.\n\n4. Permissões: Solicitamos acesso à câmera apenas para escanear códigos QR de vinculação, e permissões de rede para a sincronização entre seus próprios dispositivos.</string>
+
+    <!-- General -->
+    <string name="btn_cancel">CANCELAR</string>
+    <string name="btn_confirm">CONFIRMAR</string>
+    <string name="btn_close">FECHAR</string>
+    <string name="btn_back">Voltar</string>
+    <string name="btn_save">SALVAR</string>
+    <string name="btn_exit_without_save">SAIR SEM SALVAR</string>
+
+    <!-- Permissions -->
+    <string name="perm_required_title">Permissões necessárias</string>
+    <string name="perm_required_desc">Para vincular um dispositivo, precisamos de acesso à câmera e às funções de rede.</string>
+    <string name="perm_grant">Conceder</string>
+    <string name="perm_settings_title">Permissões necessárias</string>
+    <string name="perm_settings_desc">Algumas permissões são necessárias para a sincronização. Por favor, ative-as nas configurações.</string>
+    <string name="perm_open_settings">Abrir Configurações</string>
+
+    <!-- Linked Devices -->
+    <string name="linked_devices_title">Dispositivos vinculados</string>
+    <string name="linked_devices_empty">Nenhum dispositivo vinculado</string>
+    <string name="linked_devices_empty_hint">Use \'Vincular novo dispositivo\' no perfil</string>
+    <string name="linked_devices_disconnect_all">Fechar todas as sessões vinculadas</string>
+    <string name="linked_devices_disconnect_confirm_title">Redefinir servidor vinculado?</string>
+    <string name="linked_devices_disconnect_confirm_desc">Todos os dados no servidor \'%s\' serão excluídos e ele retornará ao seu estado inicial. Você tem certeza?</string>
+    <string name="linked_devices_disconnect_btn">REDEFINIÇÃO REMOTA</string>
+    <string name="linked_devices_mass_disconnect_title">Fechar todas as sessões?</string>
+    <string name="linked_devices_mass_disconnect_desc">Esta ação enviará uma ordem de redefinição para todos os dispositivos conectados atualmente. Você não poderá desfazer esta ação.</string>
+    <string name="linked_devices_mass_disconnect_btn">FECHAR TUDO</string>
+    <string name="linked_devices_connected_now">Conectado agora</string>
+    <string name="linked_devices_disconnected">Desconectado</string>
+    <string name="linked_devices_disconnect_action">Desconectar</string>
+
+    <!-- Exit Dialog -->
+    <string name="exit_unsaved_title">Alterações não salvas</string>
+    <string name="exit_unsaved_desc">Você tem alterações não salvas. Deseja sair assim mesmo ou salvar primeiro?</string>
+</resources>

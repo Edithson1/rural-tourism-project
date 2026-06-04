@@ -18,14 +18,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.compose.ui.platform.LocalContext
 import upch.mluque.final_project.sync.SyncViewModel
 import upch.mluque.final_project.ui.components.ConnectionRequiredDialog
+import upch.mluque.final_project.utils.UiTranslations
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LinkedDevicesScreen(navController: NavController, syncViewModel: SyncViewModel) {
+fun LinkedDevicesScreen(navController: NavController, syncViewModel: SyncViewModel, language: String) {
     val isConnected by syncViewModel.isConnected.collectAsState()
     val remoteDeviceName by syncViewModel.remoteDeviceName.collectAsState()
+    val context = LocalContext.current
     
     var showIndividualDisconnectDialog by remember { mutableStateOf(false) }
     var showMassDisconnectDialog by remember { mutableStateOf(false) }
@@ -34,17 +37,17 @@ fun LinkedDevicesScreen(navController: NavController, syncViewModel: SyncViewMod
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Dispositivos vinculados") },
+                title = { Text(UiTranslations.getString(context, "linked_devices_title", language)) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Atrás")
+                        Icon(Icons.Default.ArrowBack, contentDescription = UiTranslations.getString(context, "btn_back", language))
                     }
                 }
             )
         }
     ) { padding ->
         if (remoteDeviceName == null) {
-            EmptyState()
+            EmptyState(language)
         } else {
             Column(
                 modifier = Modifier
@@ -56,6 +59,7 @@ fun LinkedDevicesScreen(navController: NavController, syncViewModel: SyncViewMod
                         DeviceItem(
                             name = remoteDeviceName ?: "Desconocido",
                             isActive = isConnected,
+                            language = language,
                             onDisconnect = {
                                 if (isConnected) {
                                     showIndividualDisconnectDialog = true
@@ -85,7 +89,7 @@ fun LinkedDevicesScreen(navController: NavController, syncViewModel: SyncViewMod
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                     shape = MaterialTheme.shapes.medium
                 ) {
-                    Text("Cerrar todas las sesiones vinculadas", fontWeight = FontWeight.Bold, color = Color.White)
+                    Text(UiTranslations.getString(context, "linked_devices_disconnect_all", language), fontWeight = FontWeight.Bold, color = Color.White)
                 }
             }
         }
@@ -94,8 +98,8 @@ fun LinkedDevicesScreen(navController: NavController, syncViewModel: SyncViewMod
     if (showIndividualDisconnectDialog) {
         AlertDialog(
             onDismissRequest = { showIndividualDisconnectDialog = false },
-            title = { Text("¿Resetear servidor vinculado?") },
-            text = { Text("Se borrarán todos los datos en el servidor '${remoteDeviceName}' y este volverá a su estado inicial. ¿Estás seguro?") },
+            title = { Text(UiTranslations.getString(context, "linked_devices_disconnect_confirm_title", language)) },
+            text = { Text(UiTranslations.getString(context, "linked_devices_disconnect_confirm_desc", language, remoteDeviceName ?: "")) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -106,12 +110,12 @@ fun LinkedDevicesScreen(navController: NavController, syncViewModel: SyncViewMod
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = Color.Red)
                 ) {
-                    Text("RESET REMOTO")
+                    Text(UiTranslations.getString(context, "linked_devices_disconnect_btn", language))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showIndividualDisconnectDialog = false }) {
-                    Text("CANCELAR")
+                    Text(UiTranslations.getString(context, "btn_cancel", language))
                 }
             }
         )
@@ -120,8 +124,8 @@ fun LinkedDevicesScreen(navController: NavController, syncViewModel: SyncViewMod
     if (showMassDisconnectDialog) {
         AlertDialog(
             onDismissRequest = { showMassDisconnectDialog = false },
-            title = { Text("¿Cerrar todas las sesiones?") },
-            text = { Text("Esta acción enviará una orden de reset a todos los dispositivos conectados actualmente. No podrás deshacer esta acción.") },
+            title = { Text(UiTranslations.getString(context, "linked_devices_mass_disconnect_title", language)) },
+            text = { Text(UiTranslations.getString(context, "linked_devices_mass_disconnect_desc", language)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -132,12 +136,12 @@ fun LinkedDevicesScreen(navController: NavController, syncViewModel: SyncViewMod
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = Color.Red)
                 ) {
-                    Text("CERRAR TODO")
+                    Text(UiTranslations.getString(context, "linked_devices_mass_disconnect_btn", language))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showMassDisconnectDialog = false }) {
-                    Text("CANCELAR")
+                    Text(UiTranslations.getString(context, "btn_cancel", language))
                 }
             }
         )
@@ -149,7 +153,8 @@ fun LinkedDevicesScreen(navController: NavController, syncViewModel: SyncViewMod
 }
 
 @Composable
-fun DeviceItem(name: String, isActive: Boolean, onDisconnect: () -> Unit) {
+fun DeviceItem(name: String, isActive: Boolean, language: String, onDisconnect: () -> Unit) {
+    val context = LocalContext.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -178,7 +183,7 @@ fun DeviceItem(name: String, isActive: Boolean, onDisconnect: () -> Unit) {
         Column(modifier = Modifier.weight(1f)) {
             Text(name, fontWeight = FontWeight.Bold, fontSize = 16.sp)
             Text(
-                if (isActive) "Conectado ahora" else "Desconectado",
+                if (isActive) UiTranslations.getString(context, "linked_devices_connected_now", language) else UiTranslations.getString(context, "linked_devices_disconnected", language),
                 fontSize = 12.sp,
                 color = if (isActive) MaterialTheme.colorScheme.primary else Color.Gray
             )
@@ -188,7 +193,7 @@ fun DeviceItem(name: String, isActive: Boolean, onDisconnect: () -> Unit) {
             IconButton(onClick = onDisconnect) {
                 Icon(
                     Icons.Default.ArrowBack, // Usamos ArrowBack como placeholder para "sacar" o desconectar
-                    contentDescription = "Desconectar",
+                    contentDescription = UiTranslations.getString(context, "linked_devices_disconnect_action", language),
                     tint = Color.Red,
                     modifier = Modifier.size(20.dp)
                 )
@@ -198,7 +203,8 @@ fun DeviceItem(name: String, isActive: Boolean, onDisconnect: () -> Unit) {
 }
 
 @Composable
-fun EmptyState() {
+fun EmptyState(language: String) {
+    val context = LocalContext.current
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -211,9 +217,9 @@ fun EmptyState() {
             tint = Color.Gray.copy(alpha = 0.3f)
         )
         Spacer(modifier = Modifier.height(16.dp))
-        Text("No hay dispositivos vinculados", fontWeight = FontWeight.Bold, color = Color.Gray)
+        Text(UiTranslations.getString(context, "linked_devices_empty", language), fontWeight = FontWeight.Bold, color = Color.Gray)
         Text(
-            "Usa 'Vincular nuevo dispositivo' en el perfil",
+            UiTranslations.getString(context, "linked_devices_empty_hint", language),
             fontSize = 14.sp,
             color = Color.Gray
         )

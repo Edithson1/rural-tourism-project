@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.delay
 import upch.mluque.final_project.ui.MainViewModel
 import upch.mluque.final_project.ui.components.AudioPlayerUI
@@ -32,6 +33,7 @@ fun MapScreen(
     val visits by viewModel.allVisits.collectAsState()
     val settings by viewModel.appSettings.collectAsState()
     val language = settings?.language ?: "Español"
+    val context = LocalContext.current
     
     val currentSummary = settings?.let { it.mapSummary[it.language] ?: it.mapSummary["Español"] ?: "" } ?: ""
 
@@ -60,8 +62,14 @@ fun MapScreen(
         )
         visits.forEach { visit ->
             visit.services.split(", ").forEach { service ->
-                if (counts.containsKey(service)) {
-                    counts[service] = counts[service]!! + 1
+                val originalName = when(service) {
+                    UiTranslations.translateService("Hospedaje", "Español", context) -> "Hospedaje"
+                    UiTranslations.translateService("Alimentación", "Español", context) -> "Alimentación"
+                    UiTranslations.translateService("Artesanía", "Español", context) -> "Artesanía"
+                    else -> service
+                }
+                if (counts.containsKey(originalName)) {
+                    counts[originalName] = counts[originalName]!! + 1
                 }
             }
         }
@@ -91,9 +99,10 @@ fun MapScreen(
                 Column(modifier = Modifier.weight(1.5f)) {
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = UiTranslations.getString("map_title", language),
+                        text = UiTranslations.getString(context, "map_title", language),
                         fontSize = 28.sp,
                         fontWeight = FontWeight.Bold,
+                        lineHeight = 34.sp,
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     Spacer(modifier = Modifier.height(16.dp))
@@ -161,16 +170,16 @@ fun MapScreen(
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
-                                text = UiTranslations.getString("map_legend", language),
+                                text = UiTranslations.getString(context, "map_legend", language),
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(bottom = 12.dp)
                             )
                             
-                            LegendItemRow(UiTranslations.translateService("Hospedaje", language), colorPrimary, serviceCounts["Hospedaje"] ?: 0)
-                            LegendItemRow(UiTranslations.translateService("Alimentación", language), colorSecondary, serviceCounts["Alimentación"] ?: 0)
-                            LegendItemRow(UiTranslations.translateService("Artesanía", language), colorTertiary, serviceCounts["Artesanía"] ?: 0)
+                            LegendItemRow(UiTranslations.translateService("Hospedaje", language, context), colorPrimary, serviceCounts["Hospedaje"] ?: 0)
+                            LegendItemRow(UiTranslations.translateService("Alimentación", language, context), colorSecondary, serviceCounts["Alimentación"] ?: 0)
+                            LegendItemRow(UiTranslations.translateService("Artesanía", language, context), colorTertiary, serviceCounts["Artesanía"] ?: 0)
                         }
                     }
 
@@ -183,7 +192,7 @@ fun MapScreen(
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
-                                text = UiTranslations.getString("map_summary_title", language),
+                                text = UiTranslations.getString(context, "map_summary_title", language),
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -215,9 +224,10 @@ fun MapScreen(
                 Spacer(modifier = Modifier.height(6.dp))
 
                 Text(
-                    text = UiTranslations.getString("map_title", language),
+                    text = UiTranslations.getString(context, "map_title", language),
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
+                    lineHeight = 34.sp,
                     color = MaterialTheme.colorScheme.onBackground
                 )
 
@@ -276,7 +286,7 @@ fun MapScreen(
 
                         // Legend Box - Improved
                         Text(
-                            text = UiTranslations.getString("map_legend", language),
+                            text = UiTranslations.getString(context, "map_legend", language),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -287,9 +297,9 @@ fun MapScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            LegendItem(UiTranslations.translateService("Hospedaje", language), colorPrimary, serviceCounts["Hospedaje"] ?: 0)
-                            LegendItem(UiTranslations.translateService("Alimentación", language), colorSecondary, serviceCounts["Alimentación"] ?: 0)
-                            LegendItem(UiTranslations.translateService("Artesanía", language), colorTertiary, serviceCounts["Artesanía"] ?: 0)
+                            LegendItem(UiTranslations.translateService("Hospedaje", language, context), colorPrimary, serviceCounts["Hospedaje"] ?: 0)
+                            LegendItem(UiTranslations.translateService("Alimentación", language, context), colorSecondary, serviceCounts["Alimentación"] ?: 0)
+                            LegendItem(UiTranslations.translateService("Artesanía", language, context), colorTertiary, serviceCounts["Artesanía"] ?: 0)
                         }
                     }
                 }
@@ -305,7 +315,7 @@ fun MapScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            text = UiTranslations.getString("map_summary_title", language),
+                            text = UiTranslations.getString(context, "map_summary_title", language),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,

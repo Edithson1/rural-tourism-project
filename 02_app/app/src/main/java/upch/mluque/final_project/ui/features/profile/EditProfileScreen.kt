@@ -89,19 +89,19 @@ fun EditProfileScreen(
     }
 
     val services = listOf(
-        ServiceOption("Hospedaje", Icons.Default.Bed),
-        ServiceOption("Alimentación", Icons.Default.Restaurant),
-        ServiceOption("Artesanía", Icons.Default.Checkroom),
-        ServiceOption("Varios", Icons.Default.Storefront)
+        ServiceOption(UiTranslations.translateService("Hospedaje", language, context), Icons.Default.Bed),
+        ServiceOption(UiTranslations.translateService("Alimentación", language, context), Icons.Default.Restaurant),
+        ServiceOption(UiTranslations.translateService("Artesanía", language, context), Icons.Default.Checkroom),
+        ServiceOption(UiTranslations.translateService("Varios", language, context), Icons.Default.Storefront)
     )
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(UiTranslations.getString("profile_edit_title", language), fontWeight = FontWeight.Bold) },
+                title = { Text(UiTranslations.getString(context, "profile_edit_title", language), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = UiTranslations.getString("btn_back", language))
+                        Icon(Icons.Default.ArrowBack, contentDescription = UiTranslations.getString(context, "btn_back", language))
                     }
                 }
             )
@@ -180,7 +180,7 @@ fun EditProfileScreen(
 
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Text(
-                            text = UiTranslations.getString("profile_business_name", language),
+                            text = UiTranslations.getString(context, "profile_business_name", language),
                             fontSize = 14.sp,
                             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                         )
@@ -212,7 +212,7 @@ fun EditProfileScreen(
                 ) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = UiTranslations.getString("profile_sector", language),
+                        text = UiTranslations.getString(context, "profile_sector", language),
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                     )
@@ -220,8 +220,22 @@ fun EditProfileScreen(
 
                     ServiceSelectorGrid(
                         services = services,
-                        selectedServices = if (selectedService.isEmpty()) emptySet() else setOf(selectedService),
-                        onServiceToggle = { selectedService = it }
+                        selectedServices = if (selectedService.isEmpty()) emptySet() else setOf(selectedService.let { 
+                            UiTranslations.translateService(it, language, context)
+                        }),
+                        onServiceToggle = { serviceNameTranslated ->
+                            // Map back to original name if needed, but here we just store the selected translated name 
+                            // or use the original keys if ServiceSelectorGrid handles it.
+                            // In this app, we usually store the original name in the DB.
+                            val originalName = when(serviceNameTranslated) {
+                                UiTranslations.translateService("Hospedaje", language, context) -> "Hospedaje"
+                                UiTranslations.translateService("Alimentación", language, context) -> "Alimentación"
+                                UiTranslations.translateService("Artesanía", language, context) -> "Artesanía"
+                                UiTranslations.translateService("Varios", language, context) -> "Varios"
+                                else -> serviceNameTranslated
+                            }
+                            selectedService = originalName
+                        }
                     )
 
                     Spacer(modifier = Modifier.height(40.dp))
@@ -242,7 +256,7 @@ fun EditProfileScreen(
                         shape = RoundedCornerShape(28.dp),
                         enabled = businessName.isNotBlank() && selectedService.isNotBlank()
                     ) {
-                        Text(UiTranslations.getString("profile_save_changes", language), fontWeight = FontWeight.Bold)
+                        Text(UiTranslations.getString(context, "profile_save_changes", language), fontWeight = FontWeight.Bold)
                     }
                     Spacer(modifier = Modifier.height(24.dp))
                 }
@@ -342,8 +356,19 @@ fun EditProfileScreen(
 
                 ServiceSelectorGrid(
                     services = services,
-                    selectedServices = if (selectedService.isEmpty()) emptySet() else setOf(selectedService),
-                    onServiceToggle = { selectedService = it }
+                    selectedServices = if (selectedService.isEmpty()) emptySet() else setOf(selectedService.let { 
+                        UiTranslations.translateService(it, language, context)
+                    }),
+                    onServiceToggle = { serviceNameTranslated ->
+                        val originalName = when(serviceNameTranslated) {
+                            UiTranslations.translateService("Hospedaje", language, context) -> "Hospedaje"
+                            UiTranslations.translateService("Alimentación", language, context) -> "Alimentación"
+                            UiTranslations.translateService("Artesanía", language, context) -> "Artesanía"
+                            UiTranslations.translateService("Varios", language, context) -> "Varios"
+                            else -> serviceNameTranslated
+                        }
+                        selectedService = originalName
+                    }
                 )
 
                 Spacer(modifier = Modifier.weight(1f))
@@ -388,7 +413,7 @@ fun EditProfileScreen(
         if (showImageSourceDialog) {
             AlertDialog(
                 onDismissRequest = { showImageSourceDialog = false },
-                title = { Text(UiTranslations.getString("profile_photo_change", language)) },
+                title = { Text(UiTranslations.getString(context, "profile_photo_change", language)) },
                 text = {
                     Column {
                         ListItem(
@@ -410,7 +435,7 @@ fun EditProfileScreen(
                 },
                 confirmButton = {
                     TextButton(onClick = { showImageSourceDialog = false }) {
-                        Text(UiTranslations.getString("btn_cancel", language))
+                        Text(UiTranslations.getString(context, "btn_cancel", language))
                     }
                 }
             )
@@ -518,7 +543,7 @@ fun ImageEditorDialog(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         TextButton(onClick = onDismiss, colors = ButtonDefaults.textButtonColors(contentColor = Color.White)) {
-                            Text(UiTranslations.getString("btn_cancel", language))
+                            Text(UiTranslations.getString(context, "btn_cancel", language))
                         }
                         Button(
                             onClick = {
@@ -527,7 +552,7 @@ fun ImageEditorDialog(
                             },
                             shape = RoundedCornerShape(24.dp)
                         ) {
-                            Text(UiTranslations.getString("btn_confirm", language))
+                            Text(UiTranslations.getString(context, "btn_confirm", language))
                         }
                     }
                 }

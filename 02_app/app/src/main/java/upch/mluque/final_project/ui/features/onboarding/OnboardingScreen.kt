@@ -20,6 +20,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import upch.mluque.final_project.ui.theme.Final_projectTheme
 import upch.mluque.final_project.utils.UiTranslations
 
@@ -30,9 +31,10 @@ fun OnboardingScreen(
     onLanguageSelected: (String) -> Unit,
     onNext: () -> Unit
 ) {
-    val title = UiTranslations.getString("onboarding_title_$pageIndex", selectedLanguage)
-    val description = UiTranslations.getString("onboarding_desc_$pageIndex", selectedLanguage)
-    val buttonText = UiTranslations.getString("onboarding_btn_$pageIndex", selectedLanguage)
+    val context = LocalContext.current
+    val title = UiTranslations.getString(context, "onboarding_title_$pageIndex", selectedLanguage)
+    val description = UiTranslations.getString(context, "onboarding_desc_$pageIndex", selectedLanguage)
+    val buttonText = UiTranslations.getString(context, "onboarding_btn_$pageIndex", selectedLanguage)
 
     val icon = when (pageIndex) {
         0 -> Icons.Default.WifiOff

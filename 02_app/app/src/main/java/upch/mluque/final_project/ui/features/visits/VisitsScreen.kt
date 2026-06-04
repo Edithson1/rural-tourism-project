@@ -1,5 +1,6 @@
  package upch.mluque.final_project.ui.features.visits
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -27,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import upch.mluque.final_project.data.local.Visit
 import upch.mluque.final_project.ui.MainViewModel
 import upch.mluque.final_project.ui.components.BottomNavigationBar
@@ -73,13 +75,35 @@ fun VisitsPreview() {
                 Spacer(modifier = Modifier.height(24.dp))
                 
                 VisitItem(
-                    visit = Visit(1, "Francia", "🇫🇷", "S/ 51 - 100", "Hospedaje", System.currentTimeMillis() - 86400000, true, System.currentTimeMillis()),
+                    visit = Visit(
+                        id = 1,
+                        nationality = "Francia",
+                        nationalityFlag = "🇫🇷",
+                        priceType = "Rango",
+                        priceValue = "51-100",
+                        priceCurrency = "S/",
+                        services = "Hospedaje",
+                        registrationDate = System.currentTimeMillis() - 86400000,
+                        isSent = true,
+                        sentDate = System.currentTimeMillis()
+                    ),
                     language = "Español",
                     onClick = {}
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 VisitItem(
-                    visit = Visit(2, "Estados Unidos", "🇺🇸", "S/ 201 - 500", "Alimentación", System.currentTimeMillis() - 172800000, false, null),
+                    visit = Visit(
+                        id = 2,
+                        nationality = "Estados Unidos",
+                        nationalityFlag = "🇺🇸",
+                        priceType = "Rango",
+                        priceValue = "201-500",
+                        priceCurrency = "S/",
+                        services = "Alimentación",
+                        registrationDate = System.currentTimeMillis() - 172800000,
+                        isSent = false,
+                        sentDate = null
+                    ),
                     language = "Español",
                     onClick = {}
                 )
@@ -98,12 +122,13 @@ fun VisitsScreen(
     val visits by viewModel.allVisits.collectAsState()
     val settings by viewModel.appSettings.collectAsState()
     val language = settings?.language ?: "Español"
+    val context = LocalContext.current
     
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp && configuration.screenWidthDp > 600
 
     val groupedVisits = remember(visits, language) {
-        groupVisits(visits, language)
+        groupVisits(visits, language, context)
     }
 
     Scaffold(
@@ -133,18 +158,21 @@ fun VisitsScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = UiTranslations.getString("visits_title", language),
+                    text = UiTranslations.getString(context, "visits_title", language),
                     fontSize = if (isLandscape) 32.sp else 28.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
+                    lineHeight = 36.sp,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.weight(1f)
                 )
                 
                 Surface(
                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.padding(start = 8.dp)
                 ) {
                     Text(
-                        text = UiTranslations.getString("total_records", language, visits.size),
+                        text = UiTranslations.getString(context, "total_records", language, visits.size),
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
@@ -158,7 +186,7 @@ fun VisitsScreen(
             if (visits.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
-                        text = UiTranslations.getString("no_records_yet", language),
+                        text = UiTranslations.getString(context, "no_records_yet", language),
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
                     )
                 }
@@ -195,7 +223,7 @@ fun VisitsScreen(
     }
 }
 
-private fun groupVisits(visits: List<Visit>, language: String): Map<String, List<Visit>> {
+private fun groupVisits(visits: List<Visit>, language: String, context: Context): Map<String, List<Visit>> {
     val grouped = mutableMapOf<String, MutableList<Visit>>()
     val now = Calendar.getInstance()
     
@@ -212,14 +240,14 @@ private fun groupVisits(visits: List<Visit>, language: String): Map<String, List
             isSameYear(now, visitDate) -> "cat_this_year"
             else -> "cat_older"
         }
-        val category = UiTranslations.getString(categoryKey, language)
+        val category = UiTranslations.getString(context, categoryKey, language)
         
         grouped.getOrPut(category) { mutableListOf() }.add(visit)
     }
     
     val result = LinkedHashMap<String, List<Visit>>()
     listOf("cat_today", "cat_yesterday", "cat_this_week", "cat_this_month", "cat_this_year", "cat_older").forEach { key ->
-        val cat = UiTranslations.getString(key, language)
+        val cat = UiTranslations.getString(context, key, language)
         grouped[cat]?.let { result[cat] = it }
     }
     return result
@@ -254,6 +282,7 @@ private fun isSameYear(today: Calendar, date: Calendar): Boolean {
 
 @Composable
 fun VisitItem(visit: Visit, language: String, onClick: () -> Unit) {
+    val context = LocalContext.current
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -289,13 +318,13 @@ fun VisitItem(visit: Visit, language: String, onClick: () -> Unit) {
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "${UiTranslations.getString("tourist_label", language)} - ${visit.nationality}",
+                    text = "${UiTranslations.getString(context, "tourist_label", language)} - ${visit.nationality}",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = getTimeAgo(visit.registrationDate, language),
+                    text = getTimeAgo(visit.registrationDate, language, context),
                     fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
@@ -321,7 +350,7 @@ fun VisitItem(visit: Visit, language: String, onClick: () -> Unit) {
     }
 }
 
-fun getTimeAgo(timestamp: Long, language: String): String {
+fun getTimeAgo(timestamp: Long, language: String, context: Context): String {
     val now = System.currentTimeMillis()
     val diff = now - timestamp
     
@@ -330,11 +359,11 @@ fun getTimeAgo(timestamp: Long, language: String): String {
     val days = TimeUnit.MILLISECONDS.toDays(diff)
 
     return when {
-        minutes < 1 -> UiTranslations.getString("time_now", language)
-        minutes < 60 -> UiTranslations.getString("time_min_ago", language, minutes.toInt())
-        hours < 24 -> if (hours == 1L) UiTranslations.getString("time_hour_ago", language) else UiTranslations.getString("time_hours_ago", language, hours.toInt())
-        days == 1L -> UiTranslations.getString("time_yesterday", language)
-        days < 7 -> UiTranslations.getString("time_days_ago", language, days.toInt())
+        minutes < 1 -> UiTranslations.getString(context, "time_now", language)
+        minutes < 60 -> UiTranslations.getString(context, "time_min_ago", language, minutes.toInt())
+        hours < 24 -> if (hours == 1L) UiTranslations.getString(context, "time_hour_ago", language) else UiTranslations.getString(context, "time_hours_ago", language, hours.toInt())
+        days == 1L -> UiTranslations.getString(context, "time_yesterday", language)
+        days < 7 -> UiTranslations.getString(context, "time_days_ago", language, days.toInt())
         else -> SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(timestamp))
     }
 }

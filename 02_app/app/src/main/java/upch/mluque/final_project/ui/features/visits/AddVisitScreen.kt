@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -29,16 +30,23 @@ fun AddVisitScreen(
     visitCount: Int,
     language: String,
     onBack: () -> Unit,
-    onSave: (String, String, String, String) -> Unit
+    onSave: (String, String, String, String, String, String) -> Unit
 ) {
     var nationalitySearch by remember { mutableStateOf("") }
     var selectedNationality by remember { mutableStateOf<Country?>(null) }
     var isNationalityExpanded by remember { mutableStateOf(false) }
 
-    var selectedRange by remember { mutableStateOf("") }
-    var isRangeExpanded by remember { mutableStateOf(false) }
+    var selectedPriceType by remember { mutableStateOf("Rango") }
+    var isPriceTypeExpanded by remember { mutableStateOf(false) }
+    
+    var selectedPriceValue by remember { mutableStateOf("") }
+    var isPriceValueExpanded by remember { mutableStateOf(false) }
+    
+    var selectedCurrency by remember { mutableStateOf("S/") }
+    var isCurrencyExpanded by remember { mutableStateOf(false) }
 
     var selectedServices by remember { mutableStateOf(setOf<String>()) }
+    val context = LocalContext.current
 
     val countries = listOf(
         Country("Perú", "🇵🇪"),
@@ -59,13 +67,11 @@ fun AddVisitScreen(
         it.name.contains(nationalitySearch, ignoreCase = true) 
     }
 
-    val ranges = listOf(
-        "S/ 0 - S/ 50",
-        "S/ 51 - S/ 100",
-        "S/ 101 - S/ 200",
-        "S/ 201 - S/ 500",
-        "S/ 500+"
-    )
+    val priceTypes = listOf("Rango", "Fijo", "Personalizado")
+    
+    val rangeValues = listOf("0-10", "11-50", "51-100", "101-200", "201-500", "501+")
+    val fixedValues = listOf("0", "10", "20", "50", "100", "200", "500")
+    val currencies = listOf("S/", "$", "€")
 
     val availableServices = listOf(
         ServiceOption("Hospedaje", Icons.Default.Bed),
@@ -115,16 +121,17 @@ fun AddVisitScreen(
                 ) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = UiTranslations.getString("add_visit_title", language),
+                        text = UiTranslations.getString(context, "add_visit_title", language),
                         fontSize = 28.sp,
                         fontWeight = FontWeight.Bold,
+                        lineHeight = 34.sp,
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     Spacer(modifier = Modifier.height(24.dp))
 
                     // Nationality Selector
                     Text(
-                        text = UiTranslations.getString("add_visit_country_label", language) + " *",
+                        text = UiTranslations.getString(context, "add_visit_country_label", language) + " *",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
@@ -143,7 +150,7 @@ fun AddVisitScreen(
                                 nationalitySearch = it
                                 isNationalityExpanded = true
                             },
-                            placeholder = { Text(UiTranslations.getString("select_option", language)) },
+                            placeholder = { Text(UiTranslations.getString(context, "select_option", language)) },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .menuAnchor(MenuAnchorType.PrimaryEditable, true),
@@ -183,28 +190,111 @@ fun AddVisitScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Expense Selector
+                    // Expense Selector (Refactored)
                     Text(
-                        text = UiTranslations.getString("add_visit_price_label", language) + " *",
+                        text = UiTranslations.getString(context, "add_visit_price_label", language) + " *",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    ExposedDropdownMenuBox(
-                        expanded = isRangeExpanded,
-                        onExpandedChange = { isRangeExpanded = !isRangeExpanded }
-                    ) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        // 1. Type Selector
+                        ExposedDropdownMenuBox(
+                            expanded = isPriceTypeExpanded,
+                            onExpandedChange = { isPriceTypeExpanded = !isPriceTypeExpanded },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            OutlinedTextField(
+                                value = when(selectedPriceType) {
+                                    "Rango" -> UiTranslations.getString(context, "price_type_range", language)
+                                    "Fijo" -> UiTranslations.getString(context, "price_type_fixed", language)
+                                    "Personalizado" -> UiTranslations.getString(context, "price_type_custom", language)
+                                    else -> selectedPriceType
+                                },
+                                onValueChange = { },
+                                readOnly = true,
+                                modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, true),
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isPriceTypeExpanded) },
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                    unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                                ),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            ExposedDropdownMenu(
+                                expanded = isPriceTypeExpanded,
+                                onDismissRequest = { isPriceTypeExpanded = false }
+                            ) {
+                                priceTypes.forEach { type ->
+                                    DropdownMenuItem(
+                                        text = { 
+                                            Text(when(type) {
+                                                "Rango" -> UiTranslations.getString(context, "price_type_range", language)
+                                                "Fijo" -> UiTranslations.getString(context, "price_type_fixed", language)
+                                                "Personalizado" -> UiTranslations.getString(context, "price_type_custom", language)
+                                                else -> type
+                                            }) 
+                                        },
+                                        onClick = {
+                                            selectedPriceType = type
+                                            selectedPriceValue = ""
+                                            isPriceTypeExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+
+                        // 2. Currency Selector
+                        ExposedDropdownMenuBox(
+                            expanded = isCurrencyExpanded,
+                            onExpandedChange = { isCurrencyExpanded = !isCurrencyExpanded },
+                            modifier = Modifier.width(90.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = selectedCurrency,
+                                onValueChange = { },
+                                readOnly = true,
+                                modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, true),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                    unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                                ),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            ExposedDropdownMenu(
+                                expanded = isCurrencyExpanded,
+                                onDismissRequest = { isCurrencyExpanded = false }
+                            ) {
+                                currencies.forEach { curr ->
+                                    DropdownMenuItem(
+                                        text = { Text(curr) },
+                                        onClick = {
+                                            selectedCurrency = curr
+                                            isCurrencyExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // 3. Value Selector / Input
+                    if (selectedPriceType == "Personalizado") {
                         OutlinedTextField(
-                            value = selectedRange,
-                            onValueChange = { },
-                            readOnly = true,
-                            placeholder = { Text(UiTranslations.getString("select_range", language)) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .menuAnchor(MenuAnchorType.PrimaryNotEditable, true),
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isRangeExpanded) },
+                            value = selectedPriceValue,
+                            onValueChange = { selectedPriceValue = it },
+                            placeholder = { Text(UiTranslations.getString(context, "setup_business_name_hint", language)) },
+                            modifier = Modifier.fillMaxWidth(),
+                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = MaterialTheme.colorScheme.primary,
                                 unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
@@ -213,20 +303,42 @@ fun AddVisitScreen(
                             ),
                             shape = RoundedCornerShape(12.dp)
                         )
-
-                        ExposedDropdownMenu(
-                            expanded = isRangeExpanded,
-                            onDismissRequest = { isRangeExpanded = false },
-                            modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                    } else {
+                        ExposedDropdownMenuBox(
+                            expanded = isPriceValueExpanded,
+                            onExpandedChange = { isPriceValueExpanded = !isPriceValueExpanded }
                         ) {
-                            ranges.forEach { range ->
-                                DropdownMenuItem(
-                                    text = { Text(text = range) },
-                                    onClick = {
-                                        selectedRange = range
-                                        isRangeExpanded = false
-                                    }
-                                )
+                            OutlinedTextField(
+                                value = selectedPriceValue,
+                                onValueChange = { },
+                                readOnly = true,
+                                placeholder = { Text(UiTranslations.getString(context, "select_option", language)) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .menuAnchor(MenuAnchorType.PrimaryNotEditable, true),
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isPriceValueExpanded) },
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                    unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                                ),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            ExposedDropdownMenu(
+                                expanded = isPriceValueExpanded,
+                                onDismissRequest = { isPriceValueExpanded = false }
+                            ) {
+                                val values = if (selectedPriceType == "Rango") rangeValues else fixedValues
+                                values.forEach { valStr ->
+                                    DropdownMenuItem(
+                                        text = { Text(valStr) },
+                                        onClick = {
+                                            selectedPriceValue = valStr
+                                            isPriceValueExpanded = false
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
@@ -243,7 +355,7 @@ fun AddVisitScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     // Services
                     Text(
-                        text = UiTranslations.getString("add_visit_services_label", language),
+                        text = UiTranslations.getString(context, "add_visit_services_label", language),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
@@ -251,11 +363,11 @@ fun AddVisitScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     ServiceSelectorGrid(
-                        services = availableServices.map { it.copy(name = UiTranslations.translateService(it.name, language)) },
-                        selectedServices = selectedServices.map { UiTranslations.translateService(it, language) }.toSet(),
+                        services = availableServices.map { it.copy(name = UiTranslations.translateService(it.name, language, context)) },
+                        selectedServices = selectedServices.map { UiTranslations.translateService(it, language, context) }.toSet(),
                         onServiceToggle = { serviceNameTranslated ->
                             // Map back to original name
-                            val originalName = availableServices.find { UiTranslations.translateService(it.name, language) == serviceNameTranslated }?.name ?: serviceNameTranslated
+                            val originalName = availableServices.find { UiTranslations.translateService(it.name, language, context) == serviceNameTranslated }?.name ?: serviceNameTranslated
                             if (selectedServices.contains(originalName)) {
                                 selectedServices = selectedServices - originalName
                             } else {
@@ -272,7 +384,7 @@ fun AddVisitScreen(
                             val nationality = selectedNationality?.name ?: ""
                             val flag = selectedNationality?.flag ?: ""
                             val servicesString = selectedServices.joinToString(", ")
-                            onSave(nationality, flag, selectedRange, servicesString)
+                            onSave(nationality, flag, selectedPriceType, selectedPriceValue, selectedCurrency, servicesString)
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -282,7 +394,7 @@ fun AddVisitScreen(
                             containerColor = MaterialTheme.colorScheme.primary,
                             disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                         ),
-                        enabled = selectedNationality != null && selectedRange.isNotEmpty() && selectedServices.isNotEmpty()
+                        enabled = selectedNationality != null && selectedPriceValue.isNotEmpty() && selectedServices.isNotEmpty()
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
@@ -292,7 +404,7 @@ fun AddVisitScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = UiTranslations.getString("add_visit_save", language),
+                                text = UiTranslations.getString(context, "add_visit_save", language),
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
@@ -316,18 +428,21 @@ fun AddVisitScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = UiTranslations.getString("add_visit_title", language),
+                        text = UiTranslations.getString(context, "add_visit_title", language),
                         fontSize = 28.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
+                        lineHeight = 34.sp,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.weight(1f)
                     )
 
                     Surface(
                         color = MaterialTheme.colorScheme.surfaceVariant,
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.padding(start = 8.dp)
                     ) {
                         Text(
-                            text = "${UiTranslations.getString("record_label", language)} #${visitCount + 1}",
+                            text = "${UiTranslations.getString(context, "record_label", language)} #${visitCount + 1}",
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                             fontSize = 12.sp,
                             color = if (isSystemInDarkTheme()) Color.LightGray else Color.Gray
@@ -339,7 +454,7 @@ fun AddVisitScreen(
 
                 // Nationality Selector
                 Text(
-                    text = UiTranslations.getString("add_visit_country_label", language) + " *",
+                    text = UiTranslations.getString(context, "add_visit_country_label", language) + " *",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
@@ -358,7 +473,7 @@ fun AddVisitScreen(
                             nationalitySearch = it
                             isNationalityExpanded = true
                         },
-                        placeholder = { Text(UiTranslations.getString("select_option", language)) },
+                        placeholder = { Text(UiTranslations.getString(context, "select_option", language)) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .menuAnchor(MenuAnchorType.PrimaryEditable, true),
@@ -398,28 +513,111 @@ fun AddVisitScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Expense Selector
+                // Expense Selector (Refactored)
                 Text(
-                    text = UiTranslations.getString("add_visit_price_label", language) + " *",
+                    text = UiTranslations.getString(context, "add_visit_price_label", language) + " *",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
-                ExposedDropdownMenuBox(
-                    expanded = isRangeExpanded,
-                    onExpandedChange = { isRangeExpanded = !isRangeExpanded }
-                ) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // 1. Type Selector
+                    ExposedDropdownMenuBox(
+                        expanded = isPriceTypeExpanded,
+                        onExpandedChange = { isPriceTypeExpanded = !isPriceTypeExpanded },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        OutlinedTextField(
+                            value = when(selectedPriceType) {
+                                "Rango" -> UiTranslations.getString(context, "price_type_range", language)
+                                "Fijo" -> UiTranslations.getString(context, "price_type_fixed", language)
+                                "Personalizado" -> UiTranslations.getString(context, "price_type_custom", language)
+                                else -> selectedPriceType
+                            },
+                            onValueChange = { },
+                            readOnly = true,
+                            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, true),
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isPriceTypeExpanded) },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        ExposedDropdownMenu(
+                            expanded = isPriceTypeExpanded,
+                            onDismissRequest = { isPriceTypeExpanded = false }
+                        ) {
+                            priceTypes.forEach { type ->
+                                DropdownMenuItem(
+                                    text = { 
+                                        Text(when(type) {
+                                            "Rango" -> UiTranslations.getString(context, "price_type_range", language)
+                                            "Fijo" -> UiTranslations.getString(context, "price_type_fixed", language)
+                                            "Personalizado" -> UiTranslations.getString(context, "price_type_custom", language)
+                                            else -> type
+                                        }) 
+                                    },
+                                    onClick = {
+                                        selectedPriceType = type
+                                        selectedPriceValue = ""
+                                        isPriceTypeExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    // 2. Currency Selector
+                    ExposedDropdownMenuBox(
+                        expanded = isCurrencyExpanded,
+                        onExpandedChange = { isCurrencyExpanded = !isCurrencyExpanded },
+                        modifier = Modifier.width(90.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = selectedCurrency,
+                            onValueChange = { },
+                            readOnly = true,
+                            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, true),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        ExposedDropdownMenu(
+                            expanded = isCurrencyExpanded,
+                            onDismissRequest = { isCurrencyExpanded = false }
+                        ) {
+                            currencies.forEach { curr ->
+                                DropdownMenuItem(
+                                    text = { Text(curr) },
+                                    onClick = {
+                                        selectedCurrency = curr
+                                        isCurrencyExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // 3. Value Selector / Input
+                if (selectedPriceType == "Personalizado") {
                     OutlinedTextField(
-                        value = selectedRange,
-                        onValueChange = { },
-                        readOnly = true,
-                        placeholder = { Text(UiTranslations.getString("select_range", language)) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .menuAnchor(MenuAnchorType.PrimaryNotEditable, true),
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isRangeExpanded) },
+                        value = selectedPriceValue,
+                        onValueChange = { selectedPriceValue = it },
+                        placeholder = { Text(UiTranslations.getString(context, "setup_business_name_hint", language)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = MaterialTheme.colorScheme.primary,
                             unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
@@ -428,20 +626,42 @@ fun AddVisitScreen(
                         ),
                         shape = RoundedCornerShape(12.dp)
                     )
-
-                    ExposedDropdownMenu(
-                        expanded = isRangeExpanded,
-                        onDismissRequest = { isRangeExpanded = false },
-                        modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                } else {
+                    ExposedDropdownMenuBox(
+                        expanded = isPriceValueExpanded,
+                        onExpandedChange = { isPriceValueExpanded = !isPriceValueExpanded }
                     ) {
-                        ranges.forEach { range ->
-                            DropdownMenuItem(
-                                text = { Text(text = range) },
-                                onClick = {
-                                    selectedRange = range
-                                    isRangeExpanded = false
-                                }
-                            )
+                        OutlinedTextField(
+                            value = selectedPriceValue,
+                            onValueChange = { },
+                            readOnly = true,
+                            placeholder = { Text(UiTranslations.getString(context, "select_option", language)) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor(MenuAnchorType.PrimaryNotEditable, true),
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isPriceValueExpanded) },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        ExposedDropdownMenu(
+                            expanded = isPriceValueExpanded,
+                            onDismissRequest = { isPriceValueExpanded = false }
+                        ) {
+                            val values = if (selectedPriceType == "Rango") rangeValues else fixedValues
+                            values.forEach { valStr ->
+                                DropdownMenuItem(
+                                    text = { Text(valStr) },
+                                    onClick = {
+                                        selectedPriceValue = valStr
+                                        isPriceValueExpanded = false
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -450,7 +670,7 @@ fun AddVisitScreen(
 
                 // Services
                 Text(
-                    text = UiTranslations.getString("add_visit_services_label", language),
+                    text = UiTranslations.getString(context, "add_visit_services_label", language),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
@@ -458,10 +678,10 @@ fun AddVisitScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 ServiceSelectorGrid(
-                    services = availableServices.map { it.copy(name = UiTranslations.translateService(it.name, language)) },
-                    selectedServices = selectedServices.map { UiTranslations.translateService(it, language) }.toSet(),
+                    services = availableServices.map { it.copy(name = UiTranslations.translateService(it.name, language, context)) },
+                    selectedServices = selectedServices.map { UiTranslations.translateService(it, language, context) }.toSet(),
                     onServiceToggle = { serviceNameTranslated ->
-                        val originalName = availableServices.find { UiTranslations.translateService(it.name, language) == serviceNameTranslated }?.name ?: serviceNameTranslated
+                        val originalName = availableServices.find { UiTranslations.translateService(it.name, language, context) == serviceNameTranslated }?.name ?: serviceNameTranslated
                         if (selectedServices.contains(originalName)) {
                             selectedServices = selectedServices - originalName
                         } else {
@@ -478,7 +698,7 @@ fun AddVisitScreen(
                         val nationality = selectedNationality?.name ?: ""
                         val flag = selectedNationality?.flag ?: ""
                         val servicesString = selectedServices.joinToString(", ")
-                        onSave(nationality, flag, selectedRange, servicesString)
+                        onSave(nationality, flag, selectedPriceType, selectedPriceValue, selectedCurrency, servicesString)
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -488,7 +708,7 @@ fun AddVisitScreen(
                         containerColor = MaterialTheme.colorScheme.primary,
                         disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                     ),
-                    enabled = selectedNationality != null && selectedRange.isNotEmpty() && selectedServices.isNotEmpty()
+                    enabled = selectedNationality != null && selectedPriceValue.isNotEmpty() && selectedServices.isNotEmpty()
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
@@ -498,7 +718,7 @@ fun AddVisitScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = UiTranslations.getString("add_visit_save", language),
+                            text = UiTranslations.getString(context, "add_visit_save", language),
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
@@ -518,7 +738,7 @@ data class Country(val name: String, val flag: String)
 @Composable
 fun AddVisitPreview() {
     Final_projectTheme {
-        AddVisitScreen(visitCount = 11, language = "Español", onBack = {}, onSave = { _, _, _, _ -> })
+        AddVisitScreen(visitCount = 11, language = "Español", onBack = {}, onSave = { _, _, _, _, _, _ -> })
     }
 }
 
@@ -526,7 +746,7 @@ fun AddVisitPreview() {
 @Composable
 fun AddVisitDarkPreview() {
     Final_projectTheme {
-        AddVisitScreen(visitCount = 11, language = "Español", onBack = {}, onSave = { _, _, _, _ -> })
+        AddVisitScreen(visitCount = 11, language = "Español", onBack = {}, onSave = { _, _, _, _, _, _ -> })
     }
 }
 

@@ -25,6 +25,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import androidx.compose.ui.platform.LocalContext
 import upch.mluque.final_project.data.local.Visit
 import upch.mluque.final_project.ui.components.BottomNavigationBar
 import upch.mluque.final_project.ui.theme.Final_projectTheme
@@ -46,9 +47,10 @@ fun HomeScreen(
     onNavigate: (String) -> Unit
 ) {
     var selectedView by remember { mutableStateOf(TimeView.MONTH) }
+    val context = LocalContext.current
 
-    val chartData = remember(visits, selectedView) {
-        processChartData(visits, selectedView)
+    val chartData = remember(visits, selectedView, language) {
+        processChartData(visits, selectedView, context, language)
     }
 
     val maxCount = chartData.maxOfOrNull { it.second }?.takeIf { it > 0 } ?: 1
@@ -176,6 +178,7 @@ fun LandscapeHomeContent(
 
 @Composable
 fun HomeHeader(businessName: String, selectedService: String, profilePicture: ByteArray?, language: String) {
+    val context = LocalContext.current
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(
             modifier = Modifier
@@ -205,14 +208,14 @@ fun HomeHeader(businessName: String, selectedService: String, profilePicture: By
         
         Column {
             Text(
-                text = UiTranslations.getString("home_greeting", language, businessName),
+                text = UiTranslations.getString(context, "home_greeting", language, businessName),
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
             )
 
             Text(
-                text = UiTranslations.getString("home_category", language, selectedService),
+                text = UiTranslations.getString(context, "home_category", language, UiTranslations.translateService(selectedService, language, context)),
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
             )
@@ -222,6 +225,7 @@ fun HomeHeader(businessName: String, selectedService: String, profilePicture: By
 
 @Composable
 fun TimeViewSelector(selectedView: TimeView, onViewChange: (TimeView) -> Unit, language: String) {
+    val context = LocalContext.current
     SingleChoiceSegmentedButtonRow(
         modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
     ) {
@@ -233,10 +237,10 @@ fun TimeViewSelector(selectedView: TimeView, onViewChange: (TimeView) -> Unit, l
                 label = { 
                     Text(
                         when(view) {
-                            TimeView.DAY -> UiTranslations.getString("time_day", language)
-                            TimeView.WEEK -> UiTranslations.getString("time_week", language)
-                            TimeView.MONTH -> UiTranslations.getString("time_month", language)
-                            TimeView.YEAR -> UiTranslations.getString("time_year", language)
+                            TimeView.DAY -> UiTranslations.getString(context, "time_day", language)
+                            TimeView.WEEK -> UiTranslations.getString(context, "time_week", language)
+                            TimeView.MONTH -> UiTranslations.getString(context, "time_month", language)
+                            TimeView.YEAR -> UiTranslations.getString(context, "time_year", language)
                         },
                         fontSize = 12.sp
                     ) 
@@ -248,6 +252,7 @@ fun TimeViewSelector(selectedView: TimeView, onViewChange: (TimeView) -> Unit, l
 
 @Composable
 fun ChartCard(selectedView: TimeView, chartData: List<Pair<String, Int>>, maxCount: Int, language: String) {
+    val context = LocalContext.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -257,10 +262,10 @@ fun ChartCard(selectedView: TimeView, chartData: List<Pair<String, Int>>, maxCou
         Column(modifier = Modifier.padding(20.dp)) {
             Text(
                 text = when(selectedView) {
-                    TimeView.DAY -> UiTranslations.getString("chart_today", language)
-                    TimeView.WEEK -> UiTranslations.getString("chart_week", language)
-                    TimeView.MONTH -> UiTranslations.getString("chart_month", language)
-                    TimeView.YEAR -> UiTranslations.getString("chart_year", language)
+                    TimeView.DAY -> UiTranslations.getString(context, "chart_today", language)
+                    TimeView.WEEK -> UiTranslations.getString(context, "chart_week", language)
+                    TimeView.MONTH -> UiTranslations.getString(context, "chart_month", language)
+                    TimeView.YEAR -> UiTranslations.getString(context, "chart_year", language)
                 },
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
@@ -292,6 +297,7 @@ fun ChartCard(selectedView: TimeView, chartData: List<Pair<String, Int>>, maxCou
 
 @Composable
 fun TipCard(entrepreneurTips: String, language: String, onNavigateToTip: () -> Unit) {
+    val context = LocalContext.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -324,7 +330,7 @@ fun TipCard(entrepreneurTips: String, language: String, onNavigateToTip: () -> U
                     .padding(horizontal = 16.dp)
             ) {
                 Text(
-                    text = UiTranslations.getString("home_tip_title", language),
+                    text = UiTranslations.getString(context, "tip_detail_title", language),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -356,9 +362,10 @@ fun TipCard(entrepreneurTips: String, language: String, onNavigateToTip: () -> U
 
 @Composable
 fun RecentVisitsCard(visits: List<Visit>, language: String) {
+    val context = LocalContext.current
     Column {
         Text(
-            text = UiTranslations.getString("home_recent_visits", language),
+            text = UiTranslations.getString(context, "home_recent_visits", language),
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground,
@@ -379,14 +386,14 @@ fun RecentVisitsCard(visits: List<Visit>, language: String) {
                         .padding(bottom = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(UiTranslations.getString("home_tourist_country", language), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                    Text(UiTranslations.getString("home_est_expense", language), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Text(UiTranslations.getString(context, "home_tourist_country", language), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Text(UiTranslations.getString(context, "home_est_expense", language), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
                 
                 if (visits.isEmpty()) {
                     Text(
-                        text = UiTranslations.getString("home_no_records", language),
+                        text = UiTranslations.getString(context, "home_no_records", language),
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
@@ -412,14 +419,14 @@ fun RecentVisitsCard(visits: List<Visit>, language: String) {
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
-                                        text = UiTranslations.translateServicesList(visit.services, language),
+                                        text = UiTranslations.translateServicesList(visit.services, language, context),
                                         fontSize = 12.sp,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
                             Text(
-                                text = visit.priceApprox,
+                                text = visit.getFormattedPrice(),
                                 fontSize = 14.sp,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontWeight = FontWeight.Bold,
@@ -474,7 +481,7 @@ fun BarItem(label: String, value: String, heightFactor: Float, color: Color, mod
     }
 }
 
-private fun processChartData(visits: List<Visit>, view: TimeView): List<Pair<String, Int>> {
+private fun processChartData(visits: List<Visit>, view: TimeView, context: android.content.Context, language: String): List<Pair<String, Int>> {
     val calendar = Calendar.getInstance()
     val now = calendar.timeInMillis
     
@@ -495,8 +502,9 @@ private fun processChartData(visits: List<Visit>, view: TimeView): List<Pair<Str
             }
         }
         TimeView.WEEK -> {
-            val days = listOf("Lun", "Mar", "Mie", "Jue", "Vie", "Sab", "Dom")
-            days.mapIndexed { index, name ->
+            val dayKeys = listOf("day_mon", "day_tue", "day_wed", "day_thu", "day_fri", "day_sat", "day_sun")
+            dayKeys.mapIndexed { index, key ->
+                val name = UiTranslations.getString(context, key, language)
                 val count = visits.count { v ->
                     calendar.timeInMillis = v.registrationDate
                     val dayOfWeek = (calendar.get(Calendar.DAY_OF_WEEK) + 5) % 7 // L=0, D=6
@@ -507,7 +515,7 @@ private fun processChartData(visits: List<Visit>, view: TimeView): List<Pair<Str
         }
         TimeView.MONTH -> {
             (1..4).map { week ->
-                val label = "Sem $week"
+                val label = UiTranslations.getString(context, "chart_week_label", language, week)
                 val count = visits.count { v ->
                     calendar.timeInMillis = v.registrationDate
                     val weekOfMonth = ((calendar.get(Calendar.DAY_OF_MONTH) - 1) / 7) + 1
@@ -517,8 +525,12 @@ private fun processChartData(visits: List<Visit>, view: TimeView): List<Pair<Str
             }
         }
         TimeView.YEAR -> {
-            val months = listOf("Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic")
-            months.mapIndexed { index, name ->
+            val monthKeys = listOf(
+                "month_jan", "month_feb", "month_mar", "month_apr", "month_may", "month_jun",
+                "month_jul", "month_aug", "month_sep", "month_oct", "month_nov", "month_dec"
+            )
+            monthKeys.mapIndexed { index, key ->
+                val name = UiTranslations.getString(context, key, language)
                 val count = visits.count { v ->
                     calendar.timeInMillis = v.registrationDate
                     calendar.get(Calendar.MONTH) == index && isSameYear(v.registrationDate, now)

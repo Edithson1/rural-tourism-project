@@ -202,12 +202,14 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun addVisit(nationality: String, flag: String, price: String, services: String) {
+    fun addVisit(nationality: String, flag: String, priceType: String, priceValue: String, priceCurrency: String, services: String) {
         viewModelScope.launch {
             val visit = Visit(
                 nationality = nationality,
                 nationalityFlag = flag,
-                priceApprox = price,
+                priceType = priceType,
+                priceValue = priceValue,
+                priceCurrency = priceCurrency,
                 services = services
             )
             repository.insertVisit(visit)
@@ -313,12 +315,15 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun resetInternalState() {
         _isConnected.value = false
+        _role.value = "CLIENT"
         _remoteDeviceName.value = null
         _logs.value = emptyList()
         _ticks.value = 0
         _latency.value = 0L
         _acks.value = Pair(0, 0)
         isProcessingRemoteUpdate = false
+        lastRemoteIp = null
+        lastRemotePort = 51234
     }
 
     fun requestRemoteLogout(onComplete: () -> Unit = {}) {
@@ -352,9 +357,7 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
         syncManager.stop()
         nsdHelper.stop()
         isFullyLinked = false
-        _isConnected.value = false
-        _remoteDeviceName.value = null
-        lastRemoteIp = null
+        resetInternalState()
         saveSyncState()
         addLog("Dispositivo desvinculado")
     }

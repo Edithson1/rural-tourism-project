@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.compose.ui.platform.LocalContext
 import upch.mluque.final_project.utils.PermissionRequester
 import upch.mluque.final_project.utils.UiTranslations
 import upch.mluque.final_project.utils.getSyncPermissions
@@ -21,6 +22,7 @@ fun OnboardingScreen1(
     onLanguageChange: (String) -> Unit,
     onNext: () -> Unit
 ) {
+    val context = LocalContext.current
     var triggerPermissions by remember { mutableStateOf(false) }
 
     PermissionRequester(
@@ -29,17 +31,17 @@ fun OnboardingScreen1(
             navController.navigate("show_qr")
         },
         onDenied = { /* Handled by Snackbar/Dialog in PermissionRequester */ },
-        explanationTitle = UiTranslations.getString("onboarding_perm_title", selectedLanguage),
-        explanationMessage = UiTranslations.getString("onboarding_perm_desc", selectedLanguage),
+        explanationTitle = UiTranslations.getString(context, "onboarding_perm_title", selectedLanguage),
+        explanationMessage = UiTranslations.getString(context, "onboarding_perm_desc", selectedLanguage),
         trigger = triggerPermissions,
         onTriggerReset = { triggerPermissions = false }
     )
 
     OnboardingBase(
-        title = UiTranslations.getString("onboarding_title_0", selectedLanguage),
-        description = UiTranslations.getString("onboarding_desc_0", selectedLanguage),
+        title = UiTranslations.getString(context, "onboarding_title_0", selectedLanguage),
+        description = UiTranslations.getString(context, "onboarding_desc_0", selectedLanguage),
         icon = Icons.Default.WifiOff,
-        buttonText = UiTranslations.getString("onboarding_btn_0", selectedLanguage),
+        buttonText = UiTranslations.getString(context, "onboarding_btn_0", selectedLanguage),
         pageIndex = 0,
         selectedLanguage = selectedLanguage,
         onLanguageChange = onLanguageChange,
@@ -57,7 +59,7 @@ fun OnboardingScreen1(
                 shape = RoundedCornerShape(28.dp)
             ) {
                 Text(
-                    text = UiTranslations.getString("onboarding_link_device", selectedLanguage),
+                    text = UiTranslations.getString(context, "onboarding_link_device", selectedLanguage),
                     fontSize = 16.sp
                 )
             }

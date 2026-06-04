@@ -11,9 +11,12 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
+import kotlinx.coroutines.delay
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import upch.mluque.final_project.utils.UiTranslations
+import upch.mluque.final_project.ui.navigation.Routes
 
 private data class QrData(
     val ip: String,
@@ -23,21 +26,38 @@ private data class QrData(
 )
 
 @Composable
-fun ScanQrScreen(navController: NavController) {
+fun ScanQrScreen(navController: NavController, language: String = "Español") {
     val context = LocalContext.current
     val scanner = remember { GmsBarcodeScanning.getClient(context as Activity) }
     var scannedData by remember { mutableStateOf<String?>(null) }
     var showError by remember { mutableStateOf(false) }
+    var showTimeoutDialog by remember { mutableStateOf(false) }
+    var isScannerActive by remember { mutableStateOf(true) }
+
+    // Timer logic
+    LaunchedEffect(Unit) {
+        delay(45000L) // 45 seconds
+        if (scannedData == null) {
+            isScannerActive = false
+            showTimeoutDialog = true
+        }
+    }
 
     // Trigger scanner automatically when entering the screen
-    LaunchedEffect(Unit) {
-        scanner.startScan()
-            .addOnSuccessListener { barcode: Barcode ->
-                scannedData = barcode.rawValue
-            }
-            .addOnFailureListener { 
-                showError = true
-            }
+    LaunchedEffect(isScannerActive) {
+        if (isScannerActive) {
+            scanner.startScan()
+                .addOnSuccessListener { barcode: Barcode ->
+                    scannedData = barcode.rawValue
+                }
+                .addOnFailureListener {
+                    showError = true
+                }
+                .addOnCanceledListener {
+                    // This handles when the user cancels the Google scanner overlay
+                    navController.popBackStack()
+                }
+        }
     }
 
     Scaffold { padding ->
@@ -47,24 +67,51 @@ fun ScanQrScreen(navController: NavController) {
                 .padding(padding),
             contentAlignment = Alignment.Center
         ) {
-            if (scannedData == null && !showError) {
+            if (scannedData == null && !showError && !showTimeoutDialog) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     CircularProgressIndicator()
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("Abriendo escáner de Google...")
+                    Text(UiTranslations.getString(context, "scanner_opening", language))
                 }
             }
             
             if (showError) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Error al abrir el escáner")
+                    Text(UiTranslations.getString(context, "scanner_error", language))
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(onClick = { navController.popBackStack() }) {
-                        Text("Regresar")
+                        Text(UiTranslations.getString(context, "btn_back", language))
                     }
                 }
             }
         }
+    }
+
+    if (showTimeoutDialog) {
+        AlertDialog(
+            onDismissRequest = { 
+                showTimeoutDialog = false
+                navController.popBackStack()
+            },
+            title = { Text(UiTranslations.getString(context, "scanner_timeout_title", language)) },
+            text = { Text(UiTranslations.getString(context, "scanner_timeout_desc", language)) },
+            confirmButton = {
+                Button(onClick = {
+                    showTimeoutDialog = false
+                    isScannerActive = true
+                }) {
+                    Text(UiTranslations.getString(context, "btn_retry", language))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showTimeoutDialog = false
+                    navController.popBackStack()
+                }) {
+                    Text(UiTranslations.getString(context, "btn_cancel", language))
+                }
+            }
+        )
     }
 
     if (scannedData != null) {

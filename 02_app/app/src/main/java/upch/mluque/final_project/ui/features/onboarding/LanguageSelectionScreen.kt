@@ -12,10 +12,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import upch.mluque.final_project.ui.MainViewModel
+import upch.mluque.final_project.utils.UiTranslations
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,10 +28,13 @@ fun LanguageSelectionScreen(
     val settings by viewModel.appSettings.collectAsState()
     val languages = listOf("Español", "Quechua", "Inglés", "Portugués")
     
+    val context = LocalContext.current
     var selectedLanguage by remember(settings) { mutableStateOf(settings?.language ?: "Español") }
+    val currentLanguage = settings?.language ?: "Español"
+    
     var showExitDialog by remember { mutableStateOf(false) }
 
-    val hasChanges = selectedLanguage != (settings?.language ?: "Español")
+    val hasChanges = selectedLanguage != currentLanguage
 
     BackHandler(enabled = hasChanges) {
         showExitDialog = true
@@ -38,12 +43,12 @@ fun LanguageSelectionScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Idioma", fontWeight = FontWeight.Bold) },
+                title = { Text(UiTranslations.getString(context, "profile_language", currentLanguage), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = {
                         if (hasChanges) showExitDialog = true else onBack()
                     }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Atrás")
+                        Icon(Icons.Default.ArrowBack, contentDescription = UiTranslations.getString(context, "btn_back", currentLanguage))
                     }
                 }
             )
@@ -96,7 +101,7 @@ fun LanguageSelectionScreen(
                         .padding(24.dp)
                         .height(56.dp)
                 ) {
-                    Text("GUARDAR CAMBIOS", fontWeight = FontWeight.Bold)
+                    Text(UiTranslations.getString(context, "profile_save_changes", currentLanguage), fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -104,19 +109,19 @@ fun LanguageSelectionScreen(
         if (showExitDialog) {
             AlertDialog(
                 onDismissRequest = { showExitDialog = false },
-                title = { Text("Cambios sin guardar") },
-                text = { Text("Tienes cambios sin guardar. ¿Deseas salir de todas formas o guardar primero?") },
+                title = { Text(UiTranslations.getString(context, "exit_unsaved_title", currentLanguage)) },
+                text = { Text(UiTranslations.getString(context, "exit_unsaved_desc", currentLanguage)) },
                 confirmButton = {
                     TextButton(onClick = {
                         viewModel.saveLanguage(selectedLanguage)
                         onBack()
                     }) {
-                        Text("GUARDAR")
+                        Text(UiTranslations.getString(context, "btn_save", currentLanguage))
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = onBack) {
-                        Text("SALIR SIN GUARDAR")
+                        Text(UiTranslations.getString(context, "btn_exit_without_save", currentLanguage))
                     }
                 }
             )

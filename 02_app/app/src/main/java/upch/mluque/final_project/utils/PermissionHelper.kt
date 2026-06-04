@@ -11,6 +11,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
+import upch.mluque.final_project.utils.UiTranslations
 
 @Composable
 fun PermissionRequester(
@@ -20,7 +21,8 @@ fun PermissionRequester(
     explanationTitle: String,
     explanationMessage: String,
     trigger: Boolean,
-    onTriggerReset: () -> Unit
+    onTriggerReset: () -> Unit,
+    language: String = "Español"
 ) {
     val context = LocalContext.current
     var showExplanation by remember { mutableStateOf(false) }
@@ -57,7 +59,7 @@ fun PermissionRequester(
                     showExplanation = false
                     launcher.launch(permissions.toTypedArray())
                 }) {
-                    Text("Conceder")
+                    Text(UiTranslations.getString(context, "perm_grant", language))
                 }
             },
             dismissButton = {
@@ -65,7 +67,7 @@ fun PermissionRequester(
                     showExplanation = false
                     onTriggerReset()
                 }) {
-                    Text("Cancelar")
+                    Text(UiTranslations.getString(context, "btn_cancel", language))
                 }
             }
         )
@@ -76,8 +78,8 @@ fun PermissionRequester(
         // Para simplificar esta UI, usamos un AlertDialog informativo si se deniegan.
         AlertDialog(
             onDismissRequest = { showSettingsSnackbar = false },
-            title = { Text("Permisos necesarios") },
-            text = { Text("Algunos permisos son necesarios para la sincronización. Por favor, actívalos en los ajustes.") },
+            title = { Text(UiTranslations.getString(context, "perm_settings_title", language)) },
+            text = { Text(UiTranslations.getString(context, "perm_settings_desc", language)) },
             confirmButton = {
                 Button(onClick = {
                     showSettingsSnackbar = false
@@ -86,12 +88,12 @@ fun PermissionRequester(
                     }
                     context.startActivity(intent)
                 }) {
-                    Text("Abrir Ajustes")
+                    Text(UiTranslations.getString(context, "perm_open_settings", language))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showSettingsSnackbar = false }) {
-                    Text("Cerrar")
+                    Text(UiTranslations.getString(context, "btn_close", language))
                 }
             }
         )

@@ -18,6 +18,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -47,6 +48,7 @@ fun ProfileScreen(
     val role by syncViewModel.role.collectAsState()
     val isConnected by syncViewModel.isConnected.collectAsState()
     val remoteDeviceName by syncViewModel.remoteDeviceName.collectAsState()
+    val context = LocalContext.current
     
     var showVoiceSpeedModal by remember { mutableStateOf(false) }
     var triggerPermissions by remember { mutableStateOf(false) }
@@ -59,10 +61,11 @@ fun ProfileScreen(
             navController.navigate("scan_qr")
         },
         onDenied = { },
-        explanationTitle = "Permisos necesarios",
-        explanationMessage = "Para vincular un dispositivo necesitamos acceso a la cámara y a las funciones de red.",
+        explanationTitle = UiTranslations.getString(context, "perm_required_title", language),
+        explanationMessage = UiTranslations.getString(context, "perm_required_desc", language),
         trigger = triggerPermissions,
-        onTriggerReset = { triggerPermissions = false }
+        onTriggerReset = { triggerPermissions = false },
+        language = language
     )
 
     Scaffold(
@@ -126,7 +129,7 @@ fun ProfileScreen(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = if (isConnected) UiTranslations.getString("profile_online", language) else UiTranslations.getString("profile_offline", language),
+                            text = if (isConnected) UiTranslations.getString(context, "profile_online", language) else UiTranslations.getString(context, "profile_offline", language),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = if (isConnected) Color(0xFF2E7D32) else Color.Red
@@ -151,8 +154,8 @@ fun ProfileScreen(
         if (showLogoutDialog) {
             AlertDialog(
                 onDismissRequest = { showLogoutDialog = false },
-                title = { Text(UiTranslations.getString("profile_logout_confirm_title", language)) },
-                text = { Text(UiTranslations.getString("profile_logout_confirm_desc", language)) },
+                title = { Text(UiTranslations.getString(context, "profile_logout_confirm_title", language)) },
+                text = { Text(UiTranslations.getString(context, "profile_logout_confirm_desc", language)) },
                 confirmButton = {
                     TextButton(
                         onClick = {
@@ -165,12 +168,12 @@ fun ProfileScreen(
                         },
                         colors = ButtonDefaults.textButtonColors(contentColor = Color.Red)
                     ) {
-                        Text(UiTranslations.getString("profile_logout", language))
+                        Text(UiTranslations.getString(context, "profile_logout", language))
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showLogoutDialog = false }) {
-                        Text(UiTranslations.getString("btn_cancel", language))
+                        Text(UiTranslations.getString(context, "btn_cancel", language))
                     }
                 }
             )
@@ -274,8 +277,9 @@ fun LandscapeProfileContent(
 
 @Composable
 fun ProfileTitle(language: String) {
+    val context = LocalContext.current
     Text(
-        text = UiTranslations.getString("profile_title", language),
+        text = UiTranslations.getString(context, "profile_title", language),
         fontSize = 28.sp,
         fontWeight = FontWeight.Bold,
         color = MaterialTheme.colorScheme.onBackground
@@ -284,6 +288,7 @@ fun ProfileTitle(language: String) {
 
 @Composable
 fun ProfileHeaderCard(settings: upch.mluque.final_project.data.local.AppSettings?, language: String, onNavigateToEdit: () -> Unit) {
+    val context = LocalContext.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -336,7 +341,7 @@ fun ProfileHeaderCard(settings: upch.mluque.final_project.data.local.AppSettings
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = settings?.businessCategory ?: "",
+                        text = UiTranslations.translateService(settings?.businessCategory ?: "", language, context),
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -353,7 +358,7 @@ fun ProfileHeaderCard(settings: upch.mluque.final_project.data.local.AppSettings
                 shape = RoundedCornerShape(18.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp)
             ) {
-                Text(UiTranslations.getString("profile_edit", language), fontSize = 14.sp)
+                Text(UiTranslations.getString(context, "profile_edit", language), fontSize = 14.sp)
             }
         }
     }
@@ -371,7 +376,8 @@ fun SettingsSection(
     onLogoutClick: () -> Unit,
     navController: NavController
 ) {
-    SectionTitle(UiTranslations.getString("profile_settings_title", language))
+    val context = LocalContext.current
+    SectionTitle(UiTranslations.getString(context, "profile_settings_title", language))
     
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -382,14 +388,14 @@ fun SettingsSection(
         Column {
             SettingsItem(
                 icon = Icons.Default.Language,
-                title = UiTranslations.getString("profile_language", language),
+                title = UiTranslations.getString(context, "profile_language", language),
                 value = settings?.language ?: "",
                 onClick = onNavigateToLanguage
             )
             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
             SettingsItem(
                 icon = Icons.Default.VolumeUp,
-                title = UiTranslations.getString("profile_voice_speed", language),
+                title = UiTranslations.getString(context, "profile_voice_speed", language),
                 value = "x${settings?.voiceSpeed ?: 1.0f}",
                 onClick = onVoiceSpeedClick
             )
@@ -398,20 +404,20 @@ fun SettingsSection(
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
                 SettingsItem(
                     icon = Icons.Default.QrCodeScanner,
-                    title = UiTranslations.getString("profile_link_device", language),
+                    title = UiTranslations.getString(context, "profile_link_device", language),
                     onClick = onLinkDeviceClick
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
                 SettingsItem(
                     icon = Icons.Default.Devices,
-                    title = if (remoteDeviceName != null) "${UiTranslations.getString("profile_linked_devices", language)} (1)" else UiTranslations.getString("profile_linked_devices", language),
+                    title = if (remoteDeviceName != null) "${UiTranslations.getString(context, "profile_linked_devices", language)} (1)" else UiTranslations.getString(context, "profile_linked_devices", language),
                     onClick = { navController.navigate("linked_devices") }
                 )
             } else if (role == "SERVER") {
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
                 SettingsItem(
                     icon = Icons.Default.ExitToApp,
-                    title = UiTranslations.getString("profile_logout", language),
+                    title = UiTranslations.getString(context, "profile_logout", language),
                     titleColor = Color.Red,
                     onClick = onLogoutClick
                 )
@@ -422,7 +428,8 @@ fun SettingsSection(
 
 @Composable
 fun InfoSection(language: String, onNavigateToHelp: () -> Unit, onNavigateToPrivacy: () -> Unit) {
-    SectionTitle(UiTranslations.getString("profile_info_title", language))
+    val context = LocalContext.current
+    SectionTitle(UiTranslations.getString(context, "profile_info_title", language))
     
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -433,13 +440,13 @@ fun InfoSection(language: String, onNavigateToHelp: () -> Unit, onNavigateToPriv
         Column {
             SettingsItem(
                 icon = Icons.Default.HelpOutline,
-                title = UiTranslations.getString("profile_help", language),
+                title = UiTranslations.getString(context, "profile_help", language),
                 onClick = onNavigateToHelp
             )
             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
             SettingsItem(
                 icon = Icons.Default.Security,
-                title = UiTranslations.getString("profile_privacy", language),
+                title = UiTranslations.getString(context, "profile_privacy", language),
                 onClick = onNavigateToPrivacy
             )
         }
@@ -533,9 +540,10 @@ fun VoiceSpeedModal(
     onDismiss: () -> Unit,
     onSelectSpeed: (Float) -> Unit
 ) {
+    val context = LocalContext.current
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(UiTranslations.getString("profile_voice_speed", language)) },
+        title = { Text(UiTranslations.getString(context, "profile_voice_speed", language)) },
         text = {
             Column(
                 modifier = Modifier
@@ -566,7 +574,7 @@ fun VoiceSpeedModal(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text(UiTranslations.getString("btn_close", language))
+                Text(UiTranslations.getString(context, "btn_close", language))
             }
         }
     )
