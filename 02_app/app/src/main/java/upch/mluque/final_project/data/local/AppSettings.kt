@@ -8,6 +8,8 @@ import kotlinx.serialization.Serializable
 @Entity(tableName = "app_settings")
 data class AppSettings(
     @PrimaryKey val id: Int = 1,
+    val deviceId: String = "",
+    val hardwareDeviceId: String = "",
     val language: String = "Español",
     val businessName: String = "",
     val businessCategory: String = "",
@@ -27,6 +29,8 @@ data class AppSettings(
         other as AppSettings
 
         if (id != other.id) return false
+        if (deviceId != other.deviceId) return false
+        if (hardwareDeviceId != other.hardwareDeviceId) return false
         if (language != other.language) return false
         if (businessName != other.businessName) return false
         if (businessCategory != other.businessCategory) return false
@@ -47,6 +51,8 @@ data class AppSettings(
 
     override fun hashCode(): Int {
         var result = id
+        result = 31 * result + deviceId.hashCode()
+        result = 31 * result + hardwareDeviceId.hashCode()
         result = 31 * result + language.hashCode()
         result = 31 * result + businessName.hashCode()
         result = 31 * result + businessCategory.hashCode()

@@ -4,6 +4,7 @@ import android.app.Application
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.provider.Settings
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -49,18 +50,44 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         loadCountryFeatures()
 
         viewModelScope.launch {
-            if (repository.getSettingsOnce() == null) {
+            val androidId = Settings.Secure.getString(
+                application.contentResolver,
+                Settings.Secure.ANDROID_ID
+            ) ?: "unknown"
+            
+            val currentSettings = repository.getSettingsOnce()
+            if (currentSettings == null) {
                 repository.saveSettings(AppSettings(
+                    deviceId = androidId,
+                    hardwareDeviceId = androidId,
                     entrepreneurTips = defaultTips,
                     mapSummary = defaultSummaries
                 ))
             } else {
-                val current = repository.getSettingsOnce()!!
-                if (current.entrepreneurTips.isEmpty()) {
-                    repository.saveSettings(current.copy(
+                var updated = currentSettings
+                var changed = false
+                
+                if (currentSettings.hardwareDeviceId.isEmpty()) {
+                    updated = updated.copy(hardwareDeviceId = androidId)
+                    changed = true
+                }
+                
+                // Si el deviceId está vacío (por ser nuevo campo) y no es servidor
+                if (currentSettings.deviceId.isEmpty()) {
+                    updated = updated.copy(deviceId = androidId)
+                    changed = true
+                }
+
+                if (currentSettings.entrepreneurTips.isEmpty()) {
+                    updated = updated.copy(
                         entrepreneurTips = defaultTips,
                         mapSummary = defaultSummaries
-                    ))
+                    )
+                    changed = true
+                }
+                
+                if (changed) {
+                    repository.saveSettings(updated)
                 }
             }
         }
@@ -82,7 +109,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun addVisit(nationality: String, flag: String, priceType: String, priceValue: String, priceCurrency: String, services: String) {
         viewModelScope.launch {
+            val currentSettings = repository.getSettingsOnce()
             val visit = Visit(
+                deviceId = currentSettings?.deviceId ?: "",
                 nationality = nationality,
                 nationalityFlag = flag,
                 priceType = priceType,

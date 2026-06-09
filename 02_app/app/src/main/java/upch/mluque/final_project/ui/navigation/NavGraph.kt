@@ -225,49 +225,18 @@ fun MainNavigation(
                     }
                     composable(Routes.ONBOARDING) {
                         val onboardingPagerState = rememberPagerState(pageCount = { 3 })
-                        HorizontalPager(
-                            state = onboardingPagerState,
-                            modifier = Modifier.fillMaxSize(),
-                            userScrollEnabled = !isLandscape
-                        ) { page ->
-                            when (page) {
-                                0 -> OnboardingScreen1(
-                                    navController = navController,
-                                    selectedLanguage = selectedLanguage,
-                                    onLanguageChange = { 
-                                        selectedLanguage = it
-                                        viewModel.saveLanguage(it)
-                                    },
-                                    onNext = {
-                                        coroutineScope.launch {
-                                            onboardingPagerState.animateScrollToPage(1)
-                                        }
-                                    }
-                                )
-                                1 -> OnboardingScreen2(
-                                    selectedLanguage = selectedLanguage,
-                                    onLanguageChange = { 
-                                        selectedLanguage = it
-                                        viewModel.saveLanguage(it)
-                                    },
-                                    onNext = {
-                                        coroutineScope.launch {
-                                            onboardingPagerState.animateScrollToPage(2)
-                                        }
-                                    }
-                                )
-                                2 -> OnboardingScreen3(
-                                    selectedLanguage = selectedLanguage,
-                                    onLanguageChange = { 
-                                        selectedLanguage = it
-                                        viewModel.saveLanguage(it)
-                                    },
-                                    onNext = {
-                                        navController.navigate(Routes.PROFILE_SETUP)
-                                    }
-                                )
+                        OnboardingContainer(
+                            navController = navController,
+                            pagerState = onboardingPagerState,
+                            selectedLanguage = selectedLanguage,
+                            onLanguageChange = {
+                                selectedLanguage = it
+                                viewModel.saveLanguage(it)
+                            },
+                            onNext = {
+                                navController.navigate(Routes.PROFILE_SETUP)
                             }
-                        }
+                        )
                     }
                     composable(Routes.PROFILE_SETUP) {
                         ProfileSetupScreen(

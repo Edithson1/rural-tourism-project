@@ -204,7 +204,9 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
 
     fun addVisit(nationality: String, flag: String, priceType: String, priceValue: String, priceCurrency: String, services: String) {
         viewModelScope.launch {
+            val currentSettings = repository.getSettingsOnce()
             val visit = Visit(
+                deviceId = currentSettings?.deviceId ?: "",
                 nationality = nationality,
                 nationalityFlag = flag,
                 priceType = priceType,
@@ -260,6 +262,18 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
         _role.value = "SERVER"
         lastRemotePort = port
         saveSyncState()
+
+        // Cambiar ID a modo servidor
+        viewModelScope.launch {
+            val current = repository.getSettingsOnce()
+            if (current != null) {
+                repository.saveSettings(current.copy(
+                    deviceId = "SERVER_${current.hardwareDeviceId}",
+                    lastModified = System.currentTimeMillis()
+                ))
+            }
+        }
+
         syncManager.startServer(port)
         nsdHelper.registerService(port)
         addLog("Servidor iniciado en puerto $port")
@@ -357,6 +371,18 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
         syncManager.stop()
         nsdHelper.stop()
         isFullyLinked = false
+
+        // Restaurar ID original si era servidor
+        viewModelScope.launch {
+            val current = repository.getSettingsOnce()
+            if (current != null && current.deviceId != current.hardwareDeviceId) {
+                repository.saveSettings(current.copy(
+                    deviceId = current.hardwareDeviceId,
+                    lastModified = System.currentTimeMillis()
+                ))
+            }
+        }
+
         resetInternalState()
         saveSyncState()
         addLog("Dispositivo desvinculado")
