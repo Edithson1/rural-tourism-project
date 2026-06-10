@@ -17,7 +17,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -27,8 +26,8 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import androidx.compose.ui.platform.LocalContext
 import upch.mluque.final_project.data.local.Visit
-import upch.mluque.final_project.ui.components.BottomNavigationBar
 import upch.mluque.final_project.ui.theme.Final_projectTheme
+import upch.mluque.final_project.ui.navigation.Routes
 import upch.mluque.final_project.utils.UiTranslations
 import java.util.Calendar
 
@@ -56,7 +55,7 @@ fun HomeScreen(
     val maxCount = chartData.maxOfOrNull { it.second }?.takeIf { it > 0 } ?: 1
 
     val configuration = LocalConfiguration.current
-    val isLandscape = configuration.screenWidthDp > 600
+    val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp && configuration.screenWidthDp > 600
 
     Scaffold(
         floatingActionButton = {
@@ -66,7 +65,10 @@ fun HomeScreen(
                 contentColor = MaterialTheme.colorScheme.onPrimary,
                 shape = CircleShape
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add")
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = UiTranslations.getString(context, "visits_add", language)
+                )
             }
         },
         containerColor = Color.Transparent
@@ -76,14 +78,16 @@ fun HomeScreen(
                 paddingValues, businessName, selectedService, entrepreneurTips,
                 profilePicture, visits, selectedView, chartData, maxCount, language,
                 onViewChange = { selectedView = it },
-                onNavigateToTip = onNavigateToTip
+                onNavigateToTip = onNavigateToTip,
+                onNavigate = onNavigate
             )
         } else {
             PortraitHomeContent(
                 paddingValues, businessName, selectedService, entrepreneurTips,
                 profilePicture, visits, selectedView, chartData, maxCount, language,
                 onViewChange = { selectedView = it },
-                onNavigateToTip = onNavigateToTip
+                onNavigateToTip = onNavigateToTip,
+                onNavigate = onNavigate
             )
         }
     }
@@ -102,7 +106,8 @@ fun PortraitHomeContent(
     maxCount: Int,
     language: String,
     onViewChange: (TimeView) -> Unit,
-    onNavigateToTip: () -> Unit
+    onNavigateToTip: () -> Unit,
+    onNavigate: (String) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -119,7 +124,7 @@ fun PortraitHomeContent(
         Spacer(modifier = Modifier.height(24.dp))
         TipCard(entrepreneurTips, language, onNavigateToTip)
         Spacer(modifier = Modifier.height(24.dp))
-        RecentVisitsCard(visits, language)
+        RecentVisitsCard(visits, language, onNavigate)
         Spacer(modifier = Modifier.height(100.dp))
     }
 }
@@ -137,7 +142,8 @@ fun LandscapeHomeContent(
     maxCount: Int,
     language: String,
     onViewChange: (TimeView) -> Unit,
-    onNavigateToTip: () -> Unit
+    onNavigateToTip: () -> Unit,
+    onNavigate: (String) -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -170,7 +176,7 @@ fun LandscapeHomeContent(
         ) {
             TipCard(entrepreneurTips, language, onNavigateToTip)
             Spacer(modifier = Modifier.height(24.dp))
-            RecentVisitsCard(visits, language)
+            RecentVisitsCard(visits, language, onNavigate)
             Spacer(modifier = Modifier.height(100.dp))
         }
     }
@@ -336,7 +342,7 @@ fun TipCard(entrepreneurTips: String, language: String, onNavigateToTip: () -> U
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = if (entrepreneurTips.isEmpty()) "Optimiza tus perfiles sociales para atraer más..." else entrepreneurTips,
+                    text = entrepreneurTips.ifEmpty { "Optimiza tus perfiles sociales para atraer más..." },
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
@@ -361,16 +367,29 @@ fun TipCard(entrepreneurTips: String, language: String, onNavigateToTip: () -> U
 }
 
 @Composable
-fun RecentVisitsCard(visits: List<Visit>, language: String) {
+fun RecentVisitsCard(visits: List<Visit>, language: String, onNavigate: (String) -> Unit) {
     val context = LocalContext.current
     Column {
-        Text(
-            text = UiTranslations.getString(context, "home_recent_visits", language),
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 12.dp)
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = UiTranslations.getString(context, "home_recent_visits", language),
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            
+            Text(
+                text = UiTranslations.getString(context, "profile_edit", language).replace("Editar", "Ver todo"), // Fallback if no "Ver todo" key
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.clickable { onNavigate(Routes.VISITS) }
+            )
+        }
 
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -404,6 +423,7 @@ fun RecentVisitsCard(visits: List<Visit>, language: String) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .clickable { onNavigate(Routes.visitDetail(visit.id)) }
                                 .padding(vertical = 12.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
