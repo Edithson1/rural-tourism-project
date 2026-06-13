@@ -28,6 +28,7 @@ import upch.mluque.final_project.ui.features.map.*
 import upch.mluque.final_project.ui.features.sync.*
 import upch.mluque.final_project.ui.features.info.*
 import upch.mluque.final_project.ui.features.splash.*
+import upch.mluque.final_project.ui.features.dashboard.*
 import upch.mluque.final_project.utils.UiTranslations
 
 @Composable
@@ -347,6 +348,16 @@ fun MainNavigation(
                                 syncViewModel.addVisit(nationality, flag, pType, pValue, pCurr, services)
                                 navController.popBackStack()
                             }
+                        )
+                    }
+                    composable(Routes.DASHBOARD) {
+                        val visits by viewModel.allVisits.collectAsState()
+                        val settings by viewModel.appSettings.collectAsState()
+                        val language = settings?.language ?: "Español"
+                        DashboardScreen(
+                            visits = visits,
+                            language = language,
+                            onBack = { navController.popBackStack() }
                         )
                     }
                     composable(Routes.TIP_DETAIL) { TipDetailScreen(viewModel = viewModel) { navController.popBackStack() } }

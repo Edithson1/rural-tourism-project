@@ -182,4 +182,20 @@
     <!-- Exit Dialog -->
     <string name="exit_unsaved_title">Unsaved changes</string>
     <string name="exit_unsaved_desc">You have unsaved changes. Do you want to exit anyway or save first?</string>
+
+    <!-- Dashboard/Insights -->
+    <string name="dashboard_title">Analytics Dashboard</string>
+    <string name="insights_total_visitors">Total Tourists</string>
+    <string name="insights_top_countries">Nationality Ranking</string>
+    <string name="insights_services">Service Distribution</string>
+    <string name="insights_leader_country">Leading Country</string>
+    <string name="insights_star_service">Star Service</string>
+    <string name="insights_tts_description">Listen to insights summary</string>
+    <string name="insights_filter_all">All</string>
+    <string name="insights_filter_month">This month</string>
+    <string name="insights_filter_year">This year</string>
+    <string name="insights_filter_week">Last 7 days</string>
+    <string name="insights_revenue_est">Estimated Revenue</string>
+    <string name="insights_peak_hours">Peak Visiting Hours</string>
+    <string name="insights_visits_density">Visit Density</string>
 </resources>

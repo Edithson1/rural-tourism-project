@@ -48,6 +48,7 @@ fun MainPagerScreen(
                 language = language,
                 onNavigateToTip = { navController.navigate(Routes.TIP_DETAIL) },
                 onNavigateToAdd = { navController.navigate(Routes.ADD_VISIT) },
+                onNavigateToDashboard = { navController.navigate(Routes.DASHBOARD) },
                 onNavigate = { route ->
                     navController.navigate(route) {
                         popUpTo(Routes.MAIN_PAGER) { saveState = true }

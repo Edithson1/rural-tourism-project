@@ -28,6 +28,7 @@ object Routes {
     const val PROFILE_PRIVACY = "profile_privacy"
     const val ADD_VISIT = "add_visit"
     const val TIP_DETAIL = "tip_detail"
+    const val DASHBOARD = "dashboard"
 
     /**
      * Helper to create visit detail route with ID.

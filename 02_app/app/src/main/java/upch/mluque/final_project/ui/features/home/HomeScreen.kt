@@ -43,6 +43,7 @@ fun HomeScreen(
     language: String,
     onNavigateToTip: () -> Unit,
     onNavigateToAdd: () -> Unit,
+    onNavigateToDashboard: () -> Unit,
     onNavigate: (String) -> Unit
 ) {
     var selectedView by remember { mutableStateOf(TimeView.MONTH) }
@@ -79,6 +80,7 @@ fun HomeScreen(
                 profilePicture, visits, selectedView, chartData, maxCount, language,
                 onViewChange = { selectedView = it },
                 onNavigateToTip = onNavigateToTip,
+                onNavigateToDashboard = onNavigateToDashboard,
                 onNavigate = onNavigate
             )
         } else {
@@ -87,6 +89,7 @@ fun HomeScreen(
                 profilePicture, visits, selectedView, chartData, maxCount, language,
                 onViewChange = { selectedView = it },
                 onNavigateToTip = onNavigateToTip,
+                onNavigateToDashboard = onNavigateToDashboard,
                 onNavigate = onNavigate
             )
         }
@@ -107,6 +110,7 @@ fun PortraitHomeContent(
     language: String,
     onViewChange: (TimeView) -> Unit,
     onNavigateToTip: () -> Unit,
+    onNavigateToDashboard: () -> Unit,
     onNavigate: (String) -> Unit
 ) {
     Column(
@@ -120,7 +124,7 @@ fun PortraitHomeContent(
         HomeHeader(businessName, selectedService, profilePicture, language)
         Spacer(modifier = Modifier.height(24.dp))
         TimeViewSelector(selectedView, onViewChange, language)
-        ChartCard(selectedView, chartData, maxCount, language)
+        ChartCard(selectedView, chartData, maxCount, language, onNavigateToDashboard)
         Spacer(modifier = Modifier.height(24.dp))
         TipCard(entrepreneurTips, language, onNavigateToTip)
         Spacer(modifier = Modifier.height(24.dp))
@@ -143,6 +147,7 @@ fun LandscapeHomeContent(
     language: String,
     onViewChange: (TimeView) -> Unit,
     onNavigateToTip: () -> Unit,
+    onNavigateToDashboard: () -> Unit,
     onNavigate: (String) -> Unit
 ) {
     Row(
@@ -161,7 +166,7 @@ fun LandscapeHomeContent(
             HomeHeader(businessName, selectedService, profilePicture, language)
             Spacer(modifier = Modifier.height(24.dp))
             TimeViewSelector(selectedView, onViewChange, language)
-            ChartCard(selectedView, chartData, maxCount, language)
+            ChartCard(selectedView, chartData, maxCount, language, onNavigateToDashboard)
             Spacer(modifier = Modifier.height(24.dp))
         }
         
@@ -257,7 +262,7 @@ fun TimeViewSelector(selectedView: TimeView, onViewChange: (TimeView) -> Unit, l
 }
 
 @Composable
-fun ChartCard(selectedView: TimeView, chartData: List<Pair<String, Int>>, maxCount: Int, language: String) {
+fun ChartCard(selectedView: TimeView, chartData: List<Pair<String, Int>>, maxCount: Int, language: String, onExpand: () -> Unit) {
     val context = LocalContext.current
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -266,17 +271,30 @@ fun ChartCard(selectedView: TimeView, chartData: List<Pair<String, Int>>, maxCou
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
-            Text(
-                text = when(selectedView) {
-                    TimeView.DAY -> UiTranslations.getString(context, "chart_today", language)
-                    TimeView.WEEK -> UiTranslations.getString(context, "chart_week", language)
-                    TimeView.MONTH -> UiTranslations.getString(context, "chart_month", language)
-                    TimeView.YEAR -> UiTranslations.getString(context, "chart_year", language)
-                },
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = when(selectedView) {
+                        TimeView.DAY -> UiTranslations.getString(context, "chart_today", language)
+                        TimeView.WEEK -> UiTranslations.getString(context, "chart_week", language)
+                        TimeView.MONTH -> UiTranslations.getString(context, "chart_month", language)
+                        TimeView.YEAR -> UiTranslations.getString(context, "chart_year", language)
+                    },
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                IconButton(onClick = onExpand) {
+                    Icon(
+                        imageVector = Icons.Default.OpenInFull,
+                        contentDescription = UiTranslations.getString(context, "map_expand", language),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
             Spacer(modifier = Modifier.height(24.dp))
             
             Row(
@@ -598,6 +616,7 @@ fun HomeLandscapePreview() {
             language = "Español",
             onNavigateToTip = {},
             onNavigateToAdd = {},
+            onNavigateToDashboard = {},
             onNavigate = {}
         )
     }

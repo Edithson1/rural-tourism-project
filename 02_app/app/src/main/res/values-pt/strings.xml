@@ -174,5 +174,21 @@
 
     <!-- Exit Dialog -->
     <string name="exit_unsaved_title">Alterações não salvas</string>
-    <string name="exit_unsaved_desc">Você tem alterações não salvas. Deseja sair assim mesmo ou salvar primeiro?</string>
+    <string name="exit_unsaved_desc">Você tem alterações não salvas. Deseja sair assim mismo ou salvar primeiro?</string>
+
+    <!-- Dashboard/Insights -->
+    <string name="dashboard_title">Painel de Analytics</string>
+    <string name="insights_total_visitors">Total de Turistas</string>
+    <string name="insights_top_countries">Ranking de Nacionalidades</string>
+    <string name="insights_services">Distribuição de Serviços</string>
+    <string name="insights_leader_country">País Líder</string>
+    <string name="insights_star_service">Serviço Estrela</string>
+    <string name="insights_tts_description">Ouvir resumo de insights</string>
+    <string name="insights_filter_all">Todos</string>
+    <string name="insights_filter_month">Este mês</string>
+    <string name="insights_filter_year">Este ano</string>
+    <string name="insights_filter_week">Últimos 7 dias</string>
+    <string name="insights_revenue_est">Receita Estimada</string>
+    <string name="insights_peak_hours">Horários de Pico</string>
+    <string name="insights_visits_density">Densidade de Visitas</string>
 </resources>

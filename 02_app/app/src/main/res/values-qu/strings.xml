@@ -182,4 +182,20 @@
     <!-- Exit Dialog -->
     <string name="exit_unsaved_title">Mana waqaychasqa allichaykuna</string>
     <string name="exit_unsaved_desc">Mana waqaychasqa allichaykuna kachkan. ¿Lluqsiyta munanki icha puntata waqaychayta?</string>
+
+    <!-- Dashboard/Insights -->
+    <string name="dashboard_title">Analytics nisqapa qhawana p\'unchaynin</string>
+    <string name="insights_total_visitors">Llapan watukuqkuna</string>
+    <string name="insights_top_countries">Suyu ranking</string>
+    <string name="insights_services">Yanapakuykunapa rakiynin</string>
+    <string name="insights_leader_country">Ñawpaq suyu</string>
+    <string name="insights_star_service">Aswan allin yanapakuy</string>
+    <string name="insights_tts_description">Insights pisichayta uyariy</string>
+    <string name="insights_filter_all">Llapan</string>
+    <string name="insights_filter_month">Kay killa</string>
+    <string name="insights_filter_year">Kay wata</string>
+    <string name="insights_filter_week">Qhipa 7 p\'unchaykuna</string>
+    <string name="insights_revenue_est">Chaninchasqa qullqi yaykusqan</string>
+    <string name="insights_peak_hours">Aswan watukuq horakuna</string>
+    <string name="insights_visits_density">Watukuypa densidadnin</string>
 </resources>
