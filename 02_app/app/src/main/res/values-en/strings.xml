@@ -198,4 +198,31 @@
     <string name="insights_revenue_est">Estimated Revenue</string>
     <string name="insights_peak_hours">Peak Visiting Hours</string>
     <string name="insights_visits_density">Visit Density</string>
+    <!-- Catalog -->
+    <string name="catalog_title">My Product Catalog</string>
+    <string name="catalog_add_product">Add Product</string>
+    <string name="catalog_edit_product">Edit Product</string>
+    <string name="catalog_empty">You have no products in your catalog.</string>
+    <string name="catalog_product_name">Product name</string>
+    <string name="catalog_product_price">Base price</string>
+    <string name="catalog_finish_setup">FINISH AND ENTER</string>
+    <string name="catalog_setup_desc">Set up the products you offer to start recording sales.</string>
+    <string name="product_label">Product</string>
+    <string name="quantity_label">Quantity</string>
+    <string name="discount_label">Discount</string>
+    <string name="subtotal_label">Subtotal</string>
+    <string name="total_label">Total</string>
+    <string name="discount_type_fixed">Fixed Amount (S/)</string>
+    <string name="discount_type_percent">Percentage (%)</string>
+    <string name="catalog_delete_confirm_title">Delete product?</string>
+    <string name="catalog_delete_confirm_desc">Are you sure you want to delete \'%s\'? This action cannot be undone.</string>
+    <string name="catalog_product_currency">Currency</string>
+    <string name="catalog_product_category">Category / Sector</string>
+    <string name="catalog_discount_active">Active discount</string>
+    <string name="catalog_discount_start">Start date</string>
+    <string name="catalog_discount_end">End date</string>
+    <string name="profile_sector_change_title">Change sector?</string>
+    <string name="profile_sector_change_desc">If you change your business category, products not belonging to the new category will be deleted. Do you want to continue?</string>
+    <string name="search_product_hint">Search product...</string>
+    <string name="search_country_hint">Search country...</string>
 </resources>

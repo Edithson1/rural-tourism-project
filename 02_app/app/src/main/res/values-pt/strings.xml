@@ -191,4 +191,31 @@
     <string name="insights_revenue_est">Receita Estimada</string>
     <string name="insights_peak_hours">Horários de Pico</string>
     <string name="insights_visits_density">Densidade de Visitas</string>
+    <!-- Catalog -->
+    <string name="catalog_title">Meu Catálogo de Produtos</string>
+    <string name="catalog_add_product">Adicionar Produto</string>
+    <string name="catalog_edit_product">Editar Produto</string>
+    <string name="catalog_empty">Você não tem produtos em seu catálogo.</string>
+    <string name="catalog_product_name">Nome do produto</string>
+    <string name="catalog_product_price">Preço base</string>
+    <string name="catalog_finish_setup">FINALIZAR E ENTRAR</string>
+    <string name="catalog_setup_desc">Configure os produtos que você oferece para começar a registrar vendas.</string>
+    <string name="product_label">Produto</string>
+    <string name="quantity_label">Quantidade</string>
+    <string name="discount_label">Desconto</string>
+    <string name="subtotal_label">Subtotal</string>
+    <string name="total_label">Total</string>
+    <string name="discount_type_fixed">Valor Fixo (S/)</string>
+    <string name="discount_type_percent">Porcentagem (%)</string>
+    <string name="catalog_delete_confirm_title">Excluir produto?</string>
+    <string name="catalog_delete_confirm_desc">Tem certeza que deseja excluir \'%s\'? Esta ação não pode ser desfeita.</string>
+    <string name="catalog_product_currency">Moeda</string>
+    <string name="catalog_product_category">Categoria / Setor</string>
+    <string name="catalog_discount_active">Desconto ativo</string>
+    <string name="catalog_discount_start">Data de início</string>
+    <string name="catalog_discount_end">Data de término</string>
+    <string name="profile_sector_change_title">Alterar setor?</string>
+    <string name="profile_sector_change_desc">Se você alterar o ramo de negócio, os produtos que não pertencem à nova categoria serão excluídos. Deseja continuar?</string>
+    <string name="search_product_hint">Buscar produto...</string>
+    <string name="search_country_hint">Buscar país...</string>
 </resources>

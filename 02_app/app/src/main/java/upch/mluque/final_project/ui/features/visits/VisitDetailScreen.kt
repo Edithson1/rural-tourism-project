@@ -9,18 +9,20 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.platform.LocalContext
+import upch.mluque.final_project.data.local.DiscountType
 import upch.mluque.final_project.data.local.Visit
 import upch.mluque.final_project.ui.MainViewModel
 import upch.mluque.final_project.utils.UiTranslations
@@ -37,6 +39,7 @@ fun VisitDetailScreen(
     var visit by remember { mutableStateOf<Visit?>(null) }
     val settings by viewModel.appSettings.collectAsState()
     val language = settings?.language ?: "Español"
+    val prefCurrency = settings?.preferredCurrency ?: "S/"
     val context = LocalContext.current
     
     LaunchedEffect(visitId) {
@@ -49,7 +52,7 @@ fun VisitDetailScreen(
                 title = { Text(UiTranslations.getString(context, "visits_detail_title", language)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = null)
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -64,13 +67,13 @@ fun VisitDetailScreen(
                     .padding(24.dp)
                     .verticalScroll(rememberScrollState())
             ) {
-                // Header with icon and name
+                // Header
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
                             .size(64.dp)
                             .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                            .background(MaterialTheme.colorScheme.primaryContainer),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(v.nationalityFlag, fontSize = 32.sp)
@@ -78,54 +81,135 @@ fun VisitDetailScreen(
                     Spacer(modifier = Modifier.width(20.dp))
                     Column {
                         Text(
-                            text = v.nationality,
-                            fontSize = 24.sp,
+                            text = v.nationality, 
+                            fontSize = 24.sp, 
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onBackground
                         )
                         Text(
-                            text = UiTranslations.getString(context, "tourist_label", language),
-                            fontSize = 16.sp,
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                            text = formatDate(v.registrationDate), 
+                            fontSize = 14.sp, 
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                DetailItem(UiTranslations.getString(context, "visits_price", language), v.getFormattedPrice())
-                DetailItem(UiTranslations.getString(context, "visits_services", language), UiTranslations.translateServicesList(v.services, language, context))
-                DetailItem(UiTranslations.getString(context, "visits_date", language), formatDate(v.registrationDate))
+                // Tabla de Productos
+                Text(
+                    text = UiTranslations.getString(context, "product_label", language), 
+                    fontWeight = FontWeight.Bold, 
+                    modifier = Modifier.padding(bottom = 12.dp),
+                    color = MaterialTheme.colorScheme.primary
+                )
                 
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                Divider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
-                
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Status section
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = if (v.isSent) Icons.Default.CheckCircle else Icons.Default.Schedule,
-                        contentDescription = null,
-                        tint = if (v.isSent) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f),
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = if (v.isSent) UiTranslations.getString(context, "sent_record", language) else UiTranslations.getString(context, "pending_record", language),
-                        fontWeight = FontWeight.Medium,
-                        color = if (v.isSent) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-                    )
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        v.selectedProducts.forEach { item ->
+                            Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                                Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
+                                    Text(
+                                        "${item.quantity} x ${item.name}", 
+                                        modifier = Modifier.weight(1f),
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    Text(
+                                        "${item.currency} ${String.format("%.2f", item.priceAtSale * item.quantity)}",
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                if (item.hasDiscount) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Default.LocalOffer, null, modifier = Modifier.size(10.dp), tint = Color(0xFFE53935))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = "${item.currency} ${String.format("%.2f", item.originalPrice * item.quantity)}",
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                            fontSize = 11.sp,
+                                            textDecoration = TextDecoration.LineThrough
+                                        )
+                                    }
+                                }
+                            }
+                            if (item != v.selectedProducts.last()) {
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                            }
+                        }
+                    }
                 }
+
+                Spacer(modifier = Modifier.height(24.dp))
                 
-                if (v.isSent && v.sentDate != null) {
-                    Text(
-                        text = "${UiTranslations.getString(context, "sent_on", language)}: ${formatDate(v.sentDate)}",
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
-                        modifier = Modifier.padding(start = 28.dp, top = 4.dp)
-                    )
+                // Totales
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
+                        Text(UiTranslations.getString(context, "subtotal_label", language), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("$prefCurrency ${String.format("%.2f", v.subtotal)}", color = MaterialTheme.colorScheme.onSurface)
+                    }
+                    Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
+                        val discSuffix = if (v.discountType == DiscountType.PERCENTAGE) " (${v.discountValue}%)" else ""
+                        Text(
+                            "${UiTranslations.getString(context, "discount_label", language)}$discSuffix",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        val discAmount = if (v.discountType == DiscountType.PERCENTAGE) (v.subtotal * v.discountValue / 100.0) else v.discountValue
+                        Text("- $prefCurrency ${String.format("%.2f", discAmount)}", color = Color(0xFFD32F2F))
+                    }
+                    
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
+                    
+                    Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            UiTranslations.getString(context, "total_label", language), 
+                            fontWeight = FontWeight.Bold, 
+                            fontSize = 20.sp,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        Text(
+                            "$prefCurrency ${String.format("%.2f", v.totalAmount)}",
+                            fontWeight = FontWeight.Bold, 
+                            fontSize = 24.sp, 
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(48.dp))
+
+                // Status Card
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    color = (if (v.isSent) Color(0xFF4CAF50) else Color(0xFFFF9800)).copy(alpha = 0.1f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, (if (v.isSent) Color(0xFF4CAF50) else Color(0xFFFF9800)).copy(alpha = 0.3f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = if (v.isSent) Icons.Default.CheckCircle else Icons.Default.Schedule,
+                            contentDescription = null,
+                            tint = if (v.isSent) Color(0xFF2E7D32) else Color(0xFFE65100),
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = if (v.isSent) UiTranslations.getString(context, "sent_record", language) else UiTranslations.getString(context, "pending_record", language),
+                            color = if (v.isSent) Color(0xFF2E7D32) else Color(0xFFE65100),
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
             }
         } ?: run {
@@ -136,25 +220,7 @@ fun VisitDetailScreen(
     }
 }
 
-@Composable
-fun DetailItem(label: String, value: String) {
-    Column(modifier = Modifier.padding(bottom = 20.dp)) {
-        Text(
-            text = label,
-            fontSize = 14.sp,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
-        )
-        Text(
-            text = value,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-    }
-}
-
-fun formatDate(timestamp: Long): String {
+private fun formatDate(timestamp: Long): String {
     val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
     return sdf.format(Date(timestamp))
 }
-

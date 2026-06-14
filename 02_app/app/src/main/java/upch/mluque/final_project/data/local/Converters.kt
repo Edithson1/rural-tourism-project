@@ -18,4 +18,18 @@ class Converters {
             emptyMap()
         }
     }
+
+    @TypeConverter
+    fun fromSelectedProductList(value: List<SelectedProduct>): String {
+        return Json.encodeToString(value)
+    }
+
+    @TypeConverter
+    fun toSelectedProductList(value: String): List<SelectedProduct> {
+        return try {
+            Json.decodeFromString(value)
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
 }

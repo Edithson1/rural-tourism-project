@@ -3,7 +3,6 @@
 import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,7 +13,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -25,92 +23,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
 import upch.mluque.final_project.data.local.Visit
 import upch.mluque.final_project.ui.MainViewModel
-import upch.mluque.final_project.ui.components.BottomNavigationBar
-import upch.mluque.final_project.ui.theme.Final_projectTheme
 import upch.mluque.final_project.utils.UiTranslations
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
-
-@Preview(showBackground = true)
-@Composable
-fun VisitsPreview() {
-    Final_projectTheme {
-        // Mock UI for preview since we can't easily mock MainViewModel here
-        // In a real app we might use a different composable for the list content
-        Scaffold(
-            bottomBar = {
-                BottomNavigationBar(currentRoute = "visits", onNavigate = {})
-            },
-            floatingActionButton = {
-                FloatingActionButton(
-                    onClick = {},
-                    containerColor = MaterialTheme.colorScheme.secondary,
-                    contentColor = MaterialTheme.colorScheme.onSecondary,
-                    shape = CircleShape
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add")
-                }
-            }
-        ) { paddingValues ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(horizontal = 24.dp)
-            ) {
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "Tus Registros",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                VisitItem(
-                    visit = Visit(
-                        id = 1,
-                        nationality = "Francia",
-                        nationalityFlag = "🇫🇷",
-                        priceType = "Rango",
-                        priceValue = "51-100",
-                        priceCurrency = "S/",
-                        services = "Hospedaje",
-                        registrationDate = System.currentTimeMillis() - 86400000,
-                        isSent = true,
-                        sentDate = System.currentTimeMillis()
-                    ),
-                    language = "Español",
-                    onClick = {}
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                VisitItem(
-                    visit = Visit(
-                        id = 2,
-                        nationality = "Estados Unidos",
-                        nationalityFlag = "🇺🇸",
-                        priceType = "Rango",
-                        priceValue = "201-500",
-                        priceCurrency = "S/",
-                        services = "Alimentación",
-                        registrationDate = System.currentTimeMillis() - 172800000,
-                        isSent = false,
-                        sentDate = null
-                    ),
-                    language = "Español",
-                    onClick = {}
-                )
-            }
-        }
-    }
-}
 
 @Composable
 fun VisitsScreen(
@@ -139,7 +60,7 @@ fun VisitsScreen(
                 contentColor = MaterialTheme.colorScheme.onPrimary,
                 shape = CircleShape
             ) {
-                Icon(Icons.Default.Add, contentDescription = UiTranslations.getString("visits_add", language))
+                Icon(Icons.Default.Add, contentDescription = UiTranslations.getString(context, "visits_add", language))
             }
         },
         containerColor = Color.Transparent
@@ -299,7 +220,6 @@ fun VisitItem(visit: Visit, language: String, onClick: () -> Unit) {
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Icon Placeholder (Gray circle with Person icon)
             Box(
                 modifier = Modifier
                     .size(48.dp)
@@ -307,11 +227,7 @@ fun VisitItem(visit: Visit, language: String, onClick: () -> Unit) {
                     .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                )
+                Text(visit.nationalityFlag, fontSize = 24.sp)
             }
 
             Spacer(modifier = Modifier.width(16.dp))
@@ -324,23 +240,23 @@ fun VisitItem(visit: Visit, language: String, onClick: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = getTimeAgo(visit.registrationDate, language, context),
+                    text = "S/ ${String.format("%.2f", visit.totalAmount)}",
                     fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
                 )
             }
 
-            // Status Icon
             if (visit.isSent) {
                 Icon(
                     imageVector = Icons.Default.CheckCircle,
                     contentDescription = "Enviado",
-                    tint = Color(0xFF4CAF50), // Green for success
+                    tint = Color(0xFF4CAF50),
                     modifier = Modifier.size(24.dp)
                 )
             } else {
                 Icon(
-                    imageVector = Icons.Default.Schedule, // Clock icon
+                    imageVector = Icons.Default.Schedule,
                     contentDescription = "Pendiente",
                     tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
                     modifier = Modifier.size(24.dp)
@@ -367,4 +283,3 @@ fun getTimeAgo(timestamp: Long, language: String, context: Context): String {
         else -> SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(timestamp))
     }
 }
-

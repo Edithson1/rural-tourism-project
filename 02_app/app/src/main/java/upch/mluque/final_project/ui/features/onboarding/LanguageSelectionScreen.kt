@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import upch.mluque.final_project.ui.MainViewModel
+import upch.mluque.final_project.ui.components.UnsavedChangesDialog
 import upch.mluque.final_project.utils.UiTranslations
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -107,23 +108,14 @@ fun LanguageSelectionScreen(
         }
 
         if (showExitDialog) {
-            AlertDialog(
-                onDismissRequest = { showExitDialog = false },
-                title = { Text(UiTranslations.getString(context, "exit_unsaved_title", currentLanguage)) },
-                text = { Text(UiTranslations.getString(context, "exit_unsaved_desc", currentLanguage)) },
-                confirmButton = {
-                    TextButton(onClick = {
-                        viewModel.saveLanguage(selectedLanguage)
-                        onBack()
-                    }) {
-                        Text(UiTranslations.getString(context, "btn_save", currentLanguage))
-                    }
+            UnsavedChangesDialog(
+                language = currentLanguage,
+                onSave = {
+                    viewModel.saveLanguage(selectedLanguage)
+                    onBack()
                 },
-                dismissButton = {
-                    TextButton(onClick = onBack) {
-                        Text(UiTranslations.getString(context, "btn_exit_without_save", currentLanguage))
-                    }
-                }
+                onExitWithoutSaving = onBack,
+                onDismiss = { showExitDialog = false }
             )
         }
     }

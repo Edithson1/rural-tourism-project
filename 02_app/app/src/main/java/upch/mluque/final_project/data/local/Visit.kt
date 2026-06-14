@@ -11,20 +11,12 @@ data class Visit(
     val deviceId: String = "",
     val nationality: String,
     val nationalityFlag: String,
-    val priceType: String,
-    val priceValue: String,
-    val priceCurrency: String,
-    val services: String, // Comma separated list of services
+    val selectedProducts: List<SelectedProduct> = emptyList(),
+    val subtotal: Double = 0.0,
+    val discountValue: Double = 0.0,
+    val discountType: DiscountType = DiscountType.FIXED,
+    val totalAmount: Double = 0.0,
     val registrationDate: Long = System.currentTimeMillis(),
     val isSent: Boolean = false,
     val sentDate: Long? = null
-) {
-    fun getFormattedPrice(): String {
-        return when (priceType) {
-            "Rango" -> "$priceCurrency $priceValue"
-            "Fijo" -> "$priceCurrency $priceValue"
-            "Personalizado" -> "$priceCurrency $priceValue"
-            else -> "$priceCurrency $priceValue"
-        }
-    }
-}
+)

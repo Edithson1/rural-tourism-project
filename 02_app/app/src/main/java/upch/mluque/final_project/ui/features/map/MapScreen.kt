@@ -8,17 +8,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Fullscreen
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.delay
 import upch.mluque.final_project.ui.MainViewModel
 import upch.mluque.final_project.ui.components.AudioPlayerUI
@@ -40,7 +39,7 @@ fun MapScreen(
     // Estados para la simulación de audio
     var currentTime by remember { mutableLongStateOf(0L) }
     var isPlaying by remember { mutableStateOf(false) }
-    val readingTimePerLine = 4000L // Un poco más lento para el resumen
+    val readingTimePerLine = 4000L
     val lines = remember(currentSummary) { currentSummary.split("\n", ". ").filter { it.isNotBlank() } }
     val totalDuration = remember(lines) { (lines.size * readingTimePerLine).coerceAtLeast(1000L) }
 
@@ -54,32 +53,20 @@ fun MapScreen(
         }
     }
 
-    val serviceCounts = remember(visits) {
-        val counts = mutableMapOf(
-            "Hospedaje" to 0,
-            "Alimentación" to 0,
-            "Artesanía" to 0
-        )
+    val productCounts = remember(visits) {
+        val counts = mutableMapOf<String, Int>()
         visits.forEach { visit ->
-            visit.services.split(", ").forEach { service ->
-                val originalName = when(service) {
-                    UiTranslations.translateService("Hospedaje", "Español", context) -> "Hospedaje"
-                    UiTranslations.translateService("Alimentación", "Español", context) -> "Alimentación"
-                    UiTranslations.translateService("Artesanía", "Español", context) -> "Artesanía"
-                    else -> service
-                }
-                if (counts.containsKey(originalName)) {
-                    counts[originalName] = counts[originalName]!! + 1
-                }
+            visit.selectedProducts.forEach { item ->
+                counts[item.name] = counts.getOrDefault(item.name, 0) + item.quantity
             }
         }
-        counts
+        counts.toList().sortedByDescending { it.second }.take(3)
     }
 
-    // Prepare colors
     val colorPrimary = MaterialTheme.colorScheme.primary
     val colorSecondary = MaterialTheme.colorScheme.secondary
     val colorTertiary = MaterialTheme.colorScheme.tertiary
+    val colors = listOf(colorPrimary, colorSecondary, colorTertiary)
 
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp && configuration.screenWidthDp > 600
@@ -125,7 +112,6 @@ fun MapScreen(
                                 showLabels = false
                             )
 
-                            // Subtítulos sobre el mapa
                             if (isPlaying) {
                                 MapSubtitles(
                                     text = lines.joinToString("\n"),
@@ -135,7 +121,6 @@ fun MapScreen(
                                 )
                             }
 
-                            // Fullscreen button
                             IconButton(
                                 onClick = { onNavigate("fullscreen_map") },
                                 modifier = Modifier
@@ -161,7 +146,6 @@ fun MapScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Spacer(modifier = Modifier.height(50.dp))
-                    // Legend Card
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
@@ -177,13 +161,12 @@ fun MapScreen(
                                 modifier = Modifier.padding(bottom = 12.dp)
                             )
                             
-                            LegendItemRow(UiTranslations.translateService("Hospedaje", language, context), colorPrimary, serviceCounts["Hospedaje"] ?: 0)
-                            LegendItemRow(UiTranslations.translateService("Alimentación", language, context), colorSecondary, serviceCounts["Alimentación"] ?: 0)
-                            LegendItemRow(UiTranslations.translateService("Artesanía", language, context), colorTertiary, serviceCounts["Artesanía"] ?: 0)
+                            productCounts.forEachIndexed { index, (name, count) ->
+                                LegendItemRow(name, colors.getOrElse(index) { Color.Gray }, count)
+                            }
                         }
                     }
 
-                    // Audio Summary Card
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
@@ -233,7 +216,6 @@ fun MapScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Map Card
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
@@ -241,7 +223,6 @@ fun MapScreen(
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        // OSM Map View
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -256,7 +237,6 @@ fun MapScreen(
                                 showLabels = false
                             )
 
-                            // Subtítulos sobre el mapa
                             if (isPlaying) {
                                 MapSubtitles(
                                     text = lines.joinToString("\n"),
@@ -266,7 +246,6 @@ fun MapScreen(
                                 )
                             }
 
-                            // Fullscreen button
                             IconButton(
                                 onClick = { onNavigate("fullscreen_map") },
                                 modifier = Modifier
@@ -284,7 +263,6 @@ fun MapScreen(
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // Legend Box - Improved
                         Text(
                             text = UiTranslations.getString(context, "map_legend", language),
                             fontSize = 14.sp,
@@ -297,16 +275,15 @@ fun MapScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            LegendItem(UiTranslations.translateService("Hospedaje", language, context), colorPrimary, serviceCounts["Hospedaje"] ?: 0)
-                            LegendItem(UiTranslations.translateService("Alimentación", language, context), colorSecondary, serviceCounts["Alimentación"] ?: 0)
-                            LegendItem(UiTranslations.translateService("Artesanía", language, context), colorTertiary, serviceCounts["Artesanía"] ?: 0)
+                            productCounts.forEachIndexed { index, (name, count) ->
+                                LegendItem(name, colors.getOrElse(index) { Color.Gray }, count)
+                            }
                         }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // Audio Summary Card
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
@@ -356,7 +333,9 @@ fun LegendItemRow(label: String, color: Color, count: Int) {
             text = label,
             fontSize = 13.sp,
             color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
         )
         Text(
             text = count.toString(),
@@ -371,7 +350,7 @@ fun LegendItemRow(label: String, color: Color, count: Int) {
 fun LegendItem(label: String, color: Color, count: Int) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(4.dp)
+        modifier = Modifier.padding(4.dp).width(80.dp)
     ) {
         Box(
             modifier = Modifier
@@ -383,7 +362,9 @@ fun LegendItem(label: String, color: Color, count: Int) {
         Text(
             text = label,
             fontSize = 10.sp,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
         )
         Text(
             text = count.toString(),
@@ -393,4 +374,3 @@ fun LegendItem(label: String, color: Color, count: Int) {
         )
     }
 }
-

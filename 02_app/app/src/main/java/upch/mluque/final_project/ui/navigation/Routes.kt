@@ -29,6 +29,15 @@ object Routes {
     const val ADD_VISIT = "add_visit"
     const val TIP_DETAIL = "tip_detail"
     const val DASHBOARD = "dashboard"
+    const val PRODUCT_CATALOG = "product_catalog"
+    const val PRODUCT_CATALOG_SETUP = "product_catalog_setup"
+    const val PRODUCT_EDITOR = "product_editor?productId={productId}"
+    const val CURRENCY_SELECTION = "currency_selection"
+
+    /**
+     * Helper to create product editor route with ID.
+     */
+    fun productEditor(id: Int?) = if (id != null) "product_editor?productId=$id" else "product_editor"
 
     /**
      * Helper to create visit detail route with ID.

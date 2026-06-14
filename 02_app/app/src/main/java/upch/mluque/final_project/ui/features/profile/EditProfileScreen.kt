@@ -1,5 +1,6 @@
 package upch.mluque.final_project.ui.features.profile
 
+import androidx.activity.compose.BackHandler
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
@@ -8,22 +9,17 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.AddAPhoto
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Bed
-import androidx.compose.material.icons.filled.Checkroom
-import androidx.compose.material.icons.filled.PhotoLibrary
-import androidx.compose.material.icons.filled.Restaurant
-import androidx.compose.material.icons.filled.Storefront
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,26 +29,28 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.ClipOp
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
-import androidx.compose.ui.graphics.drawscope.translate
-import kotlin.math.max
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 import upch.mluque.final_project.ui.MainViewModel
+import upch.mluque.final_project.ui.components.CountdownConfirmationDialog
 import upch.mluque.final_project.ui.components.ServiceOption
 import upch.mluque.final_project.ui.components.ServiceSelectorGrid
+import upch.mluque.final_project.ui.components.UnsavedChangesDialog
 import upch.mluque.final_project.utils.UiTranslations
 import java.io.ByteArrayOutputStream
-import java.io.InputStream
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,32 +58,24 @@ fun EditProfileScreen(
     viewModel: MainViewModel,
     onBack: () -> Unit
 ) {
+    val context = LocalContext.current
     val settings by viewModel.appSettings.collectAsState()
     val language = settings?.language ?: "Español"
-    
-    var businessName by remember { mutableStateOf("") }
-    var selectedService by remember { mutableStateOf("") }
-    var initialized by remember { mutableStateOf(false) }
-    var showImageSourceDialog by remember { mutableStateOf(false) }
-    var editingUri by remember { mutableStateOf<Uri?>(null) }
-    
-    // Estado para la imagen pendiente de guardar
+
+    var businessName by remember(settings) { mutableStateOf(settings?.businessName ?: "") }
+    var selectedService by remember(settings) { mutableStateOf(settings?.businessCategory ?: "") }
     var pendingBitmap by remember { mutableStateOf<Bitmap?>(null) }
-    
-    val context = LocalContext.current
+    var editingUri by remember { mutableStateOf<Uri?>(null) }
+    var showImageSourceDialog by remember { mutableStateOf(false) }
+    var showExitDialog by remember { mutableStateOf(false) }
+    var showSectorWarning by remember { mutableStateOf(false) }
 
-    LaunchedEffect(settings) {
-        if (!initialized && settings != null) {
-            businessName = settings?.businessName ?: ""
-            selectedService = settings?.businessCategory ?: ""
-            initialized = true
-        }
-    }
+    val hasChanges = (businessName != (settings?.businessName ?: "")) ||
+            (selectedService != (settings?.businessCategory ?: "")) ||
+            (pendingBitmap != null)
 
-    val galleryLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia()
-    ) { uri ->
-        uri?.let { editingUri = it }
+    BackHandler(enabled = hasChanges) {
+        showExitDialog = true
     }
 
     val services = listOf(
@@ -95,15 +85,38 @@ fun EditProfileScreen(
         ServiceOption(UiTranslations.translateService("Varios", language, context), Icons.Default.Storefront)
     )
 
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        if (uri != null) {
+            editingUri = uri
+        }
+    }
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(UiTranslations.getString(context, "profile_edit_title", language), fontWeight = FontWeight.Bold) },
+                title = {
+                    Text(
+                        UiTranslations.getString(context, "profile_edit_title", language),
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = UiTranslations.getString(context, "btn_back", language))
+                    IconButton(onClick = {
+                        if (hasChanges) showExitDialog = true else onBack()
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onBackground
+                        )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
             )
         },
         containerColor = MaterialTheme.colorScheme.background
@@ -117,23 +130,20 @@ fun EditProfileScreen(
                     .fillMaxSize()
                     .padding(paddingValues)
                     .padding(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(24.dp),
+                horizontalArrangement = Arrangement.spacedBy(32.dp),
                 verticalAlignment = Alignment.Top
             ) {
                 // Left Column: Photo and Name
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .fillMaxHeight()
                         .verticalScroll(rememberScrollState())
                         .padding(vertical = 16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    // Profile Picture Circle
                     Box(
                         modifier = Modifier
-                            .size(120.dp)
+                            .size(140.dp)
                             .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.primaryContainer)
                             .clickable { showImageSourceDialog = true },
@@ -142,37 +152,36 @@ fun EditProfileScreen(
                         if (pendingBitmap != null) {
                             AsyncImage(
                                 model = pendingBitmap,
-                                contentDescription = "Previsualización",
+                                contentDescription = null,
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Crop
                             )
                         } else if (settings?.profilePicture != null) {
                             AsyncImage(
                                 model = settings?.profilePicture,
-                                contentDescription = "Foto de perfil",
+                                contentDescription = null,
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Crop
                             )
                         } else {
                             Icon(
-                                imageVector = Icons.Default.AccountCircle,
+                                Icons.Default.Person,
                                 contentDescription = null,
-                                modifier = Modifier.size(80.dp),
+                                modifier = Modifier.size(64.dp),
                                 tint = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                         }
                         
                         Box(
                             modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.Black.copy(alpha = 0.2f)),
+                                .align(Alignment.BottomEnd)
+                                .offset(x = 8.dp, y = 8.dp) // Center properly on the circle edge
+                                .size(36.dp)
+                                .background(MaterialTheme.colorScheme.primary, CircleShape)
+                                .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.AddAPhoto,
-                                contentDescription = null,
-                                tint = Color.White.copy(alpha = 0.8f)
-                            )
+                            Icon(Icons.Default.CameraAlt, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
                         }
                     }
 
@@ -182,64 +191,25 @@ fun EditProfileScreen(
                         Text(
                             text = UiTranslations.getString(context, "profile_business_name", language),
                             fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                            modifier = Modifier.padding(bottom = 8.dp)
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
                         OutlinedTextField(
                             value = businessName,
-                            onValueChange = { 
-                                if (!it.contains("\n")) businessName = it 
-                            },
+                            onValueChange = { if (!it.contains("\n")) businessName = it },
+                            placeholder = { Text(UiTranslations.getString(context, "setup_business_name_hint", language)) },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
                             singleLine = true,
-                            maxLines = 1,
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = MaterialTheme.colorScheme.primary,
                                 unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
                             )
                         )
                     }
-                }
-
-                // Right Column: Services and Save Button
-                Column(
-                    modifier = Modifier
-                        .weight(1.2f)
-                        .fillMaxHeight()
-                        .verticalScroll(rememberScrollState())
-                        .padding(vertical = 16.dp)
-                ) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = UiTranslations.getString(context, "profile_sector", language),
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    ServiceSelectorGrid(
-                        services = services,
-                        selectedServices = if (selectedService.isEmpty()) emptySet() else setOf(selectedService.let { 
-                            UiTranslations.translateService(it, language, context)
-                        }),
-                        onServiceToggle = { serviceNameTranslated ->
-                            // Map back to original name if needed, but here we just store the selected translated name 
-                            // or use the original keys if ServiceSelectorGrid handles it.
-                            // In this app, we usually store the original name in the DB.
-                            val originalName = when(serviceNameTranslated) {
-                                UiTranslations.translateService("Hospedaje", language, context) -> "Hospedaje"
-                                UiTranslations.translateService("Alimentación", language, context) -> "Alimentación"
-                                UiTranslations.translateService("Artesanía", language, context) -> "Artesanía"
-                                UiTranslations.translateService("Varios", language, context) -> "Varios"
-                                else -> serviceNameTranslated
-                            }
-                            selectedService = originalName
-                        }
-                    )
-
-                    Spacer(modifier = Modifier.height(40.dp))
-
+                    
+                    Spacer(modifier = Modifier.height(24.dp))
+                    
                     Button(
                         onClick = {
                             val byteArray = pendingBitmap?.let { bitmap ->
@@ -258,7 +228,43 @@ fun EditProfileScreen(
                     ) {
                         Text(UiTranslations.getString(context, "profile_save_changes", language), fontWeight = FontWeight.Bold)
                     }
-                    Spacer(modifier = Modifier.height(24.dp))
+                }
+
+                // Right Column: Service Grid
+                Column(
+                    modifier = Modifier
+                        .weight(1.2f)
+                        .fillMaxHeight()
+                        .verticalScroll(rememberScrollState())
+                        .padding(vertical = 16.dp)
+                ) {
+                    Text(
+                        text = UiTranslations.getString(context, "profile_sector", language),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    ServiceSelectorGrid(
+                        services = services,
+                        selectedServices = if (selectedService.isEmpty()) emptySet() else setOf(selectedService.let { 
+                            UiTranslations.translateService(it, language, context)
+                        }),
+                        onServiceToggle = { serviceNameTranslated ->
+                            val originalName = when(serviceNameTranslated) {
+                                UiTranslations.translateService("Hospedaje", language, context) -> "Hospedaje"
+                                UiTranslations.translateService("Alimentación", language, context) -> "Alimentación"
+                                UiTranslations.translateService("Artesanía", language, context) -> "Artesanía"
+                                UiTranslations.translateService("Varios", language, context) -> "Varios"
+                                else -> serviceNameTranslated
+                            }
+                            if (originalName != (settings?.businessCategory ?: "")) {
+                                showSectorWarning = true
+                            }
+                            selectedService = originalName
+                        }
+                    )
                 }
             }
         } else {
@@ -270,53 +276,49 @@ fun EditProfileScreen(
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // Profile Picture Circle
                 Box(
                     modifier = Modifier
-                        .size(100.dp)
+                        .size(120.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primaryContainer)
                         .clickable { showImageSourceDialog = true },
                     contentAlignment = Alignment.Center
                 ) {
-                    // Priorizar previsualización local
                     if (pendingBitmap != null) {
                         AsyncImage(
                             model = pendingBitmap,
-                            contentDescription = "Previsualización",
+                            contentDescription = null,
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
                         )
                     } else if (settings?.profilePicture != null) {
                         AsyncImage(
                             model = settings?.profilePicture,
-                            contentDescription = "Foto de perfil",
+                            contentDescription = null,
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
                         )
                     } else {
                         Icon(
-                            imageVector = Icons.Default.AccountCircle,
+                            Icons.Default.Person,
                             contentDescription = null,
-                            modifier = Modifier.size(64.dp),
+                            modifier = Modifier.size(56.dp),
                             tint = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
                     
-                    // Overlay icon
                     Box(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color.Black.copy(alpha = 0.2f)),
+                            .align(Alignment.BottomEnd)
+                            .offset(x = 6.dp, y = 6.dp) // Offset to position on the edge circle
+                            .size(32.dp)
+                            .background(MaterialTheme.colorScheme.primary, CircleShape)
+                            .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.AddAPhoto,
-                            contentDescription = null,
-                            tint = Color.White.copy(alpha = 0.8f)
-                        )
+                        Icon(Icons.Default.CameraAlt, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
                     }
                 }
 
@@ -324,16 +326,17 @@ fun EditProfileScreen(
 
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Text(
-                        text = UiTranslations.getString("profile_business_name", language),
+                        text = UiTranslations.getString(context, "profile_business_name", language),
                         fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                        modifier = Modifier.padding(bottom = 8.dp)
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = businessName,
                         onValueChange = { 
                             if (!it.contains("\n")) businessName = it 
                         },
+                        placeholder = { Text(UiTranslations.getString(context, "setup_business_name_hint", language)) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
@@ -348,9 +351,10 @@ fun EditProfileScreen(
                 Spacer(modifier = Modifier.height(32.dp))
 
                 Text(
-                    text = UiTranslations.getString("profile_sector", language),
+                    text = UiTranslations.getString(context, "profile_sector", language),
                     fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                    modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -360,22 +364,24 @@ fun EditProfileScreen(
                         UiTranslations.translateService(it, language, context)
                     }),
                     onServiceToggle = { serviceNameTranslated ->
-                        val originalName = when(serviceNameTranslated) {
-                            UiTranslations.translateService("Hospedaje", language, context) -> "Hospedaje"
-                            UiTranslations.translateService("Alimentación", language, context) -> "Alimentación"
-                            UiTranslations.translateService("Artesanía", language, context) -> "Artesanía"
-                            UiTranslations.translateService("Varios", language, context) -> "Varios"
-                            else -> serviceNameTranslated
-                        }
-                        selectedService = originalName
+                    val originalName = when(serviceNameTranslated) {
+                        UiTranslations.translateService("Hospedaje", language, context) -> "Hospedaje"
+                        UiTranslations.translateService("Alimentación", language, context) -> "Alimentación"
+                        UiTranslations.translateService("Artesanía", language, context) -> "Artesanía"
+                        UiTranslations.translateService("Varios", language, context) -> "Varios"
+                        else -> serviceNameTranslated
                     }
-                )
+                    selectedService = originalName
+                }
+            )
 
-                Spacer(modifier = Modifier.weight(1f))
-                Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
-                Button(
-                    onClick = {
+            Button(
+                onClick = {
+                    if (selectedService != (settings?.businessCategory ?: "")) {
+                        showSectorWarning = true
+                    } else {
                         val byteArray = pendingBitmap?.let { bitmap ->
                             val outputStream = ByteArrayOutputStream()
                             bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
@@ -383,14 +389,15 @@ fun EditProfileScreen(
                         }
                         viewModel.saveProfile(businessName, selectedService, byteArray)
                         onBack()
-                    },
+                    }
+                },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
                     shape = RoundedCornerShape(28.dp),
                     enabled = businessName.isNotBlank() && selectedService.isNotBlank()
                 ) {
-                    Text(UiTranslations.getString("profile_save_changes", language), fontWeight = FontWeight.Bold)
+                    Text(UiTranslations.getString(context, "profile_save_changes", language), fontWeight = FontWeight.Bold)
                 }
                 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -403,7 +410,6 @@ fun EditProfileScreen(
                 language = language,
                 onDismiss = { editingUri = null },
                 onConfirm = { bitmap ->
-                    // Solo actualizamos el estado local para previsualización
                     pendingBitmap = bitmap
                     editingUri = null
                 }
@@ -424,13 +430,6 @@ fun EditProfileScreen(
                                 showImageSourceDialog = false
                             }
                         )
-                        ListItem(
-                            headlineContent = { Text("Cámara") },
-                            leadingContent = { Icon(Icons.Default.AddAPhoto, contentDescription = null) },
-                            modifier = Modifier.clickable {
-                                showImageSourceDialog = false
-                            }
-                        )
                     }
                 },
                 confirmButton = {
@@ -438,6 +437,43 @@ fun EditProfileScreen(
                         Text(UiTranslations.getString(context, "btn_cancel", language))
                     }
                 }
+            )
+        }
+
+        if (showExitDialog) {
+            UnsavedChangesDialog(
+                language = language,
+                onSave = {
+                    val byteArray = pendingBitmap?.let { bitmap ->
+                        val outputStream = ByteArrayOutputStream()
+                        bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
+                        outputStream.toByteArray()
+                    }
+                    viewModel.saveProfile(businessName, selectedService, byteArray)
+                    onBack()
+                },
+                onExitWithoutSaving = onBack,
+                onDismiss = { showExitDialog = false }
+            )
+        }
+
+        if (showSectorWarning) {
+            CountdownConfirmationDialog(
+                language = language,
+                titleKey = "profile_sector_change_title",
+                descKey = "profile_sector_change_desc",
+                seconds = 10,
+                onConfirm = {
+                    val byteArray = pendingBitmap?.let { bitmap ->
+                        val outputStream = ByteArrayOutputStream()
+                        bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
+                        outputStream.toByteArray()
+                    }
+                    viewModel.saveProfile(businessName, selectedService, byteArray)
+                    showSectorWarning = false
+                    onBack()
+                },
+                onDismiss = { showSectorWarning = false }
             )
         }
     }
@@ -451,143 +487,192 @@ fun ImageEditorDialog(
     onConfirm: (Bitmap) -> Unit
 ) {
     val context = LocalContext.current
-    val bitmap = remember(uri) {
-        context.contentResolver.openInputStream(uri)?.use { 
-            BitmapFactory.decodeStream(it)
-        }
+    var sourceBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    
+    var scale by remember { mutableFloatStateOf(1f) }
+    var offset by remember { mutableStateOf(Offset.Zero) }
+
+    // Referencias para el recorte
+    var canvasSize by remember { mutableStateOf(Size.Zero) }
+
+    LaunchedEffect(uri) {
+        val inputStream = context.contentResolver.openInputStream(uri)
+        sourceBitmap = BitmapFactory.decodeStream(inputStream)
     }
 
-    if (bitmap == null) {
-        onDismiss()
+    if (sourceBitmap == null) {
+        AlertDialog(onDismissRequest = onDismiss, confirmButton = {}, text = { CircularProgressIndicator() })
         return
     }
 
-    var scale by remember { mutableStateOf(1f) }
-    var offset by remember { mutableStateOf(Offset.Zero) }
+    val bitmap = sourceBitmap!!
     
-    val cropSizePx = with(LocalDensity.current) { 200.dp.toPx() }
-    
-    Dialog(
+    AlertDialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = Color.Black
-        ) {
-            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-                val canvasWidth = constraints.maxWidth.toFloat()
-                val canvasHeight = constraints.maxHeight.toFloat()
-                val density = LocalDensity.current.density
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+        modifier = Modifier.fillMaxWidth(0.95f),
+        title = { Text(UiTranslations.getString(context, "profile_photo_change", language)) },
+        text = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f)
+                        .background(Color.Black)
+                        .clip(RoundedCornerShape(8.dp))
+                        .pointerInput(Unit) {
+                            detectTransformGestures { _, pan, zoom, _ ->
+                                // Calcular límites para que el selector siempre esté dentro de la imagen
+                                val imgWidth = bitmap.width.toFloat()
+                                val imgHeight = bitmap.height.toFloat()
+                                
+                                val selectorSizeOnCanvas = canvasSize.width * 0.8f
+                                
+                                // El factor de escala base que hace que la imagen cubra el canvas es:
+                                val baseDrawScale = Math.max(canvasSize.width / imgWidth, canvasSize.height / imgHeight)
+                                
+                                val minScaleX = selectorSizeOnCanvas / (baseDrawScale * imgWidth)
+                                val minScaleY = selectorSizeOnCanvas / (baseDrawScale * imgHeight)
+                                val absoluteMinScale = Math.max(minScaleX, minScaleY)
 
-                Column(modifier = Modifier.fillMaxSize()) {
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                            .pointerInput(Unit) {
-                                detectTransformGestures { _, pan, zoom, _ ->
-                                    scale = (scale * zoom).coerceIn(0.5f, 5f)
-                                    offset += pan
-                                }
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Canvas(modifier = Modifier.fillMaxSize()) {
-                        val imageWidth = bitmap.width.toFloat()
-                        val imageHeight = bitmap.height.toFloat()
-                        val baseScale = (size.minDimension / max(imageWidth, imageHeight))
-                        val finalScale = baseScale * scale
-                            
-                            translate(offset.x, offset.y) {
-                                drawImage(
-                                    image = bitmap.asImageBitmap(),
-                                    dstOffset = Offset(
-                                        (size.width - imageWidth * finalScale) / 2,
-                                        (size.height - imageHeight * finalScale) / 2
-                                    ).toIntOffset(),
-                                    dstSize = Size(imageWidth * finalScale, imageHeight * finalScale).toIntSize(),
-                                    filterQuality = FilterQuality.High
+                                scale = (scale * zoom).coerceAtLeast(absoluteMinScale)
+                                
+                                // Limit Pan to keep selector inside image bounds
+                                val scaledW = imgWidth * baseDrawScale * scale
+                                val scaledH = imgHeight * baseDrawScale * scale
+                                
+                                val maxPanX = (scaledW - selectorSizeOnCanvas) / 2
+                                val maxPanY = (scaledH - selectorSizeOnCanvas) / 2
+                                
+                                offset = Offset(
+                                    (offset.x + pan.x).coerceIn(-maxPanX.coerceAtLeast(0f), maxPanX.coerceAtLeast(0f)),
+                                    (offset.y + pan.y).coerceIn(-maxPanY.coerceAtLeast(0f), maxPanY.coerceAtLeast(0f))
                                 )
                             }
                         }
-
-                        Canvas(modifier = Modifier.fillMaxSize()) {
-                            val radius = cropSizePx / 2
-                            val rectPath = Path().apply {
-                                addRect(
-                                    Rect(
-                                        center.x - radius,
-                                        center.y - radius,
-                                        center.x + radius,
-                                        center.y + radius
-                                    )
+                ) {
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        canvasSize = size
+                        val canvasWidth = size.width
+                        val canvasHeight = size.height
+                        
+                        withTransform({
+                            translate(offset.x, offset.y)
+                            scale(scale, scale, Offset(canvasWidth/2, canvasHeight/2))
+                        }) {
+                            val imgWidth = bitmap.width.toFloat()
+                            val imgHeight = bitmap.height.toFloat()
+                            val drawScale = Math.max(canvasWidth / imgWidth, canvasHeight / imgHeight)
+                            
+                            drawImage(
+                                image = bitmap.asImageBitmap(),
+                                dstOffset = IntOffset(
+                                    ((canvasWidth - imgWidth * drawScale) / 2).toInt(),
+                                    ((canvasHeight - imgHeight * drawScale) / 2).toInt()
+                                ),
+                                dstSize = IntSize(
+                                    (imgWidth * drawScale).toInt(),
+                                    (imgHeight * drawScale).toInt()
                                 )
-                            }
-                            clipPath(rectPath, clipOp = ClipOp.Difference) {
-                                drawRect(Color.Black.copy(alpha = 0.7f))
-                            }
-                            drawRect(
-                                color = Color.White,
-                                topLeft = Offset(center.x - radius, center.y - radius),
-                                size = Size(cropSizePx, cropSizePx),
-                                style = Stroke(width = 2.dp.toPx())
                             )
                         }
-                    }
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        TextButton(onClick = onDismiss, colors = ButtonDefaults.textButtonColors(contentColor = Color.White)) {
-                            Text(UiTranslations.getString(context, "btn_cancel", language))
+                        // Selector cuadrado
+                        val selectorSize = canvasWidth * 0.8f
+                        val left = (canvasWidth - selectorSize) / 2
+                        val top = (canvasHeight - selectorSize) / 2
+                        
+                        val squarePath = Path().apply {
+                            addRect(Rect(left, top, left + selectorSize, top + selectorSize))
                         }
-                        Button(
-                            onClick = {
-                                val result = cropBitmap(bitmap, scale, offset, cropSizePx, Size(canvasWidth, canvasHeight - 100 * density))
-                                onConfirm(result)
-                            },
-                            shape = RoundedCornerShape(24.dp)
-                        ) {
-                            Text(UiTranslations.getString(context, "btn_confirm", language))
+                        
+                        clipPath(squarePath, clipOp = ClipOp.Difference) {
+                            drawRect(color = Color.Black.copy(alpha = 0.6f))
                         }
+                        
+                        drawRect(
+                            color = Color.White,
+                            topLeft = Offset(left, top),
+                            size = Size(selectorSize, selectorSize),
+                            style = Stroke(width = 2.dp.toPx())
+                        )
                     }
                 }
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "Usa dos dedos para mover y ampliar la foto",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = {
+                val cropped = performCrop(bitmap, scale, offset, canvasSize)
+                onConfirm(cropped)
+            }) {
+                Text(UiTranslations.getString(context, "btn_confirm", language))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(UiTranslations.getString(context, "btn_cancel", language))
             }
         }
-    }
+    )
 }
 
-fun cropBitmap(source: Bitmap, scale: Float, offset: Offset, cropSizePx: Float, canvasSize: Size): Bitmap {
-    val imageWidth = source.width.toFloat()
-    val imageHeight = source.height.toFloat()
-    val baseScale = canvasSize.minDimension / max(imageWidth, imageHeight)
-    val finalScale = baseScale * scale
+/**
+ * Realiza el recorte de la imagen basado en la transformación visual del usuario.
+ */
+private fun performCrop(bitmap: Bitmap, scale: Float, offset: Offset, canvasSize: Size): Bitmap {
+    val imgWidth = bitmap.width.toFloat()
+    val imgHeight = bitmap.height.toFloat()
+    
+    // 1. Escala base utilizada en el drawImage del Canvas
+    val baseDrawScale = Math.max(canvasSize.width / imgWidth, canvasSize.height / imgHeight)
+    
+    // 2. El tamaño del selector en el canvas
+    val selectorSize = canvasSize.width * 0.8f
+    val selectorLeft = (canvasSize.width - selectorSize) / 2
+    val selectorTop = (canvasSize.height - selectorSize) / 2
 
-    val centerX = (imageWidth / 2f) - (offset.x / finalScale)
-    val centerY = (imageHeight / 2f) - (offset.y / finalScale)
+    // 3. Crear un bitmap de salida cuadrado (ej. 512x512 para buena calidad)
+    val outputSize = 512
+    val croppedBitmap = Bitmap.createBitmap(outputSize, outputSize, Bitmap.Config.ARGB_8888)
+    val canvas = android.graphics.Canvas(croppedBitmap)
     
-    val sizeInBitmap = cropSizePx / finalScale
+    // 4. Mapear las coordenadas del selector de vuelta a los píxeles originales del bitmap
+    // La imagen en el canvas está centrada, luego desplazada por 'offset' y escalada por 'scale'
     
-    val left = (centerX - sizeInBitmap / 2f).toInt().coerceIn(0, source.width)
-    val top = (centerY - sizeInBitmap / 2f).toInt().coerceIn(0, source.height)
-    val width = sizeInBitmap.toInt().coerceAtMost(source.width - left)
-    val height = sizeInBitmap.toInt().coerceAtMost(source.height - top)
+    val matrix = android.graphics.Matrix()
     
-    if (width <= 0 || height <= 0) return source
-
-    val cropped = Bitmap.createBitmap(source, left, top, width, height)
+    // Replicar la lógica del withTransform de Compose:
+    // a) Centrar y escalar base
+    val initialTranslateX = (canvasSize.width - imgWidth * baseDrawScale) / 2
+    val initialTranslateY = (canvasSize.height - imgHeight * baseDrawScale) / 2
     
-    return if (width > 128 || height > 128) {
-        Bitmap.createScaledBitmap(cropped, 128, 128, true)
-    } else {
-        cropped
-    }
+    matrix.postScale(baseDrawScale, baseDrawScale)
+    matrix.postTranslate(initialTranslateX, initialTranslateY)
+    
+    // b) Transformaciones del usuario (Translate -> Scale alrededor del centro del canvas)
+    matrix.postTranslate(offset.x, offset.y)
+    matrix.postScale(scale, scale, canvasSize.width / 2f, canvasSize.height / 2f)
+    
+    // c) Ahora queremos la inversa para saber qué parte del bitmap original está bajo el selector
+    val inverse = android.graphics.Matrix()
+    matrix.invert(inverse)
+    
+    // d) Dibujar el bitmap original en el canvas de salida usando la inversa de la matriz
+    // pero desplazado para que el selector (selectorLeft, selectorTop) sea el (0,0) del output
+    val outputMatrix = android.graphics.Matrix()
+    outputMatrix.set(matrix)
+    outputMatrix.postTranslate(-selectorLeft, -selectorTop)
+    outputMatrix.postScale(outputSize / selectorSize, outputSize / selectorSize)
+    
+    val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG or android.graphics.Paint.FILTER_BITMAP_FLAG)
+    canvas.drawBitmap(bitmap, outputMatrix, paint)
+    
+    return croppedBitmap
 }
-
-fun Offset.toIntOffset() = androidx.compose.ui.unit.IntOffset(x.toInt(), y.toInt())
-fun Size.toIntSize() = androidx.compose.ui.unit.IntSize(width.toInt(), height.toInt())
-

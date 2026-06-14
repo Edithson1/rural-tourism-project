@@ -11,7 +11,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -56,25 +55,20 @@ fun FullscreenMapScreen(
         }
     }
 
-    val serviceCounts = remember(visits) {
-        val counts = mutableMapOf(
-            "Hospedaje" to 0,
-            "Alimentación" to 0,
-            "Artesanía" to 0
-        )
+    val productCounts = remember(visits) {
+        val counts = mutableMapOf<String, Int>()
         visits.forEach { visit ->
-            visit.services.split(", ").forEach { service ->
-                if (counts.containsKey(service)) {
-                    counts[service] = counts[service]!! + 1
-                }
+            visit.selectedProducts.forEach { item ->
+                counts[item.name] = counts.getOrDefault(item.name, 0) + item.quantity
             }
         }
-        counts
+        counts.toList().sortedByDescending { it.second }.take(3)
     }
 
     val colorPrimary = MaterialTheme.colorScheme.primary
     val colorSecondary = MaterialTheme.colorScheme.secondary
     val colorTertiary = MaterialTheme.colorScheme.tertiary
+    val colors = listOf(colorPrimary, colorSecondary, colorTertiary)
 
     // Handle system back button
     BackHandler {
@@ -148,9 +142,9 @@ fun FullscreenMapScreen(
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(bottom = 4.dp)
                     )
-                    LegendItemFullScreen(UiTranslations.translateService("Hospedaje", language, context), colorPrimary, serviceCounts["Hospedaje"] ?: 0)
-                    LegendItemFullScreen(UiTranslations.translateService("Alimentación", language, context), colorSecondary, serviceCounts["Alimentación"] ?: 0)
-                    LegendItemFullScreen(UiTranslations.translateService("Artesanía", language, context), colorTertiary, serviceCounts["Artesanía"] ?: 0)
+                    productCounts.forEachIndexed { index, (name, count) ->
+                        LegendItemFullScreen(name, colors.getOrElse(index) { Color.Gray }, count)
+                    }
                 }
             }
         }
@@ -200,7 +194,9 @@ fun LegendItemFullScreen(label: String, color: Color, count: Int) {
             text = label,
             fontSize = 13.sp,
             color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
         )
         Text(
             text = count.toString(),
@@ -219,4 +215,3 @@ private fun Context.findActivity(): Activity? {
     }
     return null
 }
-

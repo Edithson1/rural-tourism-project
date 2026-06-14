@@ -401,7 +401,7 @@ fun RecentVisitsCard(visits: List<Visit>, language: String, onNavigate: (String)
             )
             
             Text(
-                text = UiTranslations.getString(context, "profile_edit", language).replace("Editar", "Ver todo"), // Fallback if no "Ver todo" key
+                text = "Ver todo",
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
@@ -424,7 +424,7 @@ fun RecentVisitsCard(visits: List<Visit>, language: String, onNavigate: (String)
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(UiTranslations.getString(context, "home_tourist_country", language), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                    Text(UiTranslations.getString(context, "home_est_expense", language), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Text(UiTranslations.getString(context, "total_label", language), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
                 
@@ -457,14 +457,16 @@ fun RecentVisitsCard(visits: List<Visit>, language: String, onNavigate: (String)
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
-                                        text = UiTranslations.translateServicesList(visit.services, language, context),
+                                        text = visit.selectedProducts.take(2).joinToString(", ") { it.name },
                                         fontSize = 12.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
                                     )
                                 }
                             }
                             Text(
-                                text = visit.getFormattedPrice(),
+                                text = "S/ ${String.format("%.2f", visit.totalAmount)}",
                                 fontSize = 14.sp,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontWeight = FontWeight.Bold,
@@ -621,4 +623,3 @@ fun HomeLandscapePreview() {
         )
     }
 }
-

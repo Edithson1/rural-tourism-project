@@ -245,10 +245,51 @@ fun MainNavigation(
                             onBack = { navController.popBackStack() },
                             onSave = { name, service ->
                                 syncViewModel.saveProfile(name, service)
+                                // Pre-cargar productos según el servicio
+                                viewModel.preloadProducts(service)
+                                navController.navigate(Routes.PRODUCT_CATALOG_SETUP)
+                            }
+                        )
+                    }
+                    composable(Routes.PRODUCT_CATALOG_SETUP) {
+                        ProductCatalogScreen(
+                            viewModel = viewModel,
+                            language = selectedLanguage,
+                            isSetupFlow = true,
+                            onBack = { navController.popBackStack() },
+                            onFinish = {
                                 navController.navigate(Routes.MAIN_PAGER) {
                                     popUpTo(Routes.ONBOARDING) { inclusive = true }
                                 }
-                            }
+                            },
+                            onNavigateToEditor = { id -> navController.navigate(Routes.productEditor(id)) }
+                        )
+                    }
+                    composable(Routes.PRODUCT_CATALOG) {
+                        ProductCatalogScreen(
+                            viewModel = viewModel,
+                            language = selectedLanguage,
+                            isSetupFlow = false,
+                            onBack = { navController.popBackStack() },
+                            onFinish = { navController.popBackStack() },
+                            onNavigateToEditor = { id -> navController.navigate(Routes.productEditor(id)) }
+                        )
+                    }
+                    composable(
+                        Routes.PRODUCT_EDITOR,
+                        arguments = listOf(navArgument("productId") { type = NavType.StringType; nullable = true; defaultValue = null })
+                    ) { backStackEntry ->
+                        val productId = backStackEntry.arguments?.getString("productId")?.toIntOrNull()
+                        ProductEditorScreen(
+                            productId = productId,
+                            viewModel = viewModel,
+                            onBack = { navController.popBackStack() }
+                        )
+                    }
+                    composable(Routes.CURRENCY_SELECTION) {
+                        CurrencySelectionScreen(
+                            viewModel = viewModel,
+                            onBack = { navController.popBackStack() }
                         )
                     }
                     composable(Routes.MAIN_PAGER) {
@@ -277,6 +318,18 @@ fun MainNavigation(
                         FullscreenMapScreen(
                             viewModel = viewModel,
                             onBack = { navController.popBackStack() }
+                        )
+                    }
+                    composable(Routes.PROFILE) {
+                        ProfileScreen(
+                            viewModel = viewModel,
+                            syncViewModel = syncViewModel,
+                            navController = navController,
+                            onNavigateToEdit = { navController.navigate(Routes.PROFILE_EDIT) },
+                            onNavigateToLanguage = { navController.navigate(Routes.PROFILE_LANGUAGE) },
+                            onNavigateToHelp = { navController.navigate(Routes.PROFILE_HELP) },
+                            onNavigateToPrivacy = { navController.navigate(Routes.PROFILE_PRIVACY) },
+                            onNavigateToCatalog = { navController.navigate(Routes.PRODUCT_CATALOG) }
                         )
                     }
                     composable(Routes.PROFILE_EDIT) {
@@ -337,15 +390,14 @@ fun MainNavigation(
                         )
                     }
                     composable(Routes.ADD_VISIT) {
-                        val visits by viewModel.allVisits.collectAsState()
                         val settings by viewModel.appSettings.collectAsState()
                         val language = settings?.language ?: "Español"
                         AddVisitScreen(
-                            visitCount = visits.size,
+                            viewModel = viewModel,
                             language = language,
                             onBack = { navController.popBackStack() },
-                            onSave = { nationality, flag, pType, pValue, pCurr, services ->
-                                syncViewModel.addVisit(nationality, flag, pType, pValue, pCurr, services)
+                            onSave = { nationality, flag, products, subtotal, discV, discT, total ->
+                                syncViewModel.addVisit(nationality, flag, products, subtotal, discV, discT, total)
                                 navController.popBackStack()
                             }
                         )

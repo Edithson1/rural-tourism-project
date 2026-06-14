@@ -52,23 +52,21 @@ class DashboardViewModel : ViewModel() {
 
         val counts = mutableMapOf<String, Int>()
         visits.forEach { visit ->
-            visit.services.split(", ").filter { it.isNotBlank() }.forEach { service ->
-                counts[service] = counts.getOrDefault(service, 0) + 1
+            visit.selectedProducts.forEach { item ->
+                counts[item.name] = counts.getOrDefault(item.name, 0) + item.quantity
             }
         }
         
+        val totalItems = counts.values.sum().toFloat()
+        if (totalItems == 0f) return@map emptyList<Pair<String, Float>>()
+
         counts.toList()
-            .map { it.first to (it.second.toFloat() / totalVisits) }
+            .map { it.first to (it.second.toFloat() / totalItems) }
             .sortedByDescending { it.second }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val revenueEstimates = filteredVisits.map { visits ->
-        visits.groupBy { it.priceCurrency }
-            .mapValues { entry ->
-                entry.value.sumOf { visit ->
-                    parsePriceValue(visit.priceValue)
-                }
-            }
+        mapOf("S/" to visits.sumOf { it.totalAmount })
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     val peakHours = filteredVisits.map { visits ->
@@ -90,22 +88,6 @@ class DashboardViewModel : ViewModel() {
         it.firstOrNull()?.first ?: "-"
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "-")
 
-    private fun parsePriceValue(value: String): Double {
-        return try {
-            val cleanValue = value.replace(",", ".").trim()
-            if (cleanValue.endsWith("+")) {
-                cleanValue.removeSuffix("+").trim().toDoubleOrNull() ?: 0.0
-            } else if (cleanValue.contains("-")) {
-                val parts = cleanValue.split("-").map { it.trim().toDoubleOrNull() ?: 0.0 }
-                if (parts.size == 2) (parts[0] + parts[1]) / 2.0 else parts.getOrNull(0) ?: 0.0
-            } else {
-                cleanValue.toDoubleOrNull() ?: 0.0
-            }
-        } catch (e: Exception) {
-            0.0
-        }
-    }
-
     fun updateVisits(visits: List<Visit>) {
         _visits.value = visits
     }
@@ -120,10 +102,10 @@ class DashboardViewModel : ViewModel() {
         val star = starService.value
         
         return when(language) {
-            "Quechua" -> "Kaymi rurukuna: Llapanpiqa $total watukuqkunan hamurqan. Ñawpaq suyuqa $leader kachkan. Aswan munasqa yanapakuyqa $star."
-            "Inglés" -> "Here are the insights: A total of $total tourists visited. The leading country is $leader. The most requested service is $star."
-            "Portugués" -> "Aqui estão os resultados: Um total de $total turistas visitaram. O país líder é $leader. O serviço mais solicitado é $star."
-            else -> "Aquí tienes los resultados: Un total de $total turistas visitaron tu negocio. El país líder es $leader y tu servicio estrella es $star."
+            "Quechua" -> "Kaymi rurukuna: Llapanpiqa $total watukuqkunan hamurqan. Ñawpaq suyuqa $leader kachkan. Aswan munasqa ruruqa $star."
+            "Inglés" -> "Here are the insights: A total of $total tourists visited. The leading country is $leader. The top product is $star."
+            "Portugués" -> "Aqui estão os resultados: Um total de $total turistas visitaram. O país líder é $leader. O produto principal é $star."
+            else -> "Aquí tienes los resultados: Un total de $total turistas visitaron tu negocio. El país líder es $leader y tu producto más vendido es $star."
         }
     }
 }

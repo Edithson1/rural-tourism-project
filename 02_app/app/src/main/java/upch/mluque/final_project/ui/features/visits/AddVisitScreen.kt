@@ -1,117 +1,133 @@
 package upch.mluque.final_project.ui.features.visits
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import upch.mluque.final_project.ui.components.ServiceOption
-import upch.mluque.final_project.ui.components.ServiceSelectorGrid
-import upch.mluque.final_project.ui.theme.BrownPrimary
-import upch.mluque.final_project.ui.theme.Final_projectTheme
+import androidx.compose.ui.text.style.TextDecoration
+import upch.mluque.final_project.data.local.DiscountType
+import upch.mluque.final_project.data.local.Product
+import upch.mluque.final_project.data.local.SelectedProduct
+import upch.mluque.final_project.ui.MainViewModel
+import upch.mluque.final_project.ui.components.UnsavedChangesDialog
 import upch.mluque.final_project.utils.UiTranslations
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddVisitScreen(
-    visitCount: Int,
+    viewModel: MainViewModel,
     language: String,
     onBack: () -> Unit,
-    onSave: (String, String, String, String, String, String) -> Unit
+    onSave: (String, String, List<SelectedProduct>, Double, Double, DiscountType, Double) -> Unit
 ) {
-    var nationalitySearch by remember { mutableStateOf("") }
+    val context = LocalContext.current
+    val focusManager = LocalFocusManager.current
+    val products by viewModel.allProducts.collectAsState(initial = emptyList())
+    
     var selectedNationality by remember { mutableStateOf<Country?>(null) }
     var isNationalityExpanded by remember { mutableStateOf(false) }
-
-    var selectedPriceType by remember { mutableStateOf("Rango") }
-    var isPriceTypeExpanded by remember { mutableStateOf(false) }
+    var nationalitySearch by remember { mutableStateOf("") }
     
-    var selectedPriceValue by remember { mutableStateOf("") }
-    var isPriceValueExpanded by remember { mutableStateOf(false) }
+    var productSearch by remember { mutableStateOf("") }
+    val filteredProducts = remember(products, productSearch) {
+        products.filter { it.name.contains(productSearch, ignoreCase = true) }
+    }
     
-    var selectedCurrency by remember { mutableStateOf("S/") }
-    var isCurrencyExpanded by remember { mutableStateOf(false) }
+    val selectedQuantities = remember { mutableStateMapOf<Int, Int>() }
+    
+    var discountValue by remember { mutableStateOf("") }
+    var discountType by remember { mutableStateOf(DiscountType.FIXED) }
+    var showExitDialog by remember { mutableStateOf(false) }
 
-    var selectedServices by remember { mutableStateOf(setOf<String>()) }
-    val context = LocalContext.current
+    val hasChanges = selectedNationality != null || selectedQuantities.isNotEmpty() || discountValue.isNotEmpty()
 
     val countries = listOf(
-        Country("Perú", "🇵🇪"),
-        Country("Argentina", "🇦🇷"),
-        Country("Brasil", "🇧🇷"),
-        Country("Chile", "🇨🇱"),
-        Country("Colombia", "🇨🇴"),
-        Country("Ecuador", "🇪🇨"),
-        Country("México", "🇲🇽"),
-        Country("España", "🇪🇸"),
-        Country("Estados Unidos", "🇺🇸"),
-        Country("Francia", "🇫🇷"),
-        Country("Alemania", "🇩🇪"),
-        Country("Reino Unido", "🇬🇧")
+        Country("Perú", "🇵🇪"), Country("Argentina", "🇦🇷"), Country("Brasil", "🇧🇷"),
+        Country("Chile", "🇨🇱"), Country("Colombia", "🇨🇴"), Country("Ecuador", "🇪🇨"),
+        Country("México", "🇲🇽"), Country("España", "🇪🇸"), Country("Estados Unidos", "🇺🇸"),
+        Country("Francia", "🇫🇷"), Country("Alemania", "🇩🇪"), Country("Reino Unido", "🇬🇧")
     )
 
-    val filteredCountries = countries.filter { 
-        it.name.contains(nationalitySearch, ignoreCase = true) 
+    val settings by viewModel.appSettings.collectAsState()
+    val prefCurrency = settings?.preferredCurrency ?: "S/"
+    val usdRate = settings?.usdExchangeRate ?: 3.8
+    val eurRate = settings?.eurExchangeRate ?: 4.1
+
+    fun convertPrice(price: Double, from: String): Double {
+        if (from == prefCurrency) return price
+        
+        // Convert to Soles first
+        val priceInSoles = when(from) {
+            "$" -> price * usdRate
+            "€" -> price * eurRate
+            else -> price
+        }
+        
+        // Convert from Soles to preferred
+        return when(prefCurrency) {
+            "$" -> priceInSoles / usdRate
+            "€" -> priceInSoles / eurRate
+            else -> priceInSoles
+        }
     }
 
-    val priceTypes = listOf("Rango", "Fijo", "Personalizado")
-    
-    val rangeValues = listOf("0-10", "11-50", "51-100", "101-200", "201-500", "501+")
-    val fixedValues = listOf("0", "10", "20", "50", "100", "200", "500")
-    val currencies = listOf("S/", "$", "€")
+    val subtotal = products.sumOf { (selectedQuantities[it.id] ?: 0) * convertPrice(it.getActivePrice(), it.currency) }
+    val discountNum = discountValue.toDoubleOrNull() ?: 0.0
+    val total = if (discountType == DiscountType.FIXED) {
+        (subtotal - discountNum).coerceAtLeast(0.0)
+    } else {
+        (subtotal * (1 - discountNum / 100.0)).coerceAtLeast(0.0)
+    }
 
-    val availableServices = listOf(
-        ServiceOption("Hospedaje", Icons.Default.Bed),
-        ServiceOption("Alimentación", Icons.Default.Restaurant),
-        ServiceOption("Artesanía", Icons.Default.LocalMall)
-    )
+    BackHandler(enabled = hasChanges) {
+        showExitDialog = true
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { },
+                title = { Text(UiTranslations.getString(context, "add_visit_title", language)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onBackground
-                        )
+                    IconButton(onClick = {
+                        if (hasChanges) showExitDialog = true else onBack()
+                    }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = null)
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent
-                )
+                }
             )
-        },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { paddingValues ->
+        }
+    ) { padding ->
         val configuration = androidx.compose.ui.platform.LocalConfiguration.current
         val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp && configuration.screenWidthDp > 600
 
         if (isLandscape) {
             Row(
                 modifier = Modifier
+                    .padding(padding)
                     .fillMaxSize()
-                    .padding(paddingValues)
                     .padding(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(24.dp),
-                verticalAlignment = Alignment.Top
+                horizontalArrangement = Arrangement.spacedBy(32.dp)
             ) {
-                // Left Column: Nationality and Expense
+                // Left Column: Nationality and Products
                 Column(
                     modifier = Modifier
                         .weight(1f)
@@ -119,69 +135,40 @@ fun AddVisitScreen(
                         .verticalScroll(rememberScrollState())
                         .padding(vertical = 16.dp)
                 ) {
-                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = UiTranslations.getString(context, "add_visit_title", language),
-                        fontSize = 28.sp,
+                        text = UiTranslations.getString(context, "add_visit_country_label", language),
                         fontWeight = FontWeight.Bold,
-                        lineHeight = 34.sp,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    // Nationality Selector
-                    Text(
-                        text = UiTranslations.getString(context, "add_visit_country_label", language) + " *",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                        color = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-
                     ExposedDropdownMenuBox(
                         expanded = isNationalityExpanded,
                         onExpandedChange = { isNationalityExpanded = !isNationalityExpanded }
                     ) {
                         OutlinedTextField(
                             value = if (selectedNationality != null && !isNationalityExpanded) 
-                                        "${selectedNationality?.flag} ${selectedNationality?.name}" 
-                                    else nationalitySearch,
-                            onValueChange = { 
-                                nationalitySearch = it
-                                isNationalityExpanded = true
-                            },
-                            placeholder = { Text(UiTranslations.getString(context, "select_option", language)) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .menuAnchor(MenuAnchorType.PrimaryEditable, true),
+                                "${selectedNationality?.flag} ${selectedNationality?.name}" else nationalitySearch,
+                            onValueChange = { nationalitySearch = it; isNationalityExpanded = true },
+                            modifier = Modifier.fillMaxWidth().menuAnchor(),
+                            placeholder = { Text(UiTranslations.getString(context, "search_country_hint", language)) },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isNationalityExpanded) },
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                                unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                            ),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(12.dp),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
                         )
-
                         ExposedDropdownMenu(
                             expanded = isNationalityExpanded,
-                            onDismissRequest = { isNationalityExpanded = false },
-                            modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                            onDismissRequest = { isNationalityExpanded = false }
                         ) {
-                            filteredCountries.forEach { country ->
+                            countries.filter { it.name.contains(nationalitySearch, true) }.forEach { country ->
                                 DropdownMenuItem(
-                                    text = { 
-                                        Row {
-                                            Text(text = country.flag)
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Text(text = country.name)
-                                        }
-                                    },
-                                    onClick = {
+                                    text = { Text("${country.flag} ${country.name}") },
+                                    onClick = { 
                                         selectedNationality = country
                                         nationalitySearch = ""
-                                        isNationalityExpanded = false
+                                        isNationalityExpanded = false 
+                                        focusManager.clearFocus()
                                     }
                                 )
                             }
@@ -190,321 +177,169 @@ fun AddVisitScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Expense Selector (Refactored)
                     Text(
-                        text = UiTranslations.getString(context, "add_visit_price_label", language) + " *",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                        text = UiTranslations.getString(context, "product_label", language),
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        // 1. Type Selector
-                        ExposedDropdownMenuBox(
-                            expanded = isPriceTypeExpanded,
-                            onExpandedChange = { isPriceTypeExpanded = !isPriceTypeExpanded },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            OutlinedTextField(
-                                value = when(selectedPriceType) {
-                                    "Rango" -> UiTranslations.getString(context, "price_type_range", language)
-                                    "Fijo" -> UiTranslations.getString(context, "price_type_fixed", language)
-                                    "Personalizado" -> UiTranslations.getString(context, "price_type_custom", language)
-                                    else -> selectedPriceType
-                                },
-                                onValueChange = { },
-                                readOnly = true,
-                                modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, true),
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isPriceTypeExpanded) },
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                    unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                                ),
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                            ExposedDropdownMenu(
-                                expanded = isPriceTypeExpanded,
-                                onDismissRequest = { isPriceTypeExpanded = false }
-                            ) {
-                                priceTypes.forEach { type ->
-                                    DropdownMenuItem(
-                                        text = { 
-                                            Text(when(type) {
-                                                "Rango" -> UiTranslations.getString(context, "price_type_range", language)
-                                                "Fijo" -> UiTranslations.getString(context, "price_type_fixed", language)
-                                                "Personalizado" -> UiTranslations.getString(context, "price_type_custom", language)
-                                                else -> type
-                                            }) 
-                                        },
-                                        onClick = {
-                                            selectedPriceType = type
-                                            selectedPriceValue = ""
-                                            isPriceTypeExpanded = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
-
-                        // 2. Currency Selector
-                        ExposedDropdownMenuBox(
-                            expanded = isCurrencyExpanded,
-                            onExpandedChange = { isCurrencyExpanded = !isCurrencyExpanded },
-                            modifier = Modifier.width(90.dp)
-                        ) {
-                            OutlinedTextField(
-                                value = selectedCurrency,
-                                onValueChange = { },
-                                readOnly = true,
-                                modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, true),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                    unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                                ),
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                            ExposedDropdownMenu(
-                                expanded = isCurrencyExpanded,
-                                onDismissRequest = { isCurrencyExpanded = false }
-                            ) {
-                                currencies.forEach { curr ->
-                                    DropdownMenuItem(
-                                        text = { Text(curr) },
-                                        onClick = {
-                                            selectedCurrency = curr
-                                            isCurrencyExpanded = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    
+                    OutlinedTextField(
+                        value = productSearch,
+                        onValueChange = { productSearch = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text(UiTranslations.getString(context, "search_product_hint", language)) },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
+                    )
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // 3. Value Selector / Input
-                    if (selectedPriceType == "Personalizado") {
-                        OutlinedTextField(
-                            value = selectedPriceValue,
-                            onValueChange = { selectedPriceValue = it },
-                            placeholder = { Text(UiTranslations.getString(context, "setup_business_name_hint", language)) },
-                            modifier = Modifier.fillMaxWidth(),
-                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                                unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                            ),
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                    } else {
-                        ExposedDropdownMenuBox(
-                            expanded = isPriceValueExpanded,
-                            onExpandedChange = { isPriceValueExpanded = !isPriceValueExpanded }
-                        ) {
-                            OutlinedTextField(
-                                value = selectedPriceValue,
-                                onValueChange = { },
-                                readOnly = true,
-                                placeholder = { Text(UiTranslations.getString(context, "select_option", language)) },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .menuAnchor(MenuAnchorType.PrimaryNotEditable, true),
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isPriceValueExpanded) },
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                    unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                                ),
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                            ExposedDropdownMenu(
-                                expanded = isPriceValueExpanded,
-                                onDismissRequest = { isPriceValueExpanded = false }
-                            ) {
-                                val values = if (selectedPriceType == "Rango") rangeValues else fixedValues
-                                values.forEach { valStr ->
-                                    DropdownMenuItem(
-                                        text = { Text(valStr) },
-                                        onClick = {
-                                            selectedPriceValue = valStr
-                                            isPriceValueExpanded = false
-                                        }
-                                    )
-                                }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 400.dp)
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                            .padding(8.dp)
+                    ) {
+                        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                            filteredProducts.forEach { product ->
+                                ProductSelectionRow(
+                                    product = product,
+                                    quantity = selectedQuantities[product.id] ?: 0,
+                                    preferredCurrency = prefCurrency,
+                                    usdRate = usdRate,
+                                    eurRate = eurRate,
+                                    onQuantityChange = { selectedQuantities[product.id] = it }
+                                )
                             }
                         }
                     }
                 }
 
-                // Right Column: Services and Save Button
+                // Right Column: Summary and Save
                 Column(
                     modifier = Modifier
-                        .weight(1.2f)
+                        .weight(0.8f)
                         .fillMaxHeight()
                         .verticalScroll(rememberScrollState())
                         .padding(vertical = 16.dp)
                 ) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    // Services
-                    Text(
-                        text = UiTranslations.getString(context, "add_visit_services_label", language),
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
+                                Text(UiTranslations.getString(context, "subtotal_label", language))
+                                Text("$prefCurrency ${String.format("%.2f", subtotal)}", fontWeight = FontWeight.Bold)
+                            }
+                            
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(UiTranslations.getString(context, "discount_label", language), modifier = Modifier.weight(1f))
+                                OutlinedTextField(
+                                    value = discountValue,
+                                    onValueChange = { if (it.all { c -> c.isDigit() || c == '.' }) discountValue = it },
+                                    modifier = Modifier.width(90.dp),
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
+                                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                                    shape = RoundedCornerShape(8.dp),
+                                    singleLine = true,
+                                    suffix = { Text(if (discountType == DiscountType.FIXED) prefCurrency else "%") }
+                                )
+                                IconButton(onClick = { 
+                                    discountType = if (discountType == DiscountType.FIXED) DiscountType.PERCENTAGE else DiscountType.FIXED 
+                                }) {
+                                    Icon(Icons.Default.SwapHoriz, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                }
+                            }
 
-                    ServiceSelectorGrid(
-                        services = availableServices.map { it.copy(name = UiTranslations.translateService(it.name, language, context)) },
-                        selectedServices = selectedServices.map { UiTranslations.translateService(it, language, context) }.toSet(),
-                        onServiceToggle = { serviceNameTranslated ->
-                            // Map back to original name
-                            val originalName = availableServices.find { UiTranslations.translateService(it.name, language, context) == serviceNameTranslated }?.name ?: serviceNameTranslated
-                            if (selectedServices.contains(originalName)) {
-                                selectedServices = selectedServices - originalName
-                            } else {
-                                selectedServices = selectedServices + originalName
+                            HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
+
+                            Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
+                                Text(UiTranslations.getString(context, "total_label", language), fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
+                                Text("$prefCurrency ${String.format("%.2f", total)}", fontWeight = FontWeight.ExtraBold, fontSize = 22.sp, color = MaterialTheme.colorScheme.primary)
                             }
                         }
-                    )
+                    }
 
-                    Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
 
-                    // Save Button
                     Button(
                         onClick = {
-                            val nationality = selectedNationality?.name ?: ""
-                            val flag = selectedNationality?.flag ?: ""
-                            val servicesString = selectedServices.joinToString(", ")
-                            onSave(nationality, flag, selectedPriceType, selectedPriceValue, selectedCurrency, servicesString)
+                            val selProducts = products.filter { (selectedQuantities[it.id] ?: 0) > 0 }.map { 
+                                SelectedProduct(
+                                    id = it.id, 
+                                    name = it.name, 
+                                    originalPrice = convertPrice(it.basePrice, it.currency),
+                                    priceAtSale = convertPrice(it.getActivePrice(), it.currency), 
+                                    quantity = selectedQuantities[it.id]!!,
+                                    hasDiscount = it.getActivePrice() < it.basePrice,
+                                    currency = prefCurrency
+                                )
+                            }
+                            onSave(selectedNationality?.name ?: "", selectedNationality?.flag ?: "", selProducts, subtotal, discountNum, discountType, total)
                         },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(60.dp),
-                        shape = RoundedCornerShape(30.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-                        ),
-                        enabled = selectedNationality != null && selectedPriceValue.isNotEmpty() && selectedServices.isNotEmpty()
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        shape = RoundedCornerShape(28.dp),
+                        enabled = selectedNationality != null && subtotal > 0
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Save,
-                                contentDescription = null,
-                                tint = Color.White
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = UiTranslations.getString(context, "add_visit_save", language),
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        }
+                        Icon(Icons.Default.Save, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(UiTranslations.getString(context, "add_visit_save", language), fontWeight = FontWeight.Bold)
                     }
-                    Spacer(modifier = Modifier.height(24.dp))
                 }
             }
         } else {
             Column(
                 modifier = Modifier
+                    .padding(padding)
                     .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(horizontal = 24.dp)
+                    .padding(horizontal = 16.dp)
                     .verticalScroll(rememberScrollState())
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = UiTranslations.getString(context, "add_visit_title", language),
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.Bold,
-                        lineHeight = 34.sp,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    Surface(
-                        color = MaterialTheme.colorScheme.surfaceVariant,
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.padding(start = 8.dp)
-                    ) {
-                        Text(
-                            text = "${UiTranslations.getString(context, "record_label", language)} #${visitCount + 1}",
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                            fontSize = 12.sp,
-                            color = if (isSystemInDarkTheme()) Color.LightGray else Color.Gray
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                // Nationality Selector
-                Text(
-                    text = UiTranslations.getString(context, "add_visit_country_label", language) + " *",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-                )
                 Spacer(modifier = Modifier.height(8.dp))
 
+                // 1. Nacionalidad
+                Text(
+                    text = UiTranslations.getString(context, "add_visit_country_label", language),
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(8.dp))
                 ExposedDropdownMenuBox(
                     expanded = isNationalityExpanded,
                     onExpandedChange = { isNationalityExpanded = !isNationalityExpanded }
                 ) {
                     OutlinedTextField(
                         value = if (selectedNationality != null && !isNationalityExpanded) 
-                                    "${selectedNationality?.flag} ${selectedNationality?.name}" 
-                                else nationalitySearch,
-                        onValueChange = { 
-                            nationalitySearch = it
-                            isNationalityExpanded = true
-                        },
-                        placeholder = { Text(UiTranslations.getString(context, "select_option", language)) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .menuAnchor(MenuAnchorType.PrimaryEditable, true),
+                            "${selectedNationality?.flag} ${selectedNationality?.name}" else nationalitySearch,
+                        onValueChange = { nationalitySearch = it; isNationalityExpanded = true },
+                        modifier = Modifier.fillMaxWidth().menuAnchor(),
+                        placeholder = { Text(UiTranslations.getString(context, "search_country_hint", language)) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isNationalityExpanded) },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                            focusedContainerColor = MaterialTheme.colorScheme.surface,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                        ),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
                     )
-
                     ExposedDropdownMenu(
                         expanded = isNationalityExpanded,
-                        onDismissRequest = { isNationalityExpanded = false },
-                        modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                        onDismissRequest = { isNationalityExpanded = false }
                     ) {
-                        filteredCountries.forEach { country ->
+                        countries.filter { it.name.contains(nationalitySearch, true) }.forEach { country ->
                             DropdownMenuItem(
-                                text = { 
-                                    Row {
-                                        Text(text = country.flag)
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(text = country.name)
-                                    }
-                                },
-                                onClick = {
+                                text = { Text("${country.flag} ${country.name}") },
+                                onClick = { 
                                     selectedNationality = country
                                     nationalitySearch = ""
-                                    isNationalityExpanded = false
+                                    isNationalityExpanded = false 
+                                    focusManager.clearFocus()
                                 }
                             )
                         }
@@ -513,240 +348,275 @@ fun AddVisitScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Expense Selector (Refactored)
+                // 2. Sección de Productos con Buscador
                 Text(
-                    text = UiTranslations.getString(context, "add_visit_price_label", language) + " *",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                    text = UiTranslations.getString(context, "product_label", language),
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.height(8.dp))
+                
+                // Buscador de productos estilizado
+                OutlinedTextField(
+                    value = productSearch,
+                    onValueChange = { productSearch = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text(UiTranslations.getString(context, "search_product_hint", language)) },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                    trailingIcon = if (productSearch.isNotEmpty()) {
+                        { IconButton(onClick = { productSearch = "" }) { Icon(Icons.Default.Close, contentDescription = null) } }
+                    } else null,
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                    )
+                )
 
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    // 1. Type Selector
-                    ExposedDropdownMenuBox(
-                        expanded = isPriceTypeExpanded,
-                        onExpandedChange = { isPriceTypeExpanded = !isPriceTypeExpanded },
-                        modifier = Modifier.weight(1f)
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Lista de productos con scroll interno si hay más de 3
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 280.dp)
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                        .padding(8.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState())
                     ) {
-                        OutlinedTextField(
-                            value = when(selectedPriceType) {
-                                "Rango" -> UiTranslations.getString(context, "price_type_range", language)
-                                "Fijo" -> UiTranslations.getString(context, "price_type_fixed", language)
-                                "Personalizado" -> UiTranslations.getString(context, "price_type_custom", language)
-                                else -> selectedPriceType
-                            },
-                            onValueChange = { },
-                            readOnly = true,
-                            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, true),
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isPriceTypeExpanded) },
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                                unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                            ),
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                        ExposedDropdownMenu(
-                            expanded = isPriceTypeExpanded,
-                            onDismissRequest = { isPriceTypeExpanded = false }
-                        ) {
-                            priceTypes.forEach { type ->
-                                DropdownMenuItem(
-                                    text = { 
-                                        Text(when(type) {
-                                            "Rango" -> UiTranslations.getString(context, "price_type_range", language)
-                                            "Fijo" -> UiTranslations.getString(context, "price_type_fixed", language)
-                                            "Personalizado" -> UiTranslations.getString(context, "price_type_custom", language)
-                                            else -> type
-                                        }) 
-                                    },
-                                    onClick = {
-                                        selectedPriceType = type
-                                        selectedPriceValue = ""
-                                        isPriceTypeExpanded = false
-                                    }
-                                )
+                        filteredProducts.forEach { product ->
+                            ProductSelectionRow(
+                                product = product,
+                                quantity = selectedQuantities[product.id] ?: 0,
+                                preferredCurrency = prefCurrency,
+                                usdRate = usdRate,
+                                eurRate = eurRate,
+                                onQuantityChange = { selectedQuantities[product.id] = it }
+                            )
+                            if (product != filteredProducts.last()) {
+                                HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
                             }
                         }
-                    }
-
-                    // 2. Currency Selector
-                    ExposedDropdownMenuBox(
-                        expanded = isCurrencyExpanded,
-                        onExpandedChange = { isCurrencyExpanded = !isCurrencyExpanded },
-                        modifier = Modifier.width(90.dp)
-                    ) {
-                        OutlinedTextField(
-                            value = selectedCurrency,
-                            onValueChange = { },
-                            readOnly = true,
-                            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, true),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                                unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                            ),
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                        ExposedDropdownMenu(
-                            expanded = isCurrencyExpanded,
-                            onDismissRequest = { isCurrencyExpanded = false }
-                        ) {
-                            currencies.forEach { curr ->
-                                DropdownMenuItem(
-                                    text = { Text(curr) },
-                                    onClick = {
-                                        selectedCurrency = curr
-                                        isCurrencyExpanded = false
-                                    }
-                                )
-                            }
+                        if (filteredProducts.isEmpty()) {
+                            Text(
+                                text = UiTranslations.getString(context, "catalog_empty", language),
+                                modifier = Modifier.padding(16.dp).align(Alignment.CenterHorizontally),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-                // 3. Value Selector / Input
-                if (selectedPriceType == "Personalizado") {
-                    OutlinedTextField(
-                        value = selectedPriceValue,
-                        onValueChange = { selectedPriceValue = it },
-                        placeholder = { Text(UiTranslations.getString(context, "setup_business_name_hint", language)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                            focusedContainerColor = MaterialTheme.colorScheme.surface,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                        ),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                } else {
-                    ExposedDropdownMenuBox(
-                        expanded = isPriceValueExpanded,
-                        onExpandedChange = { isPriceValueExpanded = !isPriceValueExpanded }
-                    ) {
-                        OutlinedTextField(
-                            value = selectedPriceValue,
-                            onValueChange = { },
-                            readOnly = true,
-                            placeholder = { Text(UiTranslations.getString(context, "select_option", language)) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .menuAnchor(MenuAnchorType.PrimaryNotEditable, true),
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isPriceValueExpanded) },
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                                unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                            ),
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                        ExposedDropdownMenu(
-                            expanded = isPriceValueExpanded,
-                            onDismissRequest = { isPriceValueExpanded = false }
-                        ) {
-                            val values = if (selectedPriceType == "Rango") rangeValues else fixedValues
-                            values.forEach { valStr ->
-                                DropdownMenuItem(
-                                    text = { Text(valStr) },
-                                    onClick = {
-                                        selectedPriceValue = valStr
-                                        isPriceValueExpanded = false
-                                    }
+                // 3. Resumen y Descuento
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                ) {
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
+                            Text(UiTranslations.getString(context, "subtotal_label", language), style = MaterialTheme.typography.bodyLarge)
+                            Text("$prefCurrency ${String.format("%.2f", subtotal)}", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                        }
+                        
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(
+                                text = UiTranslations.getString(context, "discount_label", language),
+                                modifier = Modifier.weight(1f),
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            OutlinedTextField(
+                                value = discountValue,
+                                onValueChange = { if (it.all { c -> c.isDigit() || c == '.' }) discountValue = it },
+                                modifier = Modifier.width(110.dp),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
+                                keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                                shape = RoundedCornerShape(8.dp),
+                                singleLine = true,
+                                suffix = { 
+                                    Text(
+                                        text = if (discountType == DiscountType.FIXED) prefCurrency else "%",
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontWeight = FontWeight.Bold
+                                    ) 
+                                },
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
                                 )
+                            )
+                            IconButton(
+                                onClick = { 
+                                    discountType = if (discountType == DiscountType.FIXED) DiscountType.PERCENTAGE else DiscountType.FIXED 
+                                },
+                                modifier = Modifier.background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape)
+                            ) {
+                                Icon(Icons.Default.SwapHoriz, contentDescription = "Switch Discount Type", tint = MaterialTheme.colorScheme.primary)
                             }
+                        }
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+
+                        Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Text(UiTranslations.getString(context, "total_label", language), fontWeight = FontWeight.ExtraBold, fontSize = 22.sp)
+                            Text(
+                                text = "$prefCurrency ${String.format("%.2f", total)}",
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 24.sp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
                         }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // Services
-                Text(
-                    text = UiTranslations.getString(context, "add_visit_services_label", language),
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-
-                ServiceSelectorGrid(
-                    services = availableServices.map { it.copy(name = UiTranslations.translateService(it.name, language, context)) },
-                    selectedServices = selectedServices.map { UiTranslations.translateService(it, language, context) }.toSet(),
-                    onServiceToggle = { serviceNameTranslated ->
-                        val originalName = availableServices.find { UiTranslations.translateService(it.name, language, context) == serviceNameTranslated }?.name ?: serviceNameTranslated
-                        if (selectedServices.contains(originalName)) {
-                            selectedServices = selectedServices - originalName
-                        } else {
-                            selectedServices = selectedServices + originalName
-                        }
-                    }
-                )
-
-                Spacer(modifier = Modifier.height(48.dp))
-
-                // Save Button
+                // 4. Botón Guardar
                 Button(
                     onClick = {
-                        val nationality = selectedNationality?.name ?: ""
-                        val flag = selectedNationality?.flag ?: ""
-                        val servicesString = selectedServices.joinToString(", ")
-                        onSave(nationality, flag, selectedPriceType, selectedPriceValue, selectedCurrency, servicesString)
+                        val selProducts = products.filter { (selectedQuantities[it.id] ?: 0) > 0 }.map { 
+                            SelectedProduct(
+                                id = it.id, 
+                                name = it.name, 
+                                originalPrice = convertPrice(it.basePrice, it.currency),
+                                priceAtSale = convertPrice(it.getActivePrice(), it.currency), 
+                                quantity = selectedQuantities[it.id]!!,
+                                hasDiscount = it.getActivePrice() < it.basePrice,
+                                currency = prefCurrency
+                            )
+                        }
+                        onSave(selectedNationality?.name ?: "", selectedNationality?.flag ?: "", selProducts, subtotal, discountNum, discountType, total)
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(60.dp),
+                    modifier = Modifier.fillMaxWidth().height(60.dp),
                     shape = RoundedCornerShape(30.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-                    ),
-                    enabled = selectedNationality != null && selectedPriceValue.isNotEmpty() && selectedServices.isNotEmpty()
+                    enabled = selectedNationality != null && subtotal > 0,
+                    elevation = ButtonDefaults.buttonColors().let { ButtonDefaults.elevatedButtonElevation(defaultElevation = 4.dp) }
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Save,
-                            contentDescription = null,
-                            tint = Color.White
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = UiTranslations.getString(context, "add_visit_save", language),
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                    }
+                    Icon(Icons.Default.Save, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = UiTranslations.getString(context, "add_visit_save", language),
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
                 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(32.dp))
             }
+        }
+
+        if (showExitDialog) {
+            UnsavedChangesDialog(
+                language = language,
+                onSave = {
+                    val selProducts = products.filter { (selectedQuantities[it.id] ?: 0) > 0 }.map { 
+                        SelectedProduct(
+                            id = it.id, 
+                            name = it.name, 
+                            originalPrice = convertPrice(it.basePrice, it.currency),
+                            priceAtSale = convertPrice(it.getActivePrice(), it.currency), 
+                            quantity = selectedQuantities[it.id]!!,
+                            hasDiscount = it.getActivePrice() < it.basePrice,
+                            currency = prefCurrency
+                        )
+                    }
+                    onSave(selectedNationality?.name ?: "", selectedNationality?.flag ?: "", selProducts, subtotal, discountNum, discountType, total)
+                },
+                onExitWithoutSaving = onBack,
+                onDismiss = { showExitDialog = false }
+            )
         }
     }
 }
 
 data class Country(val name: String, val flag: String)
 
-@Preview(showBackground = true)
 @Composable
-fun AddVisitPreview() {
-    Final_projectTheme {
-        AddVisitScreen(visitCount = 11, language = "Español", onBack = {}, onSave = { _, _, _, _, _, _ -> })
+fun ProductSelectionRow(product: Product, quantity: Int, preferredCurrency: String, usdRate: Double, eurRate: Double, onQuantityChange: (Int) -> Unit) {
+    val activePriceRaw = product.getActivePrice()
+    
+    fun convert(price: Double, from: String): Double {
+        if (from == preferredCurrency) return price
+        val priceInSoles = when(from) {
+            "$" -> price * usdRate
+            "€" -> price * eurRate
+            else -> price
+        }
+        return when(preferredCurrency) {
+            "$" -> priceInSoles / usdRate
+            "€" -> priceInSoles / eurRate
+            else -> priceInSoles
+        }
+    }
+
+    val basePrice = convert(product.basePrice, product.currency)
+    val activePrice = convert(activePriceRaw, product.currency)
+    val hasDiscount = activePriceRaw < product.basePrice
+
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp, horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(product.name, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (hasDiscount) {
+                    Text(
+                        text = "$preferredCurrency ${String.format("%.2f", basePrice)}", 
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        fontSize = 12.sp,
+                        textDecoration = TextDecoration.LineThrough
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "$preferredCurrency ${String.format("%.2f", activePrice)}", 
+                        color = Color(0xFFE53935),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                } else {
+                    Text(
+                        text = "$preferredCurrency ${String.format("%.2f", basePrice)}",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.background(MaterialTheme.colorScheme.surface, RoundedCornerShape(20.dp)).padding(horizontal = 4.dp)
+        ) {
+            IconButton(
+                onClick = { if (quantity > 0) onQuantityChange(quantity - 1) },
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(Icons.Default.Remove, contentDescription = null, modifier = Modifier.size(20.dp))
+            }
+            Text(
+                text = quantity.toString(),
+                modifier = Modifier.padding(horizontal = 12.dp),
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 16.sp,
+                color = if (quantity > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+            )
+            IconButton(
+                onClick = { onQuantityChange(quantity + 1) },
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+            }
+        }
     }
 }
-
-@Preview(showBackground = true, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
-@Composable
-fun AddVisitDarkPreview() {
-    Final_projectTheme {
-        AddVisitScreen(visitCount = 11, language = "Español", onBack = {}, onSave = { _, _, _, _, _, _ -> })
-    }
-}
-

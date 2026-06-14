@@ -14,6 +14,9 @@ import kotlinx.coroutines.withContext
 import upch.mluque.final_project.data.DataRepository
 import upch.mluque.final_project.data.local.AppDatabase
 import upch.mluque.final_project.data.local.AppSettings
+import upch.mluque.final_project.data.local.DiscountType
+import upch.mluque.final_project.data.local.Product
+import upch.mluque.final_project.data.local.SelectedProduct
 import upch.mluque.final_project.data.local.Visit
 import upch.mluque.final_project.utils.NetworkMonitor
 import java.net.Inet4Address
@@ -65,7 +68,7 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         val db = AppDatabase.getDatabase(application)
-        repository = DataRepository(db.appSettingsDao(), db.visitDao())
+        repository = DataRepository(db.appSettingsDao(), db.visitDao(), db.productDao())
         
         // Adquirir MulticastLock para asegurar descubrimiento NSD
         try {
@@ -102,6 +105,15 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
                 if (settings != null && !isProcessingRemoteUpdate && _isConnected.value) {
                     syncManager.sendMessage(SyncMessage.UpdateSettings(settings))
                     addLog("Sincronizando cambios de ajustes...")
+                }
+            }
+            .launchIn(viewModelScope)
+
+        repository.allProducts
+            .onEach { products ->
+                if (!isProcessingRemoteUpdate && _isConnected.value) {
+                    syncManager.sendMessage(SyncMessage.UpdateProducts(products))
+                    addLog("Sincronizando catálogo de productos...")
                 }
             }
             .launchIn(viewModelScope)
@@ -202,17 +214,26 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun addVisit(nationality: String, flag: String, priceType: String, priceValue: String, priceCurrency: String, services: String) {
+    fun addVisit(
+        nationality: String,
+        flag: String,
+        selectedProducts: List<SelectedProduct>,
+        subtotal: Double,
+        discountValue: Double,
+        discountType: DiscountType,
+        totalAmount: Double
+    ) {
         viewModelScope.launch {
             val currentSettings = repository.getSettingsOnce()
             val visit = Visit(
                 deviceId = currentSettings?.deviceId ?: "",
                 nationality = nationality,
                 nationalityFlag = flag,
-                priceType = priceType,
-                priceValue = priceValue,
-                priceCurrency = priceCurrency,
-                services = services
+                selectedProducts = selectedProducts,
+                subtotal = subtotal,
+                discountValue = discountValue,
+                discountType = discountType,
+                totalAmount = totalAmount
             )
             repository.insertVisit(visit)
             
@@ -399,7 +420,7 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private fun handleMessage(message: SyncMessage) {
+    fun handleMessage(message: SyncMessage) {
         // Cualquier mensaje recibido actualiza el timestamp de "vida"
         lastResponseTimestamp = System.currentTimeMillis()
 
@@ -453,6 +474,13 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
                                 repository.insertVisit(remoteVisit.copy(id = 0))
                             }
                             addLog("Fusionadas ${newVisitsForLocal.size} visitas del remoto")
+                        }
+
+                        // Fusión de Productos (Catálogo)
+                        val remoteProducts = message.products
+                        if (remoteProducts.isNotEmpty()) {
+                            repository.replaceAllProducts(remoteProducts.map { it.copy(id = 0) })
+                            addLog("Catálogo de productos actualizado")
                         }
 
                         val remoteTimestamps = remoteVisits.map { it.registrationDate }.toSet()
@@ -523,6 +551,19 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 }
             }
+            is SyncMessage.UpdateProducts -> {
+                viewModelScope.launch {
+                    isProcessingRemoteUpdate = true
+                    try {
+                        repository.replaceAllProducts(message.products.map { it.copy(id = 0) })
+                        addLog("Catálogo de productos actualizado remotamente")
+                        _ticks.value++
+                    } finally {
+                        delay(500)
+                        isProcessingRemoteUpdate = false
+                    }
+                }
+            }
             is SyncMessage.Handshake -> {
                 viewModelScope.launch {
                     _remoteDeviceName.value = message.deviceName
@@ -579,9 +620,10 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val settings = repository.getSettingsOnce()
             val visits = repository.allVisits.first()
+            val products = repository.allProducts.first()
             if (settings != null) {
-                syncManager.sendMessage(SyncMessage.SyncData(settings, visits))
-                addLog("Enviando configuración y ${visits.size} visitas...")
+                syncManager.sendMessage(SyncMessage.SyncData(settings, visits, products))
+                addLog("Enviando configuración, ${visits.size} visitas y ${products.size} productos...")
                 _syncCompleted.emit(Unit)
             }
         }

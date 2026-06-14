@@ -38,12 +38,12 @@ private val LightColorScheme = lightColorScheme(
     onPrimary = Color.White,
     onSecondary = Color.White,
     onTertiary = Color.White,
-    onBackground = DarkGreenText,
-    onSurface = DarkGreenText,
+    onBackground = Color(0xFF2C1810), // Brownish black for text
+    onSurface = Color(0xFF2C1810),
     primaryContainer = WarmPrimaryContainer,
     onPrimaryContainer = WarmOnPrimaryContainer,
     surfaceVariant = WarmSurfaceVariant,
-    onSurfaceVariant = Color.Gray
+    onSurfaceVariant = Color(0xFF5D4037) // Muted brown for secondary text
 )
 
 @Composable

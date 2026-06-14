@@ -1,12 +1,9 @@
 package upch.mluque.final_project.ui.features.profile
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -15,18 +12,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
-import upch.mluque.final_project.ui.theme.Final_projectTheme
 import upch.mluque.final_project.ui.components.ServiceOption
-import upch.mluque.final_project.ui.components.ServiceCard
 import upch.mluque.final_project.ui.components.ServiceSelectorGrid
 import upch.mluque.final_project.utils.UiTranslations
 
@@ -114,8 +106,8 @@ fun ProfileSetupScreen(
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = MaterialTheme.colorScheme.primary,
                             unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f),
-                            focusedContainerColor = if (isSystemInDarkTheme()) Color.Transparent else Color.White,
-                            unfocusedContainerColor = if (isSystemInDarkTheme()) Color.Transparent else Color.White
+                            focusedContainerColor = if (isSystemInDarkTheme()) Color.Transparent else MaterialTheme.colorScheme.surface,
+                            unfocusedContainerColor = if (isSystemInDarkTheme()) Color.Transparent else MaterialTheme.colorScheme.surface
                         )
                     )
 
@@ -140,13 +132,13 @@ fun ProfileSetupScreen(
                                 UiTranslations.getString(context, "setup_save_btn", selectedLanguage),
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White
+                                color = MaterialTheme.colorScheme.onPrimary
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Icon(
                                 imageVector = Icons.Default.ArrowForward,
                                 contentDescription = null,
-                                tint = Color.White
+                                tint = MaterialTheme.colorScheme.onPrimary
                             )
                         }
                     }
@@ -223,8 +215,8 @@ fun ProfileSetupScreen(
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = MaterialTheme.colorScheme.primary,
                             unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f),
-                            focusedContainerColor = if (isSystemInDarkTheme()) Color.Transparent else Color.White,
-                            unfocusedContainerColor = if (isSystemInDarkTheme()) Color.Transparent else Color.White
+                            focusedContainerColor = if (isSystemInDarkTheme()) Color.Transparent else MaterialTheme.colorScheme.surface,
+                            unfocusedContainerColor = if (isSystemInDarkTheme()) Color.Transparent else MaterialTheme.colorScheme.surface
                         )
                     )
                 }
@@ -280,13 +272,13 @@ fun ProfileSetupScreen(
                             UiTranslations.getString(context, "setup_save_btn", selectedLanguage),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = MaterialTheme.colorScheme.onPrimary
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Icon(
                             imageVector = Icons.Default.ArrowForward,
                             contentDescription = null,
-                            tint = Color.White
+                            tint = MaterialTheme.colorScheme.onPrimary
                         )
                     }
                 }
@@ -296,20 +288,3 @@ fun ProfileSetupScreen(
         }
     }
 }
-
-@Preview(showBackground = true)
-@Composable
-fun ProfileSetupPreview() {
-    Final_projectTheme {
-        ProfileSetupScreen(selectedLanguage = "Español", onBack = {}, onSave = { _, _ -> })
-    }
-}
-
-@Preview(showBackground = true, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
-@Composable
-fun ProfileSetupDarkPreview() {
-    Final_projectTheme {
-        ProfileSetupScreen(selectedLanguage = "Español", onBack = {}, onSave = { _, _ -> })
-    }
-}
-

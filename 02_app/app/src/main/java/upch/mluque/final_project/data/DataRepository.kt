@@ -3,15 +3,19 @@ package upch.mluque.final_project.data
 import kotlinx.coroutines.flow.Flow
 import upch.mluque.final_project.data.local.AppSettings
 import upch.mluque.final_project.data.local.AppSettingsDao
+import upch.mluque.final_project.data.local.Product
+import upch.mluque.final_project.data.local.ProductDao
 import upch.mluque.final_project.data.local.Visit
 import upch.mluque.final_project.data.local.VisitDao
 
 class DataRepository(
     private val appSettingsDao: AppSettingsDao,
-    private val visitDao: VisitDao
+    private val visitDao: VisitDao,
+    private val productDao: ProductDao
 ) {
     val appSettings: Flow<AppSettings?> = appSettingsDao.getSettings()
     val allVisits: Flow<List<Visit>> = visitDao.getAllVisits()
+    val allProducts: Flow<List<Product>> = productDao.getAllProducts()
 
     suspend fun getSettingsOnce(): AppSettings? {
         return appSettingsDao.getSettingsOnce()
@@ -29,8 +33,33 @@ class DataRepository(
         return visitDao.getVisitById(id)
     }
 
+    suspend fun getProductById(id: Int): Product? {
+        return productDao.getProductById(id)
+    }
+
+    suspend fun insertProducts(products: List<Product>) {
+        productDao.insertProducts(products)
+    }
+
+    suspend fun replaceAllProducts(products: List<Product>) {
+        productDao.replaceProducts(products)
+    }
+
+    suspend fun insertProduct(product: Product) {
+        productDao.insertProduct(product)
+    }
+
+    suspend fun updateProduct(product: Product) {
+        productDao.updateProduct(product)
+    }
+
+    suspend fun deleteProduct(product: Product) {
+        productDao.deleteProduct(product)
+    }
+
     suspend fun clearAllData() {
         appSettingsDao.clearSettings()
         visitDao.deleteAllVisits()
+        productDao.deleteAllProducts()
     }
 }

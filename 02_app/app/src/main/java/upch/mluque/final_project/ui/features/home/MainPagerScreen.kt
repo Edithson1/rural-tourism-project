@@ -90,7 +90,8 @@ fun MainPagerScreen(
                 onNavigateToEdit = { navController.navigate(Routes.PROFILE_EDIT) },
                 onNavigateToLanguage = { navController.navigate(Routes.PROFILE_LANGUAGE) },
                 onNavigateToHelp = { navController.navigate(Routes.PROFILE_HELP) },
-                onNavigateToPrivacy = { navController.navigate(Routes.PROFILE_PRIVACY) }
+                onNavigateToPrivacy = { navController.navigate(Routes.PROFILE_PRIVACY) },
+                onNavigateToCatalog = { navController.navigate(Routes.PRODUCT_CATALOG) }
             )
         }
     }

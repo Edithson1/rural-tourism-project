@@ -16,6 +16,9 @@ import upch.mluque.final_project.data.DataRepository
 import upch.mluque.final_project.data.local.AppDatabase
 import upch.mluque.final_project.data.local.AppSettings
 import upch.mluque.final_project.data.local.Visit
+import upch.mluque.final_project.data.local.Product
+import upch.mluque.final_project.data.local.SelectedProduct
+import upch.mluque.final_project.data.local.DiscountType
 import upch.mluque.final_project.data.model.CountryFeature
 import kotlinx.coroutines.flow.*
 import org.json.JSONObject
@@ -27,13 +30,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: DataRepository
     val appSettings: StateFlow<AppSettings?>
     val allVisits: StateFlow<List<Visit>>
-    
+    val allProducts: StateFlow<List<Product>>
+
     private val _countryFeatures = MutableStateFlow<List<CountryFeature>>(emptyList())
     val countryFeatures: StateFlow<List<CountryFeature>> = _countryFeatures.asStateFlow()
 
     init {
         val database = AppDatabase.getDatabase(application)
-        repository = DataRepository(database.appSettingsDao(), database.visitDao())
+        repository = DataRepository(database.appSettingsDao(), database.visitDao(), database.productDao())
         
         appSettings = repository.appSettings.stateIn(
             scope = viewModelScope,
@@ -42,6 +46,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         )
 
         allVisits = repository.allVisits.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+        allProducts = repository.allProducts.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
@@ -107,19 +117,69 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         "Portugués" to "Este mapa mostra a distribuição das suas visitas.\nOs pontos azuis representam hospedagem.\nOs pontos verdes são de alimentação.\nOs pontos vermelhos indicam artesanato.\nUse o zoom para ver mais detalhes."
     )
 
-    fun addVisit(nationality: String, flag: String, priceType: String, priceValue: String, priceCurrency: String, services: String) {
+    fun addVisit(
+        nationality: String,
+        flag: String,
+        selectedProducts: List<SelectedProduct>,
+        subtotal: Double,
+        discountValue: Double,
+        discountType: DiscountType,
+        totalAmount: Double
+    ) {
         viewModelScope.launch {
             val currentSettings = repository.getSettingsOnce()
             val visit = Visit(
                 deviceId = currentSettings?.deviceId ?: "",
                 nationality = nationality,
                 nationalityFlag = flag,
-                priceType = priceType,
-                priceValue = priceValue,
-                priceCurrency = priceCurrency,
-                services = services
+                selectedProducts = selectedProducts,
+                subtotal = subtotal,
+                discountValue = discountValue,
+                discountType = discountType,
+                totalAmount = totalAmount
             )
             repository.insertVisit(visit)
+        }
+    }
+
+    fun addProduct(product: Product) {
+        viewModelScope.launch { repository.insertProduct(product) }
+    }
+
+    fun updateProduct(product: Product) {
+        viewModelScope.launch { repository.updateProduct(product) }
+    }
+
+    fun deleteProduct(product: Product) {
+        viewModelScope.launch { repository.deleteProduct(product) }
+    }
+
+    suspend fun getProductById(id: Int): Product? {
+        return repository.getProductById(id)
+    }
+
+    fun preloadProducts(category: String) {
+        viewModelScope.launch {
+            val products = when (category) {
+                "Hospedaje" -> listOf(
+                    Product(name = "Habitación Simple", basePrice = 50.0, category = "Hospedaje", isDefault = true)
+                )
+                "Alimentación" -> listOf(
+                    Product(name = "Almuerzo del día", basePrice = 15.0, category = "Alimentación", isDefault = true)
+                )
+                "Artesanía" -> listOf(
+                    Product(name = "Artesanía de la zona", basePrice = 25.0, category = "Artesanía", isDefault = true)
+                )
+                "Varios" -> listOf(
+                    Product(name = "Habitación", basePrice = 50.0, category = "Hospedaje", isDefault = true),
+                    Product(name = "Almuerzo", basePrice = 15.0, category = "Alimentación", isDefault = true),
+                    Product(name = "Recuerdo / Artesanía", basePrice = 20.0, category = "Artesanía", isDefault = true)
+                )
+                else -> emptyList()
+            }
+            if (products.isNotEmpty()) {
+                repository.insertProducts(products)
+            }
         }
     }
 
@@ -140,11 +200,41 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun saveProfile(name: String, category: String, profilePicture: ByteArray? = null) {
         viewModelScope.launch {
             val current = repository.getSettingsOnce() ?: AppSettings()
+            val oldCategory = current.businessCategory
+            
+            // Si cambia la categoría y no es "Varios", borrar productos que no pertenezcan
+            if (category != oldCategory && category != "Varios") {
+                val allProducts = repository.allProducts.first()
+                val productsToDelete = allProducts.filter { it.category != category }
+                productsToDelete.forEach { repository.deleteProduct(it) }
+            }
+
             repository.saveSettings(current.copy(
                 businessName = name,
                 businessCategory = category,
                 profilePicture = profilePicture ?: current.profilePicture,
                 isOnboardingCompleted = true,
+                lastModified = System.currentTimeMillis()
+            ))
+        }
+    }
+
+    fun updatePreferredCurrency(currency: String) {
+        viewModelScope.launch {
+            val current = repository.getSettingsOnce() ?: AppSettings()
+            repository.saveSettings(current.copy(
+                preferredCurrency = currency,
+                lastModified = System.currentTimeMillis()
+            ))
+        }
+    }
+
+    fun updateExchangeRates(usd: Double, eur: Double) {
+        viewModelScope.launch {
+            val current = repository.getSettingsOnce() ?: AppSettings()
+            repository.saveSettings(current.copy(
+                usdExchangeRate = usd,
+                eurExchangeRate = eur,
                 lastModified = System.currentTimeMillis()
             ))
         }

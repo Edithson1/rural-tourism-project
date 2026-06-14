@@ -27,6 +27,7 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import upch.mluque.final_project.ui.MainViewModel
 import upch.mluque.final_project.sync.SyncViewModel
+import upch.mluque.final_project.ui.navigation.Routes
 import upch.mluque.final_project.ui.components.ConnectionRequiredDialog
 import upch.mluque.final_project.ui.theme.Final_projectTheme
 import upch.mluque.final_project.utils.PermissionRequester
@@ -41,7 +42,8 @@ fun ProfileScreen(
     onNavigateToEdit: () -> Unit,
     onNavigateToLanguage: () -> Unit,
     onNavigateToHelp: () -> Unit,
-    onNavigateToPrivacy: () -> Unit
+    onNavigateToPrivacy: () -> Unit,
+    onNavigateToCatalog: () -> Unit
 ) {
     val settings by viewModel.appSettings.collectAsState()
     val language = settings?.language ?: "Español"
@@ -79,7 +81,7 @@ fun ProfileScreen(
                 LandscapeProfileContent(
                     paddingValues, settings, role, isConnected, remoteDeviceName,
                     navController, onNavigateToEdit, onNavigateToLanguage,
-                    onNavigateToHelp, onNavigateToPrivacy, language,
+                    onNavigateToHelp, onNavigateToPrivacy, language, onNavigateToCatalog,
                     onVoiceSpeedClick = { showVoiceSpeedModal = true },
                     onLinkDeviceClick = { triggerPermissions = true },
                     onLogoutClick = {
@@ -94,7 +96,7 @@ fun ProfileScreen(
                 PortraitProfileContent(
                     paddingValues, settings, role, isConnected, remoteDeviceName,
                     navController, onNavigateToEdit, onNavigateToLanguage,
-                    onNavigateToHelp, onNavigateToPrivacy, language,
+                    onNavigateToHelp, onNavigateToPrivacy, language, onNavigateToCatalog,
                     onVoiceSpeedClick = { showVoiceSpeedModal = true },
                     onLinkDeviceClick = { triggerPermissions = true },
                     onLogoutClick = {
@@ -198,6 +200,7 @@ fun PortraitProfileContent(
     onNavigateToHelp: () -> Unit,
     onNavigateToPrivacy: () -> Unit,
     language: String,
+    onNavigateToCatalog: () -> Unit,
     onVoiceSpeedClick: () -> Unit,
     onLinkDeviceClick: () -> Unit,
     onLogoutClick: () -> Unit
@@ -215,7 +218,7 @@ fun PortraitProfileContent(
         Spacer(modifier = Modifier.height(24.dp))
         ProfileHeaderCard(settings, language, onNavigateToEdit)
         Spacer(modifier = Modifier.height(32.dp))
-        SettingsSection(settings, role, remoteDeviceName, language, onNavigateToLanguage, onVoiceSpeedClick, onLinkDeviceClick, onLogoutClick, navController)
+        SettingsSection(settings, role, remoteDeviceName, language, onNavigateToLanguage, onVoiceSpeedClick, onLinkDeviceClick, onLogoutClick, navController, onNavigateToCatalog)
         Spacer(modifier = Modifier.height(24.dp))
         InfoSection(language, onNavigateToHelp, onNavigateToPrivacy)
         Spacer(modifier = Modifier.height(40.dp))
@@ -235,6 +238,7 @@ fun LandscapeProfileContent(
     onNavigateToHelp: () -> Unit,
     onNavigateToPrivacy: () -> Unit,
     language: String,
+    onNavigateToCatalog: () -> Unit,
     onVoiceSpeedClick: () -> Unit,
     onLinkDeviceClick: () -> Unit,
     onLogoutClick: () -> Unit
@@ -267,7 +271,7 @@ fun LandscapeProfileContent(
                 .verticalScroll(rememberScrollState())
                 .padding(vertical = 16.dp)
         ) {
-            SettingsSection(settings, role, remoteDeviceName, language, onNavigateToLanguage, onVoiceSpeedClick, onLinkDeviceClick, onLogoutClick, navController)
+            SettingsSection(settings, role, remoteDeviceName, language, onNavigateToLanguage, onVoiceSpeedClick, onLinkDeviceClick, onLogoutClick, navController, onNavigateToCatalog)
             Spacer(modifier = Modifier.height(24.dp))
             InfoSection(language, onNavigateToHelp, onNavigateToPrivacy)
             Spacer(modifier = Modifier.height(40.dp))
@@ -374,7 +378,8 @@ fun SettingsSection(
     onVoiceSpeedClick: () -> Unit,
     onLinkDeviceClick: () -> Unit,
     onLogoutClick: () -> Unit,
-    navController: NavController
+    navController: NavController,
+    onNavigateToCatalog: () -> Unit
 ) {
     val context = LocalContext.current
     SectionTitle(UiTranslations.getString(context, "profile_settings_title", language))
@@ -386,6 +391,19 @@ fun SettingsSection(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column {
+            SettingsItem(
+                icon = Icons.Default.Inventory2,
+                title = UiTranslations.getString(context, "catalog_title", language),
+                onClick = onNavigateToCatalog
+            )
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+            SettingsItem(
+                icon = Icons.Default.Paid,
+                title = UiTranslations.getString(context, "profile_currency", language),
+                value = settings?.preferredCurrency ?: "S/",
+                onClick = { navController.navigate(Routes.CURRENCY_SELECTION) }
+            )
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
             SettingsItem(
                 icon = Icons.Default.Language,
                 title = UiTranslations.getString(context, "profile_language", language),
@@ -527,6 +545,7 @@ fun ProfileLandscapePreview() {
             onNavigateToHelp = {},
             onNavigateToPrivacy = {},
             language = "Español",
+            onNavigateToCatalog = {},
             onVoiceSpeedClick = {},
             onLinkDeviceClick = {},
             onLogoutClick = {}

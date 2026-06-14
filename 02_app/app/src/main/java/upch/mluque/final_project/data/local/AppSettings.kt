@@ -20,6 +20,9 @@ data class AppSettings(
     val entrepreneurTipsAudio: String = "",
     val mapSummaryAudio: String = "",
     val profilePicture: ByteArray? = null,
+    val usdExchangeRate: Double = 3.8,
+    val eurExchangeRate: Double = 4.1,
+    val preferredCurrency: String = "S/",
     val lastModified: Long = 0L
 ) {
     override fun equals(other: Any?): Boolean {
