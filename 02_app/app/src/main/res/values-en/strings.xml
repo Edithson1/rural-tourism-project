@@ -154,6 +154,7 @@
     <string name="btn_back">Back</string>
     <string name="btn_retry">RETRY</string>
     <string name="btn_save">SAVE</string>
+    <string name="btn_continue">CONTINUE</string>
     <string name="btn_exit_without_save">EXIT WITHOUT SAVING</string>
 
     <!-- Permissions -->

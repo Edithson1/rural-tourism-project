@@ -60,6 +60,7 @@ fun ProductEditorScreen(
     var endDate by remember { mutableStateOf<Long?>(null) }
 
     var showExitDialog by remember { mutableStateOf(false) }
+    var showInvalidDateWarning by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf<Pair<String, Long?>?>(null) } // "start" or "end"
 
     val datePickerState = rememberDatePickerState(
@@ -273,20 +274,33 @@ fun ProductEditorScreen(
                     onClick = {
                         val basePrice = price.toDoubleOrNull() ?: 0.0
                         val dValue = discountValue.toDoubleOrNull() ?: 0.0
-                        val newProduct = Product(
-                            id = productId ?: 0,
-                            name = name,
-                            basePrice = basePrice,
-                            currency = currency,
-                            category = category,
-                            isDefault = product?.isDefault ?: false,
-                            discountValue = dValue,
-                            discountType = discountType,
-                            discountStartDate = startDate,
-                            discountEndDate = endDate
-                        )
-                        if (productId == null) viewModel.addProduct(newProduct) else viewModel.updateProduct(newProduct)
-                        onBack()
+                        
+                        // Validar fechas antes de guardar
+                        val areDatesValid = (startDate == null && endDate == null) || 
+                                          (startDate != null && endDate != null && startDate!! <= endDate!!)
+                        
+                        if (!areDatesValid && discountValue.isNotEmpty() && dValue > 0) {
+                            showInvalidDateWarning = true
+                        } else {
+                            val finalStartDate = if (areDatesValid) startDate else null
+                            val finalEndDate = if (areDatesValid) endDate else null
+                            
+                            val newProduct = Product(
+                                id = productId ?: 0,
+                                name = name,
+                                basePrice = basePrice,
+                                currency = currency,
+                                category = category,
+                                isDefault = product?.isDefault ?: false,
+                                discountValue = dValue,
+                                discountType = discountType,
+                                discountStartDate = finalStartDate,
+                                discountEndDate = finalEndDate,
+                                createdAt = product?.createdAt ?: System.currentTimeMillis()
+                            )
+                            if (productId == null) viewModel.addProduct(newProduct) else viewModel.updateProduct(newProduct)
+                            onBack()
+                        }
                     },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
                     shape = RoundedCornerShape(28.dp),
@@ -297,27 +311,47 @@ fun ProductEditorScreen(
             }
         }
 
+        if (showInvalidDateWarning) {
+            AlertDialog(
+                onDismissRequest = { showInvalidDateWarning = false },
+                title = { Text("Fechas inválidas") },
+                text = { Text("Las fechas de descuento son inválidas o incompletas. Se guardará el producto sin ninguna de las fechas de oferta.") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        val basePrice = price.toDoubleOrNull() ?: 0.0
+                        val dValue = discountValue.toDoubleOrNull() ?: 0.0
+                        val newProduct = Product(
+                            id = productId ?: 0,
+                            name = name,
+                            basePrice = basePrice,
+                            currency = currency,
+                            category = category,
+                            isDefault = product?.isDefault ?: false,
+                            discountValue = dValue,
+                            discountType = discountType,
+                            discountStartDate = null,
+                            discountEndDate = null,
+                            createdAt = product?.createdAt ?: System.currentTimeMillis()
+                        )
+                        if (productId == null) viewModel.addProduct(newProduct) else viewModel.updateProduct(newProduct)
+                        showInvalidDateWarning = false
+                        onBack()
+                    }) {
+                        Text(UiTranslations.getString(context, "btn_continue", language))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showInvalidDateWarning = false }) {
+                        Text(UiTranslations.getString(context, "btn_cancel", language))
+                    }
+                }
+            )
+        }
+
         if (showExitDialog) {
             UnsavedChangesDialog(
                 language = language,
-                onSave = {
-                    val basePrice = price.toDoubleOrNull() ?: 0.0
-                    val dValue = discountValue.toDoubleOrNull() ?: 0.0
-                    val newProduct = Product(
-                        id = productId ?: 0,
-                        name = name,
-                        basePrice = basePrice,
-                        currency = currency,
-                        category = category,
-                        isDefault = product?.isDefault ?: false,
-                        discountValue = dValue,
-                        discountType = discountType,
-                        discountStartDate = startDate,
-                        discountEndDate = endDate
-                    )
-                    if (productId == null) viewModel.addProduct(newProduct) else viewModel.updateProduct(newProduct)
-                    onBack()
-                },
+                onContinueEditing = { showExitDialog = false },
                 onExitWithoutSaving = onBack,
                 onDismiss = { showExitDialog = false }
             )
@@ -393,8 +427,9 @@ fun DateSelectionRow(label: String, date: Long?, onDateChange: (Long?) -> Unit) 
             if (month !in 1..12) return@remember true
             if (year < currentYear) return@remember true
             
-            calendar.set(year, month - 1, day, 0, 0, 0)
-            calendar.set(Calendar.MILLISECOND, 0)
+            val tempCal = Calendar.getInstance()
+            tempCal.set(year, month - 1, day, 0, 0, 0)
+            tempCal.set(Calendar.MILLISECOND, 0)
             
             val today = Calendar.getInstance()
             today.set(Calendar.HOUR_OF_DAY, 0)
@@ -402,7 +437,9 @@ fun DateSelectionRow(label: String, date: Long?, onDateChange: (Long?) -> Unit) 
             today.set(Calendar.SECOND, 0)
             today.set(Calendar.MILLISECOND, 0)
             
-            calendar.timeInMillis < today.timeInMillis
+            if (day > tempCal.getActualMaximum(Calendar.DAY_OF_MONTH)) return@remember true
+            
+            tempCal.timeInMillis < today.timeInMillis
         } catch (e: Exception) {
             true
         }
@@ -435,6 +472,9 @@ fun DateSelectionRow(label: String, date: Long?, onDateChange: (Long?) -> Unit) 
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             isError = isError,
+            supportingText = if (isError) {
+                { Text("Fecha inválida o pasada", color = MaterialTheme.colorScheme.error) }
+            } else null,
             trailingIcon = {
                 IconButton(onClick = { showModal = true }) {
                     Icon(Icons.Default.CalendarToday, contentDescription = null, tint = MaterialTheme.colorScheme.primary)

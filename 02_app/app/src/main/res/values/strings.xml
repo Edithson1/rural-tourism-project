@@ -156,6 +156,7 @@
     <string name="btn_back">Atrás</string>
     <string name="btn_retry">REINTENTAR</string>
     <string name="btn_save">GUARDAR</string>
+    <string name="btn_continue">CONTINUAR</string>
     <string name="btn_exit_without_save">SALIR SIN GUARDAR</string>
 
     <!-- Permissions -->

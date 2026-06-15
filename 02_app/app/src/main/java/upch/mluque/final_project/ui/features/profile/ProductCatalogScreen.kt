@@ -1,6 +1,7 @@
 package upch.mluque.final_project.ui.features.profile
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -25,6 +26,10 @@ import upch.mluque.final_project.data.local.Product
 import upch.mluque.final_project.ui.MainViewModel
 import upch.mluque.final_project.utils.UiTranslations
 
+enum class SortOption {
+    NAME, PRICE, CREATION_DATE
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductCatalogScreen(
@@ -39,8 +44,16 @@ fun ProductCatalogScreen(
     val products by viewModel.allProducts.collectAsState(initial = emptyList())
     
     var searchQuery by remember { mutableStateOf("") }
-    val filteredProducts = remember(products, searchQuery) {
-        products.filter { it.name.contains(searchQuery, ignoreCase = true) }
+    var sortOption by remember { mutableStateOf(SortOption.NAME) }
+    var sortAscending by remember { mutableStateOf(true) }
+
+    val filteredProducts = remember(products, searchQuery, sortOption, sortAscending) {
+        val filtered = products.filter { it.name.contains(searchQuery, ignoreCase = true) }
+        when (sortOption) {
+            SortOption.NAME -> if (sortAscending) filtered.sortedBy { it.name } else filtered.sortedByDescending { it.name }
+            SortOption.PRICE -> if (sortAscending) filtered.sortedBy { it.getActivePrice() } else filtered.sortedByDescending { it.getActivePrice() }
+            SortOption.CREATION_DATE -> if (sortAscending) filtered.sortedBy { it.createdAt } else filtered.sortedByDescending { it.createdAt }
+        }
     }
 
     var productToDelete by remember { mutableStateOf<Product?>(null) }
@@ -102,7 +115,7 @@ fun ProductCatalogScreen(
                 )
             }
             
-            // Buscador (Igual al de AddVisitScreen)
+            // Buscador
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
@@ -121,6 +134,45 @@ fun ProductCatalogScreen(
                     unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
                 )
             )
+
+            // Fila de Ordenamiento (Estilo Clash Royale)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Ordenar por:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                
+                SortChip(
+                    label = "Nombre", 
+                    isSelected = sortOption == SortOption.NAME,
+                    isAscending = sortAscending,
+                    onClick = {
+                        if (sortOption == SortOption.NAME) sortAscending = !sortAscending
+                        else { sortOption = SortOption.NAME; sortAscending = true }
+                    }
+                )
+                SortChip(
+                    label = "Precio", 
+                    isSelected = sortOption == SortOption.PRICE,
+                    isAscending = sortAscending,
+                    onClick = {
+                        if (sortOption == SortOption.PRICE) sortAscending = !sortAscending
+                        else { sortOption = SortOption.PRICE; sortAscending = true }
+                    }
+                )
+                SortChip(
+                    label = "Fecha", 
+                    isSelected = sortOption == SortOption.CREATION_DATE,
+                    isAscending = sortAscending,
+                    onClick = {
+                        if (sortOption == SortOption.CREATION_DATE) sortAscending = !sortAscending
+                        else { sortOption = SortOption.CREATION_DATE; sortAscending = true }
+                    }
+                )
+            }
 
             if (filteredProducts.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -187,6 +239,37 @@ fun ProductCatalogScreen(
                 }
             }
         )
+    }
+}
+
+@Composable
+fun SortChip(label: String, isSelected: Boolean, isAscending: Boolean, onClick: () -> Unit) {
+    Surface(
+        modifier = Modifier.clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = label, 
+                fontSize = 11.sp, 
+                fontWeight = FontWeight.Bold,
+                color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            if (isSelected) {
+                Spacer(modifier = Modifier.width(4.dp))
+                Icon(
+                    imageVector = if (isAscending) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp),
+                    tint = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+        }
     }
 }
 

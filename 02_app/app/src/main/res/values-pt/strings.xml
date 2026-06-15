@@ -147,6 +147,7 @@
     <string name="btn_close">FECHAR</string>
     <string name="btn_back">Voltar</string>
     <string name="btn_save">SALVAR</string>
+    <string name="btn_continue">CONTINUAR</string>
     <string name="btn_exit_without_save">SAIR SEM SALVAR</string>
 
     <!-- Permissions -->

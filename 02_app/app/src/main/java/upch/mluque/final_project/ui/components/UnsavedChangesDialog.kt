@@ -10,7 +10,7 @@ import upch.mluque.final_project.utils.UiTranslations
 @Composable
 fun UnsavedChangesDialog(
     language: String,
-    onSave: () -> Unit,
+    onContinueEditing: () -> Unit,
     onExitWithoutSaving: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -20,8 +20,8 @@ fun UnsavedChangesDialog(
         title = { Text(UiTranslations.getString(context, "exit_unsaved_title", language)) },
         text = { Text(UiTranslations.getString(context, "exit_unsaved_desc", language)) },
         confirmButton = {
-            TextButton(onClick = onSave) {
-                Text(UiTranslations.getString(context, "btn_save", language))
+            TextButton(onClick = onContinueEditing) {
+                Text(UiTranslations.getString(context, "btn_continue", language))
             }
         },
         dismissButton = {

@@ -11,6 +11,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.BubbleChart
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -41,6 +43,7 @@ fun FullscreenMapScreen(
     // Estados para la simulación de audio
     var currentTime by remember { mutableLongStateOf(0L) }
     var isPlaying by remember { mutableStateOf(false) }
+    var viewMode by remember { mutableStateOf(MapViewMode.POINTS) }
     val readingTimePerLine = 4000L
     val lines = remember(currentSummary) { currentSummary.split("\n", ". ").filter { it.isNotBlank() } }
     val totalDuration = remember(lines) { (lines.size * readingTimePerLine).coerceAtLeast(1000L) }
@@ -94,7 +97,8 @@ fun FullscreenMapScreen(
             visits = visits,
             isInteractive = true,
             zoomLevel = 4.0,
-            showLabels = true
+            showLabels = true,
+            viewMode = viewMode
         )
 
         // Subtítulos flotantes
@@ -128,22 +132,37 @@ fun FullscreenMapScreen(
                 Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = MaterialTheme.colorScheme.primary)
             }
 
-            // Legend in fullscreen
-            Surface(
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.width(180.dp)
-            ) {
-                Column(modifier = Modifier.padding(12.dp)) {
-                    Text(
-                        UiTranslations.getString(context, "map_legend", language),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(bottom = 4.dp)
+            Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                // Mode Toggle
+                IconButton(
+                    onClick = { viewMode = if (viewMode == MapViewMode.POINTS) MapViewMode.BUBBLES else MapViewMode.POINTS },
+                    modifier = Modifier
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f), CircleShape)
+                ) {
+                    Icon(
+                        imageVector = if (viewMode == MapViewMode.POINTS) Icons.Default.BubbleChart else Icons.Default.LocationOn,
+                        contentDescription = "Modo",
+                        tint = MaterialTheme.colorScheme.primary
                     )
-                    productCounts.forEachIndexed { index, (name, count) ->
-                        LegendItemFullScreen(name, colors.getOrElse(index) { Color.Gray }, count)
+                }
+
+                // Legend in fullscreen
+                Surface(
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.width(180.dp)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            UiTranslations.getString(context, "map_legend", language),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+                        productCounts.forEachIndexed { index, (name, count) ->
+                            LegendItemFullScreen(name, colors.getOrElse(index) { Color.Gray }, count)
+                        }
                     }
                 }
             }

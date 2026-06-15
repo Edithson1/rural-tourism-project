@@ -160,6 +160,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun preloadProducts(category: String) {
         viewModelScope.launch {
+            // Eliminar productos previos que sean 'isDefault' para evitar duplicados al cambiar de opinión en el setup
+            val all = repository.allProducts.first()
+            val defaultsToDelete = all.filter { it.isDefault }
+            defaultsToDelete.forEach { repository.deleteProduct(it) }
+
             val products = when (category) {
                 "Hospedaje" -> listOf(
                     Product(name = "Habitación Simple", basePrice = 50.0, category = "Hospedaje", isDefault = true)

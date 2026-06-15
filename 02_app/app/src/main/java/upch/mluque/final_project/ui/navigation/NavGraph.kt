@@ -1,5 +1,7 @@
 package upch.mluque.final_project.ui.navigation
 
+import android.app.Activity
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -10,6 +12,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
@@ -40,6 +43,7 @@ fun MainNavigation(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val appSettings by viewModel.appSettings.collectAsState()
+    val context = LocalContext.current
 
     var selectedLanguage by remember { mutableStateOf("Español") }
     var businessName by remember { mutableStateOf("") }
@@ -50,9 +54,40 @@ fun MainNavigation(
 
     val coroutineScope = rememberCoroutineScope()
     val mainPagerState = rememberPagerState(pageCount = { 4 })
+    
+    // Track if navigation is via bottom bar to skip horizontal animation in pager
+    var isJumpNavigation by remember { mutableStateOf(false) }
+
+    // Global Back Handler
+    BackHandler {
+        if (currentRoute == Routes.MAIN_PAGER) {
+            if (mainPagerState.currentPage != 0) {
+                isJumpNavigation = true
+                coroutineScope.launch { 
+                    mainPagerState.scrollToPage(0) 
+                    isJumpNavigation = false
+                }
+            } else {
+                (context as? Activity)?.finish()
+            }
+        } else if (currentRoute == Routes.HOME || currentRoute == Routes.VISITS || currentRoute == Routes.MAP || currentRoute == Routes.PROFILE) {
+            navController.navigate(Routes.MAIN_PAGER) {
+                popUpTo(0) { inclusive = true }
+            }
+        } else if (currentRoute == Routes.SPLASH || currentRoute == Routes.ONBOARDING) {
+             (context as? Activity)?.finish()
+        } else {
+            if (isSecondaryRoute(currentRoute)) {
+                navController.popBackStack()
+            } else {
+                navController.navigate(Routes.MAIN_PAGER) {
+                    popUpTo(0) { inclusive = true }
+                }
+            }
+        }
+    }
 
     LaunchedEffect(appSettings) {
-        // Solo redirigir si el onboarding estaba completado y de pronto los ajustes son nulos (Reset remoto)
         if (appSettings == null && currentRoute == Routes.MAIN_PAGER) {
             navController.navigate(Routes.ONBOARDING) {
                 popUpTo(0) { inclusive = true }
@@ -88,12 +123,19 @@ fun MainNavigation(
                         val targetIndex = mainRoutes.indexOf(route)
                         if (currentRoute == Routes.MAIN_PAGER) {
                             coroutineScope.launch {
-                                mainPagerState.animateScrollToPage(targetIndex)
+                                isJumpNavigation = true
+                                mainPagerState.scrollToPage(targetIndex)
+                                isJumpNavigation = false
                             }
                         } else {
                             navController.navigate(Routes.MAIN_PAGER) {
                                 popUpTo(Routes.MAIN_PAGER) { inclusive = true }
                                 launchSingleTop = true
+                            }
+                            coroutineScope.launch { 
+                                isJumpNavigation = true
+                                mainPagerState.scrollToPage(targetIndex)
+                                isJumpNavigation = false
                             }
                         }
                     }
@@ -117,12 +159,19 @@ fun MainNavigation(
                         val targetIndex = mainRoutes.indexOf(route)
                         if (currentRoute == Routes.MAIN_PAGER) {
                             coroutineScope.launch {
-                                mainPagerState.animateScrollToPage(targetIndex)
+                                isJumpNavigation = true
+                                mainPagerState.scrollToPage(targetIndex)
+                                isJumpNavigation = false
                             }
                         } else {
                             navController.navigate(Routes.MAIN_PAGER) {
                                 popUpTo(Routes.MAIN_PAGER) { inclusive = true }
                                 launchSingleTop = true
+                            }
+                            coroutineScope.launch { 
+                                isJumpNavigation = true
+                                mainPagerState.scrollToPage(targetIndex)
+                                isJumpNavigation = false
                             }
                         }
                     }
@@ -144,71 +193,20 @@ fun MainNavigation(
                     ),
                     enterTransition = {
                         val target = targetState.destination.route
-                        val initial = initialState.destination.route
                         val animSpec = tween<IntOffset>(300, easing = FastOutSlowInEasing)
-                        val fadeSpec = tween<Float>(300, easing = FastOutSlowInEasing)
-
-                        if (initial == Routes.SPLASH || target == Routes.SPLASH || initial == Routes.FULLSCREEN_MAP || target == Routes.FULLSCREEN_MAP) {
-                            fadeIn(animationSpec = fadeSpec)
-                        } else if (isSecondaryRoute(target)) {
-                            slideInHorizontally(initialOffsetX = { it }, animationSpec = animSpec)
-                        } else {
-                            val targetP = getRoutePriority(target)
-                            val initialP = getRoutePriority(initial)
-                            if (targetP > initialP) slideInHorizontally(initialOffsetX = { it }, animationSpec = animSpec)
-                            else slideInHorizontally(initialOffsetX = { -it }, animationSpec = animSpec)
-                        }
+                        slideInHorizontally(initialOffsetX = { it }, animationSpec = animSpec) + fadeIn()
                     },
                     exitTransition = {
-                        val target = targetState.destination.route
-                        val initial = initialState.destination.route
                         val animSpec = tween<IntOffset>(300, easing = FastOutSlowInEasing)
-                        val fadeSpec = tween<Float>(300, easing = FastOutSlowInEasing)
-
-                        if (initial == Routes.SPLASH || target == Routes.SPLASH || initial == Routes.FULLSCREEN_MAP || target == Routes.FULLSCREEN_MAP) {
-                            fadeOut(animationSpec = fadeSpec)
-                        } else if (isSecondaryRoute(target)) {
-                            slideOutHorizontally(targetOffsetX = { -it / 4 }, animationSpec = animSpec) + fadeOut(animationSpec = fadeSpec)
-                        } else {
-                            val targetP = getRoutePriority(target)
-                            val initialP = getRoutePriority(initial)
-                            if (targetP > initialP) slideOutHorizontally(targetOffsetX = { -it }, animationSpec = animSpec)
-                            else slideOutHorizontally(targetOffsetX = { it }, animationSpec = animSpec)
-                        }
+                        slideOutHorizontally(targetOffsetX = { -it / 4 }, animationSpec = animSpec) + fadeOut()
                     },
                     popEnterTransition = {
-                        val target = targetState.destination.route
-                        val initial = initialState.destination.route
                         val animSpec = tween<IntOffset>(300, easing = FastOutSlowInEasing)
-                        val fadeSpec = tween<Float>(300, easing = FastOutSlowInEasing)
-
-                        if (initial == Routes.SPLASH || target == Routes.SPLASH || initial == Routes.FULLSCREEN_MAP || target == Routes.FULLSCREEN_MAP) {
-                            fadeIn(animationSpec = fadeSpec)
-                        } else if (isSecondaryRoute(initial)) {
-                            slideInHorizontally(initialOffsetX = { -it / 4 }, animationSpec = animSpec) + fadeIn(animationSpec = fadeSpec)
-                        } else {
-                            val targetP = getRoutePriority(target)
-                            val initialP = getRoutePriority(initial)
-                            if (targetP > initialP) slideInHorizontally(initialOffsetX = { it }, animationSpec = animSpec)
-                            else slideInHorizontally(initialOffsetX = { -it }, animationSpec = animSpec)
-                        }
+                        slideInHorizontally(initialOffsetX = { -it / 4 }, animationSpec = animSpec) + fadeIn()
                     },
                     popExitTransition = {
-                        val target = targetState.destination.route
-                        val initial = initialState.destination.route
                         val animSpec = tween<IntOffset>(300, easing = FastOutSlowInEasing)
-                        val fadeSpec = tween<Float>(300, easing = FastOutSlowInEasing)
-
-                        if (initial == Routes.SPLASH || target == Routes.SPLASH || initial == Routes.FULLSCREEN_MAP || target == Routes.FULLSCREEN_MAP) {
-                            fadeOut(animationSpec = fadeSpec)
-                        } else if (isSecondaryRoute(initial)) {
-                            slideOutHorizontally(targetOffsetX = { it }, animationSpec = animSpec)
-                        } else {
-                            val targetP = getRoutePriority(target)
-                            val initialP = getRoutePriority(initial)
-                            if (targetP > initialP) slideOutHorizontally(targetOffsetX = { -it }, animationSpec = animSpec)
-                            else slideOutHorizontally(targetOffsetX = { it }, animationSpec = animSpec)
-                        }
+                        slideOutHorizontally(targetOffsetX = { it }, animationSpec = animSpec) + fadeOut()
                     }
                 ) {
                     composable(Routes.SPLASH) {
@@ -241,11 +239,11 @@ fun MainNavigation(
                     }
                     composable(Routes.PROFILE_SETUP) {
                         ProfileSetupScreen(
+                            viewModel = viewModel,
                             selectedLanguage = selectedLanguage,
                             onBack = { navController.popBackStack() },
                             onSave = { name, service ->
-                                syncViewModel.saveProfile(name, service)
-                                // Pre-cargar productos según el servicio
+                                viewModel.saveProfile(name, service)
                                 viewModel.preloadProducts(service)
                                 navController.navigate(Routes.PRODUCT_CATALOG_SETUP)
                             }
@@ -293,18 +291,22 @@ fun MainNavigation(
                         )
                     }
                     composable(Routes.MAIN_PAGER) {
-                        MainPagerScreen(
-                            pagerState = mainPagerState,
-                            viewModel = viewModel,
-                            syncViewModel = syncViewModel,
-                            navController = navController,
-                            innerPadding = PaddingValues(0.dp), // Controlled by the Scaffold
-                            businessName = businessName,
-                            selectedService = selectedService,
-                            entrepreneurTips = entrepreneurTips,
-                            profilePicture = profilePicture,
-                            userScrollEnabled = !isLandscape
-                        )
+                        if (appSettings == null) {
+                            GlobalLoadingScreen("Cargando ajustes...")
+                        } else {
+                            MainPagerScreen(
+                                pagerState = mainPagerState,
+                                viewModel = viewModel,
+                                syncViewModel = syncViewModel,
+                                navController = navController,
+                                innerPadding = PaddingValues(0.dp),
+                                businessName = businessName,
+                                selectedService = selectedService,
+                                entrepreneurTips = entrepreneurTips,
+                                profilePicture = profilePicture,
+                                userScrollEnabled = !isLandscape
+                            )
+                        }
                     }
                     composable(Routes.VISIT_DETAIL) { backStackEntry ->
                         val visitId = backStackEntry.arguments?.getString("visitId")?.toIntOrNull() ?: 0
@@ -415,14 +417,9 @@ fun MainNavigation(
                     composable(Routes.TIP_DETAIL) { TipDetailScreen(viewModel = viewModel) { navController.popBackStack() } }
                 }
 
-                if (appSettings == null && currentRoute != null && 
-                    currentRoute != Routes.SPLASH && 
-                    currentRoute != Routes.ONBOARDING && 
-                    currentRoute != Routes.PROFILE_SETUP && 
-                    currentRoute != Routes.SHOW_QR && 
-                    currentRoute != Routes.SCAN_QR && 
-                    currentRoute != Routes.LINKED_DEVICES) {
-                    LoadingOverlay(message = "Cargando configuración...")
+                // Show Global Loading if appSettings are being loaded or if we are in a transition state
+                if (appSettings == null && currentRoute != Routes.SPLASH) {
+                    GlobalLoadingScreen(message = "Preparando recursos...")
                 }
             }
         }
@@ -432,17 +429,9 @@ fun MainNavigation(
 private fun isSecondaryRoute(route: String?): Boolean {
     val secondaryRoutes = listOf(
         Routes.PROFILE_EDIT, Routes.PROFILE_LANGUAGE, Routes.PROFILE_HELP, Routes.PROFILE_PRIVACY, 
-        Routes.ADD_VISIT, Routes.VISIT_DETAIL
+        Routes.ADD_VISIT, Routes.VISIT_DETAIL, Routes.PRODUCT_CATALOG, Routes.PRODUCT_EDITOR,
+        Routes.CURRENCY_SELECTION, Routes.DASHBOARD, Routes.TIP_DETAIL, Routes.SYNC_STATUS,
+        Routes.SHOW_QR, Routes.SCAN_QR, Routes.LINKED_DEVICES, Routes.FULLSCREEN_MAP
     )
     return route in secondaryRoutes
-}
-
-private fun getRoutePriority(route: String?): Int {
-    return when (route) {
-        Routes.SPLASH -> -1
-        Routes.ONBOARDING -> 0
-        Routes.PROFILE_SETUP -> 1
-        Routes.MAIN_PAGER -> 2
-        else -> 99
-    }
 }

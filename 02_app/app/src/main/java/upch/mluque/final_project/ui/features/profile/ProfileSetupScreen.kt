@@ -25,13 +25,16 @@ import upch.mluque.final_project.utils.UiTranslations
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileSetupScreen(
+    viewModel: upch.mluque.final_project.ui.MainViewModel,
     selectedLanguage: String,
     onBack: () -> Unit,
     onSave: (String, String) -> Unit
 ) {
     val context = LocalContext.current
-    var businessName by remember { mutableStateOf("") }
-    var selectedService by remember { mutableStateOf("") }
+    val settings by viewModel.appSettings.collectAsState()
+    
+    var businessName by remember(settings) { mutableStateOf(settings?.businessName ?: "") }
+    var selectedService by remember(settings) { mutableStateOf(settings?.businessCategory ?: "") }
 
     val services = listOf(
         ServiceOption(UiTranslations.translateService("Hospedaje", selectedLanguage, context), Icons.Default.Bed),

@@ -14,6 +14,7 @@ import upch.mluque.final_project.ui.features.map.MapScreen
 import upch.mluque.final_project.ui.features.profile.ProfileScreen
 import upch.mluque.final_project.ui.features.visits.VisitsScreen
 import upch.mluque.final_project.ui.navigation.Routes
+import kotlinx.coroutines.launch
 
 @Composable
 fun MainPagerScreen(
@@ -31,7 +32,10 @@ fun MainPagerScreen(
     val visits by viewModel.allVisits.collectAsState()
     val settings by viewModel.appSettings.collectAsState()
     val language = settings?.language ?: "Español"
+    val coroutineScope = rememberCoroutineScope()
 
+    // HorizontalPager handles its own internal animations during swipe.
+    // scrollToPage() vs animateScrollToPage() controls whether button-driven changes are instant.
     HorizontalPager(
         state = pagerState,
         modifier = Modifier.fillMaxSize().padding(innerPadding),
@@ -50,10 +54,15 @@ fun MainPagerScreen(
                 onNavigateToAdd = { navController.navigate(Routes.ADD_VISIT) },
                 onNavigateToDashboard = { navController.navigate(Routes.DASHBOARD) },
                 onNavigate = { route ->
-                    navController.navigate(route) {
-                        popUpTo(Routes.MAIN_PAGER) { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
+                    if (route == Routes.VISITS) {
+                        // For the "See All" button in Home, we use scrollToPage for instant switch as requested for buttons
+                        coroutineScope.launch { pagerState.scrollToPage(1) }
+                    } else {
+                        navController.navigate(route) {
+                            popUpTo(Routes.MAIN_PAGER) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
                     }
                 }
             )
@@ -72,7 +81,7 @@ fun MainPagerScreen(
             2 -> MapScreen(
                 viewModel = viewModel,
                 onNavigate = { route ->
-                    if (route == "fullscreen_map_action") {
+                    if (route == "fullscreen_map") {
                         navController.navigate(Routes.FULLSCREEN_MAP)
                     } else {
                         navController.navigate(route) {

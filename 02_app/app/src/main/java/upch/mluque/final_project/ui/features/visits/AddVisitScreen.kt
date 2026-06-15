@@ -155,7 +155,16 @@ fun AddVisitScreen(
                             shape = RoundedCornerShape(12.dp),
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
+                            keyboardActions = KeyboardActions(onDone = { 
+                        // Intelligent selection on Check
+                        val filtered = countries.filter { it.name.contains(nationalitySearch, true) }
+                        if (filtered.size == 1) {
+                            selectedNationality = filtered.first()
+                            nationalitySearch = ""
+                            isNationalityExpanded = false
+                        }
+                        focusManager.clearFocus() 
+                    })
                         )
                         ExposedDropdownMenu(
                             expanded = isNationalityExpanded,
@@ -193,7 +202,16 @@ fun AddVisitScreen(
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
+                        keyboardActions = KeyboardActions(onDone = { 
+                        // Intelligent selection on Check
+                        val filtered = countries.filter { it.name.contains(nationalitySearch, true) }
+                        if (filtered.size == 1) {
+                            selectedNationality = filtered.first()
+                            nationalitySearch = ""
+                            isNationalityExpanded = false
+                        }
+                        focusManager.clearFocus() 
+                    })
                     )
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -246,7 +264,15 @@ fun AddVisitScreen(
                                     onValueChange = { if (it.all { c -> c.isDigit() || c == '.' }) discountValue = it },
                                     modifier = Modifier.width(90.dp),
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
-                                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                                    keyboardActions = KeyboardActions(onDone = { 
+                        val filtered = countries.filter { it.name.contains(nationalitySearch, true) }
+                        if (filtered.size == 1) {
+                            selectedNationality = filtered.first()
+                            nationalitySearch = ""
+                            isNationalityExpanded = false
+                        }
+                        focusManager.clearFocus() 
+                    }),
                                     shape = RoundedCornerShape(8.dp),
                                     singleLine = true,
                                     suffix = { Text(if (discountType == DiscountType.FIXED) prefCurrency else "%") }
@@ -326,7 +352,16 @@ fun AddVisitScreen(
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
+                        keyboardActions = KeyboardActions(onDone = { 
+                        // Intelligent selection on Check
+                        val filtered = countries.filter { it.name.contains(nationalitySearch, true) }
+                        if (filtered.size == 1) {
+                            selectedNationality = filtered.first()
+                            nationalitySearch = ""
+                            isNationalityExpanded = false
+                        }
+                        focusManager.clearFocus() 
+                    })
                     )
                     ExposedDropdownMenu(
                         expanded = isNationalityExpanded,
@@ -370,7 +405,15 @@ fun AddVisitScreen(
                     shape = RoundedCornerShape(12.dp),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                    keyboardActions = KeyboardActions(onDone = { 
+                        val filtered = countries.filter { it.name.contains(nationalitySearch, true) }
+                        if (filtered.size == 1) {
+                            selectedNationality = filtered.first()
+                            nationalitySearch = ""
+                            isNationalityExpanded = false
+                        }
+                        focusManager.clearFocus() 
+                    }),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
                         unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
@@ -440,7 +483,15 @@ fun AddVisitScreen(
                                 onValueChange = { if (it.all { c -> c.isDigit() || c == '.' }) discountValue = it },
                                 modifier = Modifier.width(110.dp),
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
-                                keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                                keyboardActions = KeyboardActions(onDone = { 
+                        val filtered = countries.filter { it.name.contains(nationalitySearch, true) }
+                        if (filtered.size == 1) {
+                            selectedNationality = filtered.first()
+                            nationalitySearch = ""
+                            isNationalityExpanded = false
+                        }
+                        focusManager.clearFocus() 
+                    }),
                                 shape = RoundedCornerShape(8.dp),
                                 singleLine = true,
                                 suffix = { 
@@ -518,20 +569,7 @@ fun AddVisitScreen(
         if (showExitDialog) {
             UnsavedChangesDialog(
                 language = language,
-                onSave = {
-                    val selProducts = products.filter { (selectedQuantities[it.id] ?: 0) > 0 }.map { 
-                        SelectedProduct(
-                            id = it.id, 
-                            name = it.name, 
-                            originalPrice = convertPrice(it.basePrice, it.currency),
-                            priceAtSale = convertPrice(it.getActivePrice(), it.currency), 
-                            quantity = selectedQuantities[it.id]!!,
-                            hasDiscount = it.getActivePrice() < it.basePrice,
-                            currency = prefCurrency
-                        )
-                    }
-                    onSave(selectedNationality?.name ?: "", selectedNationality?.flag ?: "", selProducts, subtotal, discountNum, discountType, total)
-                },
+                onContinueEditing = { showExitDialog = false },
                 onExitWithoutSaving = onBack,
                 onDismiss = { showExitDialog = false }
             )

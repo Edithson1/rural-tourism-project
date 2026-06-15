@@ -154,6 +154,7 @@
     <string name="btn_back">Qhipaman</string>
     <string name="btn_retry">MUSUQMANTA RURAY</string>
     <string name="btn_save">WAQAYCHAY</string>
+    <string name="btn_continue">HINALLA</string>
     <string name="btn_exit_without_save">WAQAYCHAY MANA ALLICHASPA LLUQSIY</string>
 
     <!-- Permissions -->

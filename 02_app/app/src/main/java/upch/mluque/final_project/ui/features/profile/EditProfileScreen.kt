@@ -443,15 +443,7 @@ fun EditProfileScreen(
         if (showExitDialog) {
             UnsavedChangesDialog(
                 language = language,
-                onSave = {
-                    val byteArray = pendingBitmap?.let { bitmap ->
-                        val outputStream = ByteArrayOutputStream()
-                        bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
-                        outputStream.toByteArray()
-                    }
-                    viewModel.saveProfile(businessName, selectedService, byteArray)
-                    onBack()
-                },
+                onContinueEditing = { showExitDialog = false },
                 onExitWithoutSaving = onBack,
                 onDismiss = { showExitDialog = false }
             )

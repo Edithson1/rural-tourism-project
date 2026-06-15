@@ -17,6 +17,7 @@ data class Product(
     val discountType: DiscountType = DiscountType.PERCENTAGE,
     val discountStartDate: Long? = null,
     val discountEndDate: Long? = null,
+    val createdAt: Long = System.currentTimeMillis(),
     val lastModified: Long = System.currentTimeMillis()
 ) {
     fun getActivePrice(): Double {

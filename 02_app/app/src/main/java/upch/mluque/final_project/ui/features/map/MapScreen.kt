@@ -8,6 +8,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Fullscreen
+import androidx.compose.material.icons.filled.BubbleChart
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -39,6 +41,7 @@ fun MapScreen(
     // Estados para la simulación de audio
     var currentTime by remember { mutableLongStateOf(0L) }
     var isPlaying by remember { mutableStateOf(false) }
+    var viewMode by remember { mutableStateOf(MapViewMode.POINTS) }
     val readingTimePerLine = 4000L
     val lines = remember(currentSummary) { currentSummary.split("\n", ". ").filter { it.isNotBlank() } }
     val totalDuration = remember(lines) { (lines.size * readingTimePerLine).coerceAtLeast(1000L) }
@@ -109,7 +112,8 @@ fun MapScreen(
                                 viewModel = viewModel,
                                 visits = visits,
                                 isInteractive = false,
-                                showLabels = false
+                                showLabels = false,
+                                viewMode = viewMode
                             )
 
                             if (isPlaying) {
@@ -131,6 +135,21 @@ fun MapScreen(
                                 Icon(
                                     imageVector = Icons.Default.Fullscreen,
                                     contentDescription = "Expandir",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+
+                            // Mode Toggle
+                            IconButton(
+                                onClick = { viewMode = if (viewMode == MapViewMode.POINTS) MapViewMode.BUBBLES else MapViewMode.POINTS },
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .padding(8.dp)
+                                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f), CircleShape)
+                            ) {
+                                Icon(
+                                    imageVector = if (viewMode == MapViewMode.POINTS) Icons.Default.BubbleChart else Icons.Default.LocationOn,
+                                    contentDescription = "Modo",
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                             }
@@ -234,7 +253,8 @@ fun MapScreen(
                                 viewModel = viewModel,
                                 visits = visits,
                                 isInteractive = false,
-                                showLabels = false
+                                showLabels = false,
+                                viewMode = viewMode
                             )
 
                             if (isPlaying) {
@@ -256,6 +276,21 @@ fun MapScreen(
                                 Icon(
                                     imageVector = Icons.Default.Fullscreen,
                                     contentDescription = "Expandir",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+
+                            // Mode Toggle
+                            IconButton(
+                                onClick = { viewMode = if (viewMode == MapViewMode.POINTS) MapViewMode.BUBBLES else MapViewMode.POINTS },
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .padding(8.dp)
+                                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f), CircleShape)
+                            ) {
+                                Icon(
+                                    imageVector = if (viewMode == MapViewMode.POINTS) Icons.Default.BubbleChart else Icons.Default.LocationOn,
+                                    contentDescription = "Modo",
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                             }

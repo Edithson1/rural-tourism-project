@@ -48,7 +48,8 @@ fun OsmMapView(
     isInteractive: Boolean = true,
     zoomLevel: Double = 2.0,
     center: GeoPoint = GeoPoint(0.0, 0.0),
-    showLabels: Boolean = false
+    showLabels: Boolean = false,
+    viewMode: MapViewMode = MapViewMode.POINTS
 ) {
     val context = LocalContext.current
     val isDark = isSystemInDarkTheme()
@@ -72,13 +73,12 @@ fun OsmMapView(
             v.selectedProducts.forEach { allCounts.add(it.quantity) }
         }
         val gMin = allCounts.minOrNull()?.toFloat() ?: 1f
-        val gMax = allCounts.maxOrNull()?.toFloat() ?: 1f
+        val gMax = allCounts.maxOfOrNull { it }?.toFloat() ?: 1f
         Triple(gMin, gMax, 50f)
     }
 
     var baseZoom by remember { mutableDoubleStateOf(1.0) }
     var hasZoomedToFit by remember { mutableStateOf(false) }
-    var viewMode by remember { mutableStateOf(MapViewMode.POINTS) }
 
     val countryOverlays = remember(countryFeatures, countryFillColor, countryStrokeColor) {
         countryFeatures.flatMap { feature ->

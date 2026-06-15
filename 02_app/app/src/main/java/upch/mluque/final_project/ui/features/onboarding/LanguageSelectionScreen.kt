@@ -110,10 +110,7 @@ fun LanguageSelectionScreen(
         if (showExitDialog) {
             UnsavedChangesDialog(
                 language = currentLanguage,
-                onSave = {
-                    viewModel.saveLanguage(selectedLanguage)
-                    onBack()
-                },
+                onContinueEditing = { showExitDialog = false },
                 onExitWithoutSaving = onBack,
                 onDismiss = { showExitDialog = false }
             )
