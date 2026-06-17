@@ -19,13 +19,16 @@ Se elaboraron prototipos utilizando **Figma**, cubriendo el flujo principal de l
 
 ## Flujo de pantallas
 
-El flujo principal de la aplicación sigue la siguiente secuencia:
+El flujo **implementado** en el prototipo sigue la siguiente secuencia:
 
-1. **Inicio (Splash)** → **Onboarding** (solo la primera vez) → **Pantalla de idioma**.
-2. **Selección de comunidad y tipo de emprendimiento** → guardado local.
-3. **Pantalla principal (Dashboard)** con acceso rápido a:
-   - **Nuevo registro** (botón flotante) → formulario con validaciones → guardado offline.
-   - **Historial de registros** (lista con posibilidad de editar/eliminar).
-   - **Panel de insights** (gráficos y recomendaciones).
-4. **Sincronización en segundo plano** (sin pantalla dedicada): WorkManager ejecuta la subida de datos cuando se cumplen las condiciones (Wi‑Fi/datos móviles + batería suficiente). El usuario solo ve un ícono de estado.
-5. **Reportes** (vista simple para el emprendedor) y opción de exportar resumen (versión futura).
+1. **Inicio (Splash)** → **Onboarding** (solo la primera vez, 3 pasos con selección de idioma) → **Configuración de perfil**.
+2. **Configuración de perfil:** nombre y tipo de emprendimiento (Hospedaje, Alimentación, Artesanía o Varios) → **catálogo inicial de productos** → guardado local.
+3. **Pantalla principal** organizada en cuatro secciones con barra de navegación inferior (o lateral en horizontal):
+   - **Home:** resumen, consejos del emprendedor y acceso al **Dashboard de insights**.
+   - **Visitas:** historial de registros y **botón para nuevo registro** → formulario con selección de nacionalidad, productos, descuentos y total → guardado offline.
+   - **Mapa:** mapa de procedencias de los turistas (OpenStreetMap offline).
+   - **Perfil:** datos del negocio, idioma, moneda, ayuda, privacidad y sincronización.
+4. **Sincronización entre dispositivos (P2P):** emparejamiento por **código QR** sobre la red local; el usuario ve el estado de la conexión. *(La sincronización automática en segundo plano con WorkManager es una mejora planificada — ver `04_tecnologia.md` §4.2.)*
+5. **Insights:** panel con gráficos (visitantes, nacionalidades, servicios, horas pico, ingresos) y filtros por periodo.
+
+> **Nota de estado.** Algunas capacidades del diseño objetivo aún están en desarrollo: API de recomendaciones, traducción offline del contenido dinámico, **audio con voz real** (hoy simulado) y notificaciones. El detalle del avance se documenta en `04_tecnologia.md` (§4.2) y `06_funcionalidad.md`.

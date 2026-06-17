@@ -199,6 +199,24 @@
     <string name="insights_revenue_est">Chaninchasqa qullqi yaykusqan</string>
     <string name="insights_peak_hours">Aswan watukuq horakuna</string>
     <string name="insights_visits_density">Watukuypa densidadnin</string>
+    <string name="insights_tab_summary">Pisilla</string>
+    <string name="insights_tab_visitors">Watukuqkuna</string>
+    <string name="insights_tab_sales">Qhatu</string>
+    <string name="insights_tab_times">Pachakuna</string>
+    <string name="insights_avg_ticket">Kuska gasto</string>
+    <string name="insights_revenue_over_time">Qullqi yaykusqan pachapi</string>
+    <string name="insights_visits_weekday">Watukuy sapa p\'unchaw</string>
+    <string name="insights_visitors_over_time">Watukuqkuna pachapi</string>
+    <string name="insights_revenue_by_service">Qullqi yanapakuyninmanta</string>
+    <string name="insights_total_items">Rantisqa kusakuna</string>
+    <string name="insights_total_revenue">Llapan qullqi</string>
+    <string name="insights_busiest_hour">Aswan hunt\'a hora</string>
+    <string name="insights_busiest_day">Aswan hunt\'a p\'unchaw</string>
+    <string name="insights_part_of_day">Watukuy horaq rakiynin</string>
+    <string name="insights_morning">Tutamanta</string>
+    <string name="insights_afternoon">Chawpi p\'unchaw</string>
+    <string name="insights_evening">Tuta</string>
+    <string name="insights_no_data">Mana willakuy kay pachapi</string>
     <!-- Catalog -->
     <string name="catalog_title">Rurukuna qhawana</string>
     <string name="catalog_add_product">Ruruta yapay</string>
@@ -222,6 +240,18 @@
     <string name="catalog_discount_active">Pisi chanin kachkan</string>
     <string name="catalog_discount_start">Qallariy p\'unchay</string>
     <string name="catalog_discount_end">Tukuy p\'unchay</string>
+    <string name="profile_currency">Qullqi akllasqa</string>
+    <string name="currency_selection_desc">Llamk\'ayniykikunapaq aswan allin qullqita akllay. Rurukuna chaninqa kikillanmanta t\'ijrakunqa.</string>
+    <string name="currency_soles">Soles</string>
+    <string name="currency_dollars">Dólares</string>
+    <string name="currency_euros">Euros</string>
+    <string name="currency_exchange_rate">T\'ijray: 1 %1$s = S/ %2$s</string>
+    <string name="currency_local">Kikin qullqi</string>
+    <string name="sort_by_label">Allichay kaywan:</string>
+    <string name="sort_option_name">Suti</string>
+    <string name="sort_option_price">Chanin</string>
+    <string name="sort_option_date">P\'unchay</string>
+    <string name="content_desc_switch_discount">Pisi chaninta t\'ijray</string>
     <string name="profile_sector_change_title">¿Ima llank\'ay t\'ijray?</string>
     <string name="profile_sector_change_desc">Sectorta t\'ijraptiykiqa, musuq kategoriapi mana kachkaq rurukuna qullunqa. ¿Hinalla munankichu?</string>
     <string name="search_product_hint">Ruruta maskhay...</string>

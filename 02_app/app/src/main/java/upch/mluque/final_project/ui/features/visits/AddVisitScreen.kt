@@ -280,7 +280,11 @@ fun AddVisitScreen(
                                 IconButton(onClick = { 
                                     discountType = if (discountType == DiscountType.FIXED) DiscountType.PERCENTAGE else DiscountType.FIXED 
                                 }) {
-                                    Icon(Icons.Default.SwapHoriz, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    Icon(
+                                        Icons.Default.SwapHoriz, 
+                                        contentDescription = UiTranslations.getString(context, "content_desc_switch_discount", language), 
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
                                 }
                             }
 
@@ -512,7 +516,11 @@ fun AddVisitScreen(
                                 },
                                 modifier = Modifier.background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape)
                             ) {
-                                Icon(Icons.Default.SwapHoriz, contentDescription = "Switch Discount Type", tint = MaterialTheme.colorScheme.primary)
+                                Icon(
+                                    Icons.Default.SwapHoriz, 
+                                    contentDescription = UiTranslations.getString(context, "content_desc_switch_discount", language), 
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
                             }
                         }
 

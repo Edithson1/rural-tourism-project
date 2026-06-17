@@ -15,8 +15,10 @@ El proyecto tiene como finalidad desarrollar un prototipo funcional abordando lo
 **Yupay Turismo** reemplaza el tradicional cuaderno de registro por una interfaz móvil adaptada a dispositivos de baja gama. La app permite al emprendedor registrar cada visita turística (procedencia, gasto aproximado, servicios consumidos) sin necesidad de conexión a internet. Los datos se almacenan localmente y se sincronizan de forma inteligente cuando el dispositivo encuentra una red Wi‑Fi o datos móviles.
 
 Posteriormente, la aplicación procesa la información y genera:
-- Paneles de control con gráficos simples y al menos dos elementos pictográficos (mapa de procedencias, termómetro de visitas).
-- Recomendaciones personalizadas según el tipo de emprendimiento (hospedaje, alimentación o artesanía).
-- Audios en quechua y español que leen los insights en voz alta, utilizando modelos de síntesis de voz de código abierto (Meta MMS + Sherpa‑ONNX), facilitando la comprensión en contextos de baja alfabetización o predominio de lenguas originarias.
+- Paneles de control con gráficos simples y un mapa pictográfico de procedencias de los turistas. *(Implementado.)*
+- Recomendaciones personalizadas según el tipo de emprendimiento (hospedaje, alimentación o artesanía). *(En desarrollo: integración con la API de recomendaciones.)*
+- Audios en quechua y español que leen los insights en voz alta, utilizando modelos de síntesis de voz de código abierto (Meta MMS + Sherpa‑ONNX), facilitando la comprensión en contextos de baja alfabetización o predominio de lenguas originarias. *(En desarrollo: actualmente la reproducción de audio está simulada; la síntesis de voz real es una mejora planificada.)*
 
 La solución está alineada con los lineamientos de interoperabilidad del MINCETUR y cumple con principios de privacidad y protección de datos personales. Su diseño modular permitirá, como trabajo futuro, escalar el soporte multilingüe y adaptar los formularios a nuevas tipologías de emprendimiento.
+
+> **Estado del prototipo.** Esta primera entrega ya implementa el núcleo offline-first (registro de visitas, catálogo de productos, dashboard de insights, mapa de procedencias y sincronización entre dispositivos por QR, en cuatro idiomas). Las funcionalidades inteligentes y de accesibilidad —API de recomendaciones, traducción offline de contenido dinámico, voz real (TTS) y notificaciones— y el pulido de la interfaz constituyen la siguiente fase. El detalle se encuentra en `04_tecnologia.md` y `06_funcionalidad.md`.

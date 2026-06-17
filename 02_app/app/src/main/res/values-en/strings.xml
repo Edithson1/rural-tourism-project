@@ -199,6 +199,24 @@
     <string name="insights_revenue_est">Estimated Revenue</string>
     <string name="insights_peak_hours">Peak Visiting Hours</string>
     <string name="insights_visits_density">Visit Density</string>
+    <string name="insights_tab_summary">Summary</string>
+    <string name="insights_tab_visitors">Visitors</string>
+    <string name="insights_tab_sales">Sales</string>
+    <string name="insights_tab_times">Times</string>
+    <string name="insights_avg_ticket">Average Ticket</string>
+    <string name="insights_revenue_over_time">Revenue Over Time</string>
+    <string name="insights_visits_weekday">Visits by Weekday</string>
+    <string name="insights_visitors_over_time">Visitors Over Time</string>
+    <string name="insights_revenue_by_service">Revenue by Service</string>
+    <string name="insights_total_items">Products Sold</string>
+    <string name="insights_total_revenue">Total Revenue</string>
+    <string name="insights_busiest_hour">Busiest Hour</string>
+    <string name="insights_busiest_day">Busiest Day</string>
+    <string name="insights_part_of_day">Visits by Time of Day</string>
+    <string name="insights_morning">Morning</string>
+    <string name="insights_afternoon">Afternoon</string>
+    <string name="insights_evening">Evening</string>
+    <string name="insights_no_data">No data for this period</string>
     <!-- Catalog -->
     <string name="catalog_title">My Product Catalog</string>
     <string name="catalog_add_product">Add Product</string>
@@ -222,6 +240,18 @@
     <string name="catalog_discount_active">Active discount</string>
     <string name="catalog_discount_start">Start date</string>
     <string name="catalog_discount_end">End date</string>
+    <string name="profile_currency">Preferred currency</string>
+    <string name="currency_selection_desc">Select your preferred currency for transactions. Catalog prices will be automatically converted using the exchange rate.</string>
+    <string name="currency_soles">Soles</string>
+    <string name="currency_dollars">Dollars</string>
+    <string name="currency_euros">Euros</string>
+    <string name="currency_exchange_rate">Exchange: 1 %1$s = S/ %2$s</string>
+    <string name="currency_local">Local currency</string>
+    <string name="sort_by_label">Sort by:</string>
+    <string name="sort_option_name">Name</string>
+    <string name="sort_option_price">Price</string>
+    <string name="sort_option_date">Date</string>
+    <string name="content_desc_switch_discount">Switch discount type</string>
     <string name="profile_sector_change_title">Change sector?</string>
     <string name="profile_sector_change_desc">If you change your business category, products not belonging to the new category will be deleted. Do you want to continue?</string>
     <string name="search_product_hint">Search product...</string>

@@ -201,6 +201,24 @@
     <string name="insights_revenue_est">Ingresos Estimados</string>
     <string name="insights_peak_hours">Horas de Mayor Afluencia</string>
     <string name="insights_visits_density">Densidad de Visitas</string>
+    <string name="insights_tab_summary">Resumen</string>
+    <string name="insights_tab_visitors">Visitantes</string>
+    <string name="insights_tab_sales">Ventas</string>
+    <string name="insights_tab_times">Tiempos</string>
+    <string name="insights_avg_ticket">Ticket Promedio</string>
+    <string name="insights_revenue_over_time">Ingresos en el Tiempo</string>
+    <string name="insights_visits_weekday">Visitas por Día de Semana</string>
+    <string name="insights_visitors_over_time">Visitantes en el Tiempo</string>
+    <string name="insights_revenue_by_service">Ingresos por Servicio</string>
+    <string name="insights_total_items">Productos Vendidos</string>
+    <string name="insights_total_revenue">Ingresos Totales</string>
+    <string name="insights_busiest_hour">Hora Pico</string>
+    <string name="insights_busiest_day">Día Más Activo</string>
+    <string name="insights_part_of_day">Visitas por Franja Horaria</string>
+    <string name="insights_morning">Mañana</string>
+    <string name="insights_afternoon">Tarde</string>
+    <string name="insights_evening">Noche</string>
+    <string name="insights_no_data">Sin datos para este periodo</string>
     <!-- Catalog -->
     <string name="catalog_title">Mi Catálogo de Productos</string>
     <string name="catalog_add_product">Añadir Producto</string>
@@ -224,6 +242,18 @@
     <string name="catalog_discount_active">Descuento activo</string>
     <string name="catalog_discount_start">Fecha inicio</string>
     <string name="catalog_discount_end">Fecha fin</string>
+    <string name="profile_currency">Moneda preferida</string>
+    <string name="currency_selection_desc">Selecciona tu moneda preferida para las transacciones. Los precios del catálogo se convertirán automáticamente usando el tipo de cambio.</string>
+    <string name="currency_soles">Soles</string>
+    <string name="currency_dollars">Dólares</string>
+    <string name="currency_euros">Euros</string>
+    <string name="currency_exchange_rate">Cambio: 1 %1$s = S/ %2$s</string>
+    <string name="currency_local">Moneda local</string>
+    <string name="sort_by_label">Ordenar por:</string>
+    <string name="sort_option_name">Nombre</string>
+    <string name="sort_option_price">Precio</string>
+    <string name="sort_option_date">Fecha</string>
+    <string name="content_desc_switch_discount">Cambiar tipo de descuento</string>
     <string name="profile_sector_change_title">¿Cambiar de sector?</string>
     <string name="profile_sector_change_desc">Si cambias de rubro, se eliminarán los productos que no pertenezcan a la nueva categoría. ¿Deseas continuar?</string>
     <string name="search_product_hint">Buscar producto...</string>

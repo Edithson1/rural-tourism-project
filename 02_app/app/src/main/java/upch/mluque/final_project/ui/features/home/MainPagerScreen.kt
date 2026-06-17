@@ -34,8 +34,6 @@ fun MainPagerScreen(
     val language = settings?.language ?: "Español"
     val coroutineScope = rememberCoroutineScope()
 
-    // HorizontalPager handles its own internal animations during swipe.
-    // scrollToPage() vs animateScrollToPage() controls whether button-driven changes are instant.
     HorizontalPager(
         state = pagerState,
         modifier = Modifier.fillMaxSize().padding(innerPadding),

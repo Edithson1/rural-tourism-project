@@ -56,6 +56,8 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.coil.compose)
     implementation(libs.osmdroid.android)
+    // Vico: gráficos profesionales para Compose (Home + Dashboard)
+    implementation(libs.vico.compose.m3)
     implementation(libs.play.services.code.scanner)
     implementation(libs.barcode.scanning)
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")

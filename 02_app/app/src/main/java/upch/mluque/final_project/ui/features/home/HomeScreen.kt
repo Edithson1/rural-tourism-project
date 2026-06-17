@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import androidx.compose.ui.platform.LocalContext
 import upch.mluque.final_project.data.local.Visit
+import upch.mluque.final_project.ui.components.VicoColumnChart
 import upch.mluque.final_project.ui.theme.Final_projectTheme
 import upch.mluque.final_project.ui.navigation.Routes
 import upch.mluque.final_project.utils.UiTranslations
@@ -295,26 +296,14 @@ fun ChartCard(selectedView: TimeView, chartData: List<Pair<String, Int>>, maxCou
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(140.dp)
-                    .padding(horizontal = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Bottom
-            ) {
-                chartData.forEach { (label, count) ->
-                    val heightFactor = (count.toFloat() / maxCount).coerceIn(0.05f, 1f)
-                    BarItem(
-                        label = label,
-                        value = count.toString(),
-                        heightFactor = heightFactor,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            VicoColumnChart(
+                values = chartData.map { it.second.toFloat() },
+                labels = chartData.map { it.first },
+                height = 160.dp,
+                emptyText = UiTranslations.getString(context, "home_no_records", language)
+            )
         }
     }
 }
@@ -480,44 +469,6 @@ fun RecentVisitsCard(visits: List<Visit>, language: String, onNavigate: (String)
                 }
             }
         }
-    }
-}
-
-@Composable
-fun BarItem(label: String, value: String, heightFactor: Float, color: Color, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier.fillMaxHeight(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Bottom
-    ) {
-        if (value != "0") {
-            Text(
-                text = value,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
-                color = color
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-        }
-        
-        Box(
-            modifier = Modifier
-                .width(22.dp)
-                .fillMaxHeight(heightFactor * 0.7f) // El máximo ocupa el 70% del alto total para dejar espacio a los textos
-                .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
-                .background(color)
-        )
-        
-        Spacer(modifier = Modifier.height(6.dp))
-        
-        Text(
-            text = label,
-            fontSize = 9.sp,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            maxLines = 1
-        )
     }
 }
 

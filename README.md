@@ -41,17 +41,19 @@
 │   ├── 📄 05_control_versiones.md     → Ramas, commits y flujo de trabajo
 │   └── 📄 06_funcionalidad.md    → Demo y módulos implementados
 │
-├── 📁 02_app/
-│   └── 📁 src/
-│       ├── 📁 data/              → Room · Retrofit · DataStore
-│       ├── 📁 domain/            → Casos de uso · Lógica de negocio
-│       └── 📁 presentation/      → ViewModels · Jetpack Compose UI
+├── 📁 02_app/                    → Proyecto Android (Kotlin · Jetpack Compose)
+│   └── 📁 app/src/main/java/upch/mluque/final_project/
+│       ├── 📁 data/              → Room (entidades, DAOs) · DataRepository
+│       ├── 📁 sync/              → Sincronización P2P (sockets TCP · NSD · QR)
+│       ├── 📁 ui/                → ViewModels · Compose (features, components, navigation, theme)
+│       └── 📁 utils/             → Utilidades (red, permisos, traducciones)
 │
-├── 📁 figma/                     → Assets y exportaciones de diseño
 ├── 📄 .gitignore
 ├── 📄 README.md
-└── 📄 build.gradle
+└── 📄 build.gradle.kts
 ```
+
+> Nota: la arquitectura es **MVVM de dos capas** (`data` + `ui`); la lógica de negocio reside en los ViewModels. Ver `01_documentacion/04_tecnologia.md` para el detalle del stack real y las funcionalidades pendientes.
 
 ---
 
@@ -76,7 +78,7 @@
 
 > Para quienes revisen o colaboren en este proyecto:
 
-- 📖 Leer la documentación en `/docs/` antes de contribuir — cada archivo detalla una sección específica de la entrega
+- 📖 Leer la documentación en `01_documentacion/` antes de contribuir — cada archivo detalla una sección específica de la entrega (incl. `06_funcionalidad.md` con el estado de avance)
 - 🌿 Seguir el flujo de ramas definido: `feature/` → `develop` → `main`
 - 📝 Usar **Conventional Commits**: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`
 - 🔄 No hacer push directo a `main` — siempre abrir un **Pull Request** desde `develop`

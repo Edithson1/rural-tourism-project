@@ -35,9 +35,9 @@ fun CurrencySelectionScreen(
     val preferredCurrency = settings?.preferredCurrency ?: "S/"
 
     val currencies = listOf(
-        CurrencyItem("Soles", "S/", settings?.usdExchangeRate ?: 3.8, settings?.eurExchangeRate ?: 4.1),
-        CurrencyItem("Dólares", "$", 1.0, 1.1),
-        CurrencyItem("Euros", "€", 0.9, 1.0)
+        CurrencyItem(UiTranslations.getString(context, "currency_soles", language), "S/", settings?.usdExchangeRate ?: 3.8, settings?.eurExchangeRate ?: 4.1),
+        CurrencyItem(UiTranslations.getString(context, "currency_dollars", language), "$", 1.0, 1.1),
+        CurrencyItem(UiTranslations.getString(context, "currency_euros", language), "€", 0.9, 1.0)
     )
 
     Scaffold(
@@ -46,7 +46,7 @@ fun CurrencySelectionScreen(
                 title = { Text(UiTranslations.getString(context, "profile_currency", language), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = UiTranslations.getString(context, "btn_back", language))
                     }
                 }
             )
@@ -54,7 +54,7 @@ fun CurrencySelectionScreen(
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp)) {
             Text(
-                text = "Selecciona tu moneda preferida para las transacciones. Los precios del catálogo se convertirán automáticamente usando el tipo de cambio.",
+                text = UiTranslations.getString(context, "currency_selection_desc", language),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 24.dp)
@@ -97,13 +97,18 @@ fun CurrencySelectionScreen(
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(item.name, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                                 if (item.symbol != "S/") {
+                                    val rate = if (item.symbol == "$") settings?.usdExchangeRate else settings?.eurExchangeRate
                                     Text(
-                                        "Cambio: 1 ${item.symbol} = S/ ${if (item.symbol == "$") settings?.usdExchangeRate else settings?.eurExchangeRate}",
+                                        UiTranslations.getString(context, "currency_exchange_rate", language, item.symbol, rate ?: 0.0),
                                         fontSize = 12.sp,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 } else {
-                                    Text("Moneda local", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(
+                                        UiTranslations.getString(context, "currency_local", language),
+                                        fontSize = 12.sp, 
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
                                 }
                             }
                             

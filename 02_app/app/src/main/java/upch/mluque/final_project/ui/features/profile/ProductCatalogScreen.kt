@@ -73,13 +73,13 @@ fun ProductCatalogScreen(
                 navigationIcon = {
                     if (!isSetupFlow) {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.Default.ArrowBack, contentDescription = UiTranslations.getString(context, "btn_back", language))
                         }
                     }
                 },
                 actions = {
                     IconButton(onClick = { onNavigateToEditor(null) }) {
-                        Icon(Icons.Default.Add, contentDescription = "Add Product")
+                        Icon(Icons.Default.Add, contentDescription = UiTranslations.getString(context, "catalog_add_product", language))
                     }
                 }
             )
@@ -143,10 +143,15 @@ fun ProductCatalogScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Ordenar por:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    text = UiTranslations.getString(context, "sort_by_label", language),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
                 
                 SortChip(
-                    label = "Nombre", 
+                    label = UiTranslations.getString(context, "sort_option_name", language), 
                     isSelected = sortOption == SortOption.NAME,
                     isAscending = sortAscending,
                     onClick = {
@@ -155,7 +160,7 @@ fun ProductCatalogScreen(
                     }
                 )
                 SortChip(
-                    label = "Precio", 
+                    label = UiTranslations.getString(context, "sort_option_price", language), 
                     isSelected = sortOption == SortOption.PRICE,
                     isAscending = sortAscending,
                     onClick = {
@@ -164,7 +169,7 @@ fun ProductCatalogScreen(
                     }
                 )
                 SortChip(
-                    label = "Fecha", 
+                    label = UiTranslations.getString(context, "sort_option_date", language), 
                     isSelected = sortOption == SortOption.CREATION_DATE,
                     isAscending = sortAscending,
                     onClick = {
@@ -193,6 +198,7 @@ fun ProductCatalogScreen(
                         items(filteredProducts) { product ->
                             ProductItem(
                                 product = product,
+                                language = language,
                                 onEdit = { onNavigateToEditor(it.id) },
                                 onDelete = { productToDelete = it }
                             )
@@ -207,6 +213,7 @@ fun ProductCatalogScreen(
                         items(filteredProducts) { product ->
                             ProductItem(
                                 product = product,
+                                language = language,
                                 onEdit = { onNavigateToEditor(it.id) },
                                 onDelete = { productToDelete = it }
                             )
@@ -276,9 +283,11 @@ fun SortChip(label: String, isSelected: Boolean, isAscending: Boolean, onClick: 
 @Composable
 fun ProductItem(
     product: Product,
+    language: String,
     onEdit: (Product) -> Unit,
     onDelete: (Product) -> Unit
 ) {
+    val context = LocalContext.current
     val activePrice = product.getActivePrice()
     val hasDiscount = activePrice < product.basePrice
 
@@ -337,7 +346,7 @@ fun ProductItem(
                     }
                 }
                 Text(
-                    text = product.category,
+                    text = UiTranslations.translateService(product.category, language, context),
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -346,7 +355,7 @@ fun ProductItem(
                 IconButton(onClick = { onEdit(product) }) {
                     Icon(
                         Icons.Default.Edit, 
-                        contentDescription = "Edit", 
+                        contentDescription = UiTranslations.getString(context, "catalog_edit_product", language),
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }

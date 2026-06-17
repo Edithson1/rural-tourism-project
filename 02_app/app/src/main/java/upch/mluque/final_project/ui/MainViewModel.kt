@@ -25,7 +25,6 @@ import org.json.JSONObject
 import org.osmdroid.util.GeoPoint
 import java.io.ByteArrayOutputStream
 
-// Data ViewModel handling app-wide state
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: DataRepository
     val appSettings: StateFlow<AppSettings?>
