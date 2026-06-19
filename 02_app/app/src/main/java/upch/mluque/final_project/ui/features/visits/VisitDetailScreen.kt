@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import upch.mluque.final_project.data.local.DiscountType
 import upch.mluque.final_project.data.local.Visit
 import upch.mluque.final_project.ui.MainViewModel
+import upch.mluque.final_project.utils.CurrencyUtils
 import upch.mluque.final_project.utils.UiTranslations
 import java.text.SimpleDateFormat
 import java.util.*
@@ -40,6 +41,8 @@ fun VisitDetailScreen(
     val settings by viewModel.appSettings.collectAsState()
     val language = settings?.language ?: "Español"
     val prefCurrency = settings?.preferredCurrency ?: "S/"
+    val usdRate = settings?.usdExchangeRate ?: 3.8
+    val eurRate = settings?.eurExchangeRate ?: 4.1
     val context = LocalContext.current
     
     LaunchedEffect(visitId) {
@@ -119,8 +122,9 @@ fun VisitDetailScreen(
                                         color = MaterialTheme.colorScheme.onSurface,
                                         fontWeight = FontWeight.Medium
                                     )
+                                    val itemPriceConverted = CurrencyUtils.convert(item.priceAtSale, item.currency, prefCurrency, usdRate, eurRate)
                                     Text(
-                                        "${item.currency} ${String.format("%.2f", item.priceAtSale * item.quantity)}",
+                                        "$prefCurrency ${String.format("%.2f", itemPriceConverted * item.quantity)}",
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.primary
                                     )
@@ -129,8 +133,9 @@ fun VisitDetailScreen(
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Icon(Icons.Default.LocalOffer, null, modifier = Modifier.size(10.dp), tint = Color(0xFFE53935))
                                         Spacer(modifier = Modifier.width(4.dp))
+                                        val originalPriceConverted = CurrencyUtils.convert(item.originalPrice, item.currency, prefCurrency, usdRate, eurRate)
                                         Text(
-                                            text = "${item.currency} ${String.format("%.2f", item.originalPrice * item.quantity)}",
+                                            text = "$prefCurrency ${String.format("%.2f", originalPriceConverted * item.quantity)}",
                                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                                             fontSize = 11.sp,
                                             textDecoration = TextDecoration.LineThrough
@@ -148,13 +153,16 @@ fun VisitDetailScreen(
                 Spacer(modifier = Modifier.height(24.dp))
                 
                 // Totales
+                val subtotalConverted = CurrencyUtils.convert(v.subtotal, v.currency, prefCurrency, usdRate, eurRate)
+                val totalAmountConverted = CurrencyUtils.convert(v.totalAmount, v.currency, prefCurrency, usdRate, eurRate)
+                
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
                         Text(UiTranslations.getString(context, "subtotal_label", language), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text("$prefCurrency ${String.format("%.2f", v.subtotal)}", color = MaterialTheme.colorScheme.onSurface)
+                        Text("$prefCurrency ${String.format("%.2f", subtotalConverted)}", color = MaterialTheme.colorScheme.onSurface)
                     }
                     Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
                         val discSuffix = if (v.discountType == DiscountType.PERCENTAGE) " (${v.discountValue}%)" else ""
@@ -162,8 +170,12 @@ fun VisitDetailScreen(
                             "${UiTranslations.getString(context, "discount_label", language)}$discSuffix",
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        val discAmount = if (v.discountType == DiscountType.PERCENTAGE) (v.subtotal * v.discountValue / 100.0) else v.discountValue
-                        Text("- $prefCurrency ${String.format("%.2f", discAmount)}", color = Color(0xFFD32F2F))
+                        val discAmountConverted = if (v.discountType == DiscountType.PERCENTAGE) 
+                            (subtotalConverted * v.discountValue / 100.0) 
+                        else 
+                            CurrencyUtils.convert(v.discountValue, v.currency, prefCurrency, usdRate, eurRate)
+                        
+                        Text("- $prefCurrency ${String.format("%.2f", discAmountConverted)}", color = Color(0xFFD32F2F))
                     }
                     
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
@@ -176,7 +188,7 @@ fun VisitDetailScreen(
                             color = MaterialTheme.colorScheme.onBackground
                         )
                         Text(
-                            "$prefCurrency ${String.format("%.2f", v.totalAmount)}",
+                            "$prefCurrency ${String.format("%.2f", totalAmountConverted)}",
                             fontWeight = FontWeight.Bold, 
                             fontSize = 24.sp, 
                             color = MaterialTheme.colorScheme.primary

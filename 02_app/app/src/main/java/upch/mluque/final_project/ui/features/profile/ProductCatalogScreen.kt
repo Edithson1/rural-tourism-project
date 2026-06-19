@@ -22,8 +22,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import upch.mluque.final_project.data.local.AppSettings
 import upch.mluque.final_project.data.local.Product
 import upch.mluque.final_project.ui.MainViewModel
+import upch.mluque.final_project.utils.CurrencyUtils
 import upch.mluque.final_project.utils.UiTranslations
 
 enum class SortOption {
@@ -42,16 +44,24 @@ fun ProductCatalogScreen(
 ) {
     val context = LocalContext.current
     val products by viewModel.allProducts.collectAsState(initial = emptyList())
+    val settings by viewModel.appSettings.collectAsState()
+    val prefCurrency = settings?.preferredCurrency ?: "S/"
+    val usdRate = settings?.usdExchangeRate ?: 3.8
+    val eurRate = settings?.eurExchangeRate ?: 4.1
     
     var searchQuery by remember { mutableStateOf("") }
     var sortOption by remember { mutableStateOf(SortOption.NAME) }
     var sortAscending by remember { mutableStateOf(true) }
 
-    val filteredProducts = remember(products, searchQuery, sortOption, sortAscending) {
+    val filteredProducts = remember(products, searchQuery, sortOption, sortAscending, prefCurrency, usdRate, eurRate) {
         val filtered = products.filter { it.name.contains(searchQuery, ignoreCase = true) }
         when (sortOption) {
             SortOption.NAME -> if (sortAscending) filtered.sortedBy { it.name } else filtered.sortedByDescending { it.name }
-            SortOption.PRICE -> if (sortAscending) filtered.sortedBy { it.getActivePrice() } else filtered.sortedByDescending { it.getActivePrice() }
+            SortOption.PRICE -> if (sortAscending) {
+                filtered.sortedBy { CurrencyUtils.convert(it.getActivePrice(), it.currency, prefCurrency, usdRate, eurRate) }
+            } else {
+                filtered.sortedByDescending { CurrencyUtils.convert(it.getActivePrice(), it.currency, prefCurrency, usdRate, eurRate) }
+            }
             SortOption.CREATION_DATE -> if (sortAscending) filtered.sortedBy { it.createdAt } else filtered.sortedByDescending { it.createdAt }
         }
     }
@@ -199,6 +209,9 @@ fun ProductCatalogScreen(
                             ProductItem(
                                 product = product,
                                 language = language,
+                                preferredCurrency = prefCurrency,
+                                usdRate = usdRate,
+                                eurRate = eurRate,
                                 onEdit = { onNavigateToEditor(it.id) },
                                 onDelete = { productToDelete = it }
                             )
@@ -214,6 +227,9 @@ fun ProductCatalogScreen(
                             ProductItem(
                                 product = product,
                                 language = language,
+                                preferredCurrency = prefCurrency,
+                                usdRate = usdRate,
+                                eurRate = eurRate,
                                 onEdit = { onNavigateToEditor(it.id) },
                                 onDelete = { productToDelete = it }
                             )
@@ -284,12 +300,17 @@ fun SortChip(label: String, isSelected: Boolean, isAscending: Boolean, onClick: 
 fun ProductItem(
     product: Product,
     language: String,
+    preferredCurrency: String,
+    usdRate: Double,
+    eurRate: Double,
     onEdit: (Product) -> Unit,
     onDelete: (Product) -> Unit
 ) {
     val context = LocalContext.current
-    val activePrice = product.getActivePrice()
-    val hasDiscount = activePrice < product.basePrice
+    val activePriceRaw = product.getActivePrice()
+    val basePriceConverted = CurrencyUtils.convert(product.basePrice, product.currency, preferredCurrency, usdRate, eurRate)
+    val activePriceConverted = CurrencyUtils.convert(activePriceRaw, product.currency, preferredCurrency, usdRate, eurRate)
+    val hasDiscount = activePriceRaw < product.basePrice
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -313,14 +334,14 @@ fun ProductItem(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (hasDiscount) {
                         Text(
-                            text = "${product.currency} ${String.format("%.2f", product.basePrice)}", 
+                            text = "$preferredCurrency ${String.format("%.2f", basePriceConverted)}", 
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                             fontSize = 13.sp,
                             textDecoration = TextDecoration.LineThrough
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "${product.currency} ${String.format("%.2f", activePrice)}", 
+                            text = "$preferredCurrency ${String.format("%.2f", activePriceConverted)}", 
                             color = Color(0xFFE53935), // Rojo vibrante para oferta
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp
@@ -339,7 +360,7 @@ fun ProductItem(
                         }
                     } else {
                         Text(
-                            text = "${product.currency} ${String.format("%.2f", product.basePrice)}", 
+                            text = "$preferredCurrency ${String.format("%.2f", basePriceConverted)}",
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Medium
                         )

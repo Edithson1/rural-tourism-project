@@ -29,6 +29,7 @@ import upch.mluque.final_project.data.local.Visit
 import upch.mluque.final_project.ui.components.VicoColumnChart
 import upch.mluque.final_project.ui.theme.Final_projectTheme
 import upch.mluque.final_project.ui.navigation.Routes
+import upch.mluque.final_project.utils.CurrencyUtils
 import upch.mluque.final_project.utils.UiTranslations
 import java.util.Calendar
 
@@ -41,6 +42,9 @@ fun HomeScreen(
     entrepreneurTips: String,
     profilePicture: ByteArray?,
     visits: List<Visit>,
+    preferredCurrency: String,
+    usdRate: Double,
+    eurRate: Double,
     language: String,
     onNavigateToTip: () -> Unit,
     onNavigateToAdd: () -> Unit,
@@ -78,7 +82,8 @@ fun HomeScreen(
         if (isLandscape) {
             LandscapeHomeContent(
                 paddingValues, businessName, selectedService, entrepreneurTips,
-                profilePicture, visits, selectedView, chartData, maxCount, language,
+                profilePicture, visits, preferredCurrency, usdRate, eurRate,
+                selectedView, chartData, maxCount, language,
                 onViewChange = { selectedView = it },
                 onNavigateToTip = onNavigateToTip,
                 onNavigateToDashboard = onNavigateToDashboard,
@@ -87,7 +92,8 @@ fun HomeScreen(
         } else {
             PortraitHomeContent(
                 paddingValues, businessName, selectedService, entrepreneurTips,
-                profilePicture, visits, selectedView, chartData, maxCount, language,
+                profilePicture, visits, preferredCurrency, usdRate, eurRate,
+                selectedView, chartData, maxCount, language,
                 onViewChange = { selectedView = it },
                 onNavigateToTip = onNavigateToTip,
                 onNavigateToDashboard = onNavigateToDashboard,
@@ -105,6 +111,9 @@ fun PortraitHomeContent(
     entrepreneurTips: String,
     profilePicture: ByteArray?,
     visits: List<Visit>,
+    preferredCurrency: String,
+    usdRate: Double,
+    eurRate: Double,
     selectedView: TimeView,
     chartData: List<Pair<String, Int>>,
     maxCount: Int,
@@ -129,7 +138,7 @@ fun PortraitHomeContent(
         Spacer(modifier = Modifier.height(24.dp))
         TipCard(entrepreneurTips, language, onNavigateToTip)
         Spacer(modifier = Modifier.height(24.dp))
-        RecentVisitsCard(visits, language, onNavigate)
+        RecentVisitsCard(visits, preferredCurrency, usdRate, eurRate, language, onNavigate)
         Spacer(modifier = Modifier.height(100.dp))
     }
 }
@@ -142,6 +151,9 @@ fun LandscapeHomeContent(
     entrepreneurTips: String,
     profilePicture: ByteArray?,
     visits: List<Visit>,
+    preferredCurrency: String,
+    usdRate: Double,
+    eurRate: Double,
     selectedView: TimeView,
     chartData: List<Pair<String, Int>>,
     maxCount: Int,
@@ -182,7 +194,7 @@ fun LandscapeHomeContent(
         ) {
             TipCard(entrepreneurTips, language, onNavigateToTip)
             Spacer(modifier = Modifier.height(24.dp))
-            RecentVisitsCard(visits, language, onNavigate)
+            RecentVisitsCard(visits, preferredCurrency, usdRate, eurRate, language, onNavigate)
             Spacer(modifier = Modifier.height(100.dp))
         }
     }
@@ -374,7 +386,7 @@ fun TipCard(entrepreneurTips: String, language: String, onNavigateToTip: () -> U
 }
 
 @Composable
-fun RecentVisitsCard(visits: List<Visit>, language: String, onNavigate: (String) -> Unit) {
+fun RecentVisitsCard(visits: List<Visit>, preferredCurrency: String, usdRate: Double, eurRate: Double, language: String, onNavigate: (String) -> Unit) {
     val context = LocalContext.current
     Column {
         Row(
@@ -454,8 +466,9 @@ fun RecentVisitsCard(visits: List<Visit>, language: String, onNavigate: (String)
                                     )
                                 }
                             }
+                            val convertedTotal = CurrencyUtils.convert(visit.totalAmount, visit.currency, preferredCurrency, usdRate, eurRate)
                             Text(
-                                text = "S/ ${String.format("%.2f", visit.totalAmount)}",
+                                text = "$preferredCurrency ${String.format("%.2f", convertedTotal)}",
                                 fontSize = 14.sp,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontWeight = FontWeight.Bold,
@@ -566,6 +579,9 @@ fun HomeLandscapePreview() {
             entrepreneurTips = "Usa el modo horizontal para ver más datos a la vez.",
             profilePicture = null,
             visits = emptyList(),
+            preferredCurrency = "S/",
+            usdRate = 3.8,
+            eurRate = 4.1,
             language = "Español",
             onNavigateToTip = {},
             onNavigateToAdd = {},

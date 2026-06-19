@@ -300,6 +300,28 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
         addLog("Servidor iniciado en puerto $port")
     }
 
+    fun cancelServerMode() {
+        if (_role.value == "SERVER" && !isFullyLinked && !_isConnected.value) {
+            addLog("Cancelando modo servidor (No vinculado)")
+            syncManager.stop()
+            nsdHelper.stop()
+            
+            _role.value = "CLIENT"
+            
+            // Restaurar ID original
+            viewModelScope.launch {
+                val current = repository.getSettingsOnce()
+                if (current != null && current.deviceId != current.hardwareDeviceId) {
+                    repository.saveSettings(current.copy(
+                        deviceId = current.hardwareDeviceId,
+                        lastModified = System.currentTimeMillis()
+                    ))
+                }
+            }
+            saveSyncState()
+        }
+    }
+
     fun connectToServer(ip: String, port: Int) {
         _isConnected.value = false // Reiniciar estado para evitar saltos de UI
         _role.value = "CLIENT"

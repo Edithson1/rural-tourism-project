@@ -304,6 +304,9 @@ fun MainNavigation(
                                 selectedService = selectedService,
                                 entrepreneurTips = entrepreneurTips,
                                 profilePicture = profilePicture,
+                                preferredCurrency = appSettings?.preferredCurrency ?: "S/",
+                                usdRate = appSettings?.usdExchangeRate ?: 3.8,
+                                eurRate = appSettings?.eurExchangeRate ?: 4.1,
                                 userScrollEnabled = !isLandscape
                             )
                         }
@@ -410,6 +413,7 @@ fun MainNavigation(
                         val language = settings?.language ?: "Español"
                         DashboardScreen(
                             visits = visits,
+                            settings = settings,
                             language = language,
                             onBack = { navController.popBackStack() }
                         )

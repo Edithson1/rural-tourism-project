@@ -27,6 +27,9 @@ fun MainPagerScreen(
     selectedService: String,
     entrepreneurTips: String,
     profilePicture: ByteArray?,
+    preferredCurrency: String,
+    usdRate: Double,
+    eurRate: Double,
     userScrollEnabled: Boolean = true
 ) {
     val visits by viewModel.allVisits.collectAsState()
@@ -47,6 +50,9 @@ fun MainPagerScreen(
                 entrepreneurTips = entrepreneurTips,
                 profilePicture = profilePicture,
                 visits = visits,
+                preferredCurrency = preferredCurrency,
+                usdRate = usdRate,
+                eurRate = eurRate,
                 language = language,
                 onNavigateToTip = { navController.navigate(Routes.TIP_DETAIL) },
                 onNavigateToAdd = { navController.navigate(Routes.ADD_VISIT) },

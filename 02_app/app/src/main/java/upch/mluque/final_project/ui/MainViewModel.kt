@@ -135,7 +135,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 subtotal = subtotal,
                 discountValue = discountValue,
                 discountType = discountType,
-                totalAmount = totalAmount
+                totalAmount = totalAmount,
+                currency = currentSettings?.preferredCurrency ?: "S/"
             )
             repository.insertVisit(visit)
         }

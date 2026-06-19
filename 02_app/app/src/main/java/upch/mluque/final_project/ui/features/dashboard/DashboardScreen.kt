@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import upch.mluque.final_project.data.local.Visit
+import upch.mluque.final_project.data.local.AppSettings
 import upch.mluque.final_project.ui.features.dashboard.components.FilterSelector
 import upch.mluque.final_project.ui.features.dashboard.tabs.SalesTab
 import upch.mluque.final_project.ui.features.dashboard.tabs.SummaryTab
@@ -27,6 +28,7 @@ import upch.mluque.final_project.utils.UiTranslations
 @Composable
 fun DashboardScreen(
     visits: List<Visit>,
+    settings: AppSettings?,
     language: String,
     onBack: () -> Unit
 ) {
@@ -52,8 +54,9 @@ fun DashboardScreen(
 
     var selectedTab by remember { mutableStateOf(DashboardTab.SUMMARY) }
 
-    LaunchedEffect(visits) {
+    LaunchedEffect(visits, settings) {
         dashboardViewModel.updateVisits(visits)
+        dashboardViewModel.updateSettings(settings)
     }
 
     Scaffold(

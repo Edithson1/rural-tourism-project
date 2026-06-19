@@ -16,6 +16,7 @@ data class Visit(
     val discountValue: Double = 0.0,
     val discountType: DiscountType = DiscountType.FIXED,
     val totalAmount: Double = 0.0,
+    val currency: String = "S/",
     val registrationDate: Long = System.currentTimeMillis(),
     val isSent: Boolean = false,
     val sentDate: Long? = null

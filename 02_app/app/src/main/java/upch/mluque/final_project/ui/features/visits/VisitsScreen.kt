@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
 import upch.mluque.final_project.data.local.Visit
 import upch.mluque.final_project.ui.MainViewModel
+import upch.mluque.final_project.utils.CurrencyUtils
 import upch.mluque.final_project.utils.UiTranslations
 import java.text.SimpleDateFormat
 import java.util.*
@@ -133,6 +134,9 @@ fun VisitsScreen(
                         items(visitsInCategory) { visit ->
                             VisitItem(
                                 visit = visit,
+                                preferredCurrency = settings?.preferredCurrency ?: "S/",
+                                usdRate = settings?.usdExchangeRate ?: 3.8,
+                                eurRate = settings?.eurExchangeRate ?: 4.1,
                                 language = language,
                                 onClick = { onNavigateToDetail(visit.id) }
                             )
@@ -202,8 +206,10 @@ private fun isSameYear(today: Calendar, date: Calendar): Boolean {
 }
 
 @Composable
-fun VisitItem(visit: Visit, language: String, onClick: () -> Unit) {
+fun VisitItem(visit: Visit, preferredCurrency: String, usdRate: Double, eurRate: Double, language: String, onClick: () -> Unit) {
     val context = LocalContext.current
+    val convertedTotal = CurrencyUtils.convert(visit.totalAmount, visit.currency, preferredCurrency, usdRate, eurRate)
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -240,7 +246,7 @@ fun VisitItem(visit: Visit, language: String, onClick: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "S/ ${String.format("%.2f", visit.totalAmount)}",
+                    text = "$preferredCurrency ${String.format("%.2f", convertedTotal)}",
                     fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold

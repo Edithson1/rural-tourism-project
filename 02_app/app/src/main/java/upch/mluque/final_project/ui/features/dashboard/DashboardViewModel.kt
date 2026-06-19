@@ -4,12 +4,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
+import upch.mluque.final_project.data.local.AppSettings
 import upch.mluque.final_project.data.local.Visit
+import upch.mluque.final_project.utils.CurrencyUtils
 import java.util.*
 
 class DashboardViewModel : ViewModel() {
 
     private val _visits = MutableStateFlow<List<Visit>>(emptyList())
+    private val _settings = MutableStateFlow<AppSettings?>(null)
 
     private val _filter = MutableStateFlow(DashboardFilter.ALL)
     val filter: StateFlow<DashboardFilter> = _filter.asStateFlow()
@@ -51,9 +54,9 @@ class DashboardViewModel : ViewModel() {
             .take(10)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val serviceDistribution = filteredVisits.map { visits ->
+    val serviceDistribution = combine(filteredVisits, _settings) { visits, settings ->
         val totalVisits = visits.size
-        if (totalVisits == 0) return@map emptyList<Pair<String, Float>>()
+        if (totalVisits == 0) return@combine emptyList<Pair<String, Float>>()
 
         val counts = mutableMapOf<String, Int>()
         visits.forEach { visit ->
@@ -63,7 +66,7 @@ class DashboardViewModel : ViewModel() {
         }
 
         val totalItems = counts.values.sum().toFloat()
-        if (totalItems == 0f) return@map emptyList<Pair<String, Float>>()
+        if (totalItems == 0f) return@combine emptyList<Pair<String, Float>>()
 
         counts.toList()
             .map { it.first to (it.second.toFloat() / totalItems) }
@@ -71,26 +74,54 @@ class DashboardViewModel : ViewModel() {
     }.flowOn(Dispatchers.Default)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val revenueByService = filteredVisits.map { visits ->
+    val revenueByService = combine(filteredVisits, _settings) { visits, settings ->
+        val prefCurrency = settings?.preferredCurrency ?: "S/"
+        val usdRate = settings?.usdExchangeRate ?: 3.8
+        val eurRate = settings?.eurExchangeRate ?: 4.1
+        
         val totals = mutableMapOf<String, Double>()
         visits.forEach { visit ->
             visit.selectedProducts.forEach { item ->
-                totals[item.name] = totals.getOrDefault(item.name, 0.0) + item.priceAtSale * item.quantity
+                val priceConverted = CurrencyUtils.convert(item.priceAtSale, item.currency, prefCurrency, usdRate, eurRate)
+                totals[item.name] = totals.getOrDefault(item.name, 0.0) + priceConverted * item.quantity
             }
         }
         totals.toList().sortedByDescending { it.second }
     }.flowOn(Dispatchers.Default)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val revenueEstimates = filteredVisits.map { visits ->
-        mapOf("S/" to visits.sumOf { it.totalAmount })
+    val revenueEstimates = combine(filteredVisits, _settings) { visits, settings ->
+        val prefCurrency = settings?.preferredCurrency ?: "S/"
+        val usdRate = settings?.usdExchangeRate ?: 3.8
+        val eurRate = settings?.eurExchangeRate ?: 4.1
+        
+        val totalConverted = visits.sumOf { visit ->
+            CurrencyUtils.convert(visit.totalAmount, visit.currency, prefCurrency, usdRate, eurRate)
+        }
+        mapOf(prefCurrency to totalConverted)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
-    val totalRevenue = filteredVisits.map { visits -> visits.sumOf { it.totalAmount } }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+    val totalRevenue = combine(filteredVisits, _settings) { visits, settings ->
+        val prefCurrency = settings?.preferredCurrency ?: "S/"
+        val usdRate = settings?.usdExchangeRate ?: 3.8
+        val eurRate = settings?.eurExchangeRate ?: 4.1
+        
+        visits.sumOf { visit ->
+            CurrencyUtils.convert(visit.totalAmount, visit.currency, prefCurrency, usdRate, eurRate)
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
-    val averageTicket = filteredVisits.map { visits ->
-        if (visits.isEmpty()) 0.0 else visits.sumOf { it.totalAmount } / visits.size
+    val averageTicket = combine(filteredVisits, _settings) { visits, settings ->
+        if (visits.isEmpty()) return@combine 0.0
+        
+        val prefCurrency = settings?.preferredCurrency ?: "S/"
+        val usdRate = settings?.usdExchangeRate ?: 3.8
+        val eurRate = settings?.eurExchangeRate ?: 4.1
+        
+        val totalRevenueConverted = visits.sumOf { visit ->
+            CurrencyUtils.convert(visit.totalAmount, visit.currency, prefCurrency, usdRate, eurRate)
+        }
+        totalRevenueConverted / visits.size
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
     val visitsByWeekday = filteredVisits.map { visits ->
@@ -120,8 +151,14 @@ class DashboardViewModel : ViewModel() {
         buckets.toList()
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), List(3) { 0 })
 
-    val revenueSeries = combine(filteredVisits, _filter) { visits, filter ->
-        buildSeries(visits, filter) { it.totalAmount }
+    val revenueSeries = combine(filteredVisits, _filter, _settings) { visits, filter, settings ->
+        val prefCurrency = settings?.preferredCurrency ?: "S/"
+        val usdRate = settings?.usdExchangeRate ?: 3.8
+        val eurRate = settings?.eurExchangeRate ?: 4.1
+        
+        buildSeries(visits, filter) { visit ->
+            CurrencyUtils.convert(visit.totalAmount, visit.currency, prefCurrency, usdRate, eurRate)
+        }
     }.stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5000),
@@ -201,6 +238,10 @@ class DashboardViewModel : ViewModel() {
 
     fun updateVisits(visits: List<Visit>) {
         _visits.value = visits
+    }
+
+    fun updateSettings(settings: AppSettings?) {
+        _settings.value = settings
     }
 
     fun setFilter(filter: DashboardFilter) {
