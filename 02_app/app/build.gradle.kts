@@ -6,15 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "upch.mluque.final_project"
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
+    namespace = "yupay.turismo"
+    compileSdk = 36
 
     defaultConfig {
-        applicationId = "upch.mluque.final_project"
+        applicationId = "yupay.turismo"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
