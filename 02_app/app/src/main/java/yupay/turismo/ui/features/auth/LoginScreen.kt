@@ -10,24 +10,39 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.navigation.NavController
+import yupay.turismo.ui.AuthEvent
 import yupay.turismo.ui.MainViewModel
+import yupay.turismo.ui.navigation.Routes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
     viewModel: MainViewModel,
+    navController: NavController,
     onBack: () -> Unit,
     onLinkOffline: () -> Unit,
     onSuccess: () -> Unit
 ) {
+    val authState by viewModel.authState.collectAsState()
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
+
+    LaunchedEffect(authState.event) {
+        if (authState.event == AuthEvent.LoggedIn) {
+            onSuccess()
+            viewModel.consumeAuthEvent()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -64,7 +79,8 @@ fun LoginScreen(
                 label = { Text("Correo electrónico") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) }
+                leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
+                isError = authState.error != null
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -75,29 +91,47 @@ fun LoginScreen(
                 label = { Text("Contraseña") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                visualTransformation = PasswordVisualTransformation(),
-                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) }
+                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
+                trailingIcon = {
+                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        Icon(
+                            imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                            contentDescription = if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña"
+                        )
+                    }
+                }
             )
 
             TextButton(
-                onClick = { /* Simulated */ },
+                onClick = { navController.navigate(Routes.FORGOT_PASSWORD) },
                 modifier = Modifier.align(Alignment.End)
             ) {
                 Text("¿Olvidaste tu contraseña?")
             }
 
+            if (authState.error != null) {
+                Text(
+                    text = authState.error ?: "",
+                    color = MaterialTheme.colorScheme.error,
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(
-                onClick = { 
-                    viewModel.linkAccount(email, password)
-                    onSuccess() 
-                },
+                onClick = { viewModel.login(email, password) },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(28.dp),
-                enabled = email.isNotBlank() && password.isNotBlank()
+                enabled = email.isNotBlank() && password.isNotBlank() && !authState.loading
             ) {
-                Text("Entrar", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                if (authState.loading) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
+                } else {
+                    Text("Entrar", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -108,11 +142,11 @@ fun LoginScreen(
 
             OutlinedButton(
                 onClick = { 
-                    viewModel.linkAccount("usuario_google@gmail.com", "google_oauth_simulated")
-                    onSuccess()
+                    viewModel.loginWithGoogle("simulated_id_token")
                 },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
-                shape = RoundedCornerShape(28.dp)
+                shape = RoundedCornerShape(28.dp),
+                enabled = !authState.loading
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.AccountCircle, contentDescription = null)

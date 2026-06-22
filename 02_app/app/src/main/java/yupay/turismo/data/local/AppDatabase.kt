@@ -6,12 +6,16 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 
-@Database(entities = [AppSettings::class, Visit::class, Product::class], version = 10)
+@Database(
+    entities = [AppSettings::class, Visit::class, Product::class, PendingOp::class],
+    version = 11
+)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun appSettingsDao(): AppSettingsDao
     abstract fun visitDao(): VisitDao
     abstract fun productDao(): ProductDao
+    abstract fun pendingOpDao(): PendingOpDao
 
     companion object {
         @Volatile

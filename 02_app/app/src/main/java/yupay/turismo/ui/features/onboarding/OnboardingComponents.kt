@@ -85,6 +85,7 @@ fun LanguageOption(
 fun LanguageSelector(
     selectedLanguage: String,
     onLanguageChange: (String) -> Unit,
+    onOtherLanguagesClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -103,9 +104,9 @@ fun LanguageSelector(
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
         )
         LanguageOption(
-            text = "Quechua",
-            isSelected = selectedLanguage == "Quechua",
-            onClick = { onLanguageChange("Quechua") }
+            text = "Otros idiomas",
+            isSelected = false,
+            onClick = onOtherLanguagesClick
         )
     }
 }

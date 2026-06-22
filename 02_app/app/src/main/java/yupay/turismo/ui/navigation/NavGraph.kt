@@ -398,6 +398,7 @@ fun MainNavigation(
                     composable(Routes.REGISTER) {
                         RegisterScreen(
                             viewModel = viewModel,
+                            navController = navController,
                             language = selectedLanguage,
                             onBack = { navController.popBackStack() },
                             onSuccess = { navController.popBackStack() }
@@ -406,6 +407,7 @@ fun MainNavigation(
                     composable(Routes.LOGIN) {
                         LoginScreen(
                             viewModel = viewModel,
+                            navController = navController,
                             onBack = { navController.popBackStack() },
                             onLinkOffline = {
                                 navController.navigate(Routes.SHOW_QR)
@@ -413,6 +415,51 @@ fun MainNavigation(
                             onSuccess = { 
                                 navController.navigate(Routes.MAIN_PAGER) {
                                     popUpTo(0) { inclusive = true }
+                                }
+                            }
+                        )
+                    }
+                    composable(Routes.FORGOT_PASSWORD) {
+                        ForgotPasswordScreen(
+                            viewModel = viewModel,
+                            onBack = { navController.popBackStack() },
+                            onCodeSent = { email ->
+                                navController.navigate(Routes.verifyOtp(email, "reset"))
+                            }
+                        )
+                    }
+                    composable(
+                        Routes.VERIFY_OTP,
+                        arguments = listOf(
+                            navArgument("email") { type = NavType.StringType },
+                            navArgument("flow") { type = NavType.StringType }
+                        )
+                    ) { backStackEntry ->
+                        val email = backStackEntry.arguments?.getString("email") ?: ""
+                        val flow = backStackEntry.arguments?.getString("flow") ?: "register"
+                        VerifyOtpScreen(
+                            viewModel = viewModel,
+                            email = email,
+                            flow = flow,
+                            onBack = { navController.popBackStack() },
+                            onSuccess = {
+                                if (flow == "register") {
+                                    navController.navigate(Routes.MAIN_PAGER) {
+                                        popUpTo(0) { inclusive = true }
+                                    }
+                                } else {
+                                    navController.navigate(Routes.RESET_PASSWORD)
+                                }
+                            }
+                        )
+                    }
+                    composable(Routes.RESET_PASSWORD) {
+                        ResetPasswordScreen(
+                            viewModel = viewModel,
+                            onBack = { navController.popBackStack() },
+                            onSuccess = {
+                                navController.navigate(Routes.LOGIN) {
+                                    popUpTo(Routes.LOGIN) { inclusive = true }
                                 }
                             }
                         )

@@ -8,6 +8,8 @@ import kotlinx.serialization.Serializable
 @Entity(tableName = "products")
 data class Product(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    // id de este producto en el servidor (BIGSERIAL). null = aún no subido a la nube.
+    val remoteId: Long? = null,
     val name: String,
     val basePrice: Double,
     val currency: String = "S/",

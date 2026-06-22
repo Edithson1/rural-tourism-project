@@ -13,6 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import yupay.turismo.ui.MainViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -22,6 +24,7 @@ fun AccountInfoScreen(
     onBack: () -> Unit
 ) {
     val settings by viewModel.appSettings.collectAsState()
+    var passwordVisible by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -72,7 +75,24 @@ fun AccountInfoScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     
                     Text("Contraseña", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
-                    Text(settings?.accountPassword ?: "********", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        val pass = settings?.accountPassword ?: "********"
+                        Text(
+                            text = if (passwordVisible) pass else "•".repeat(pass.length.coerceAtLeast(8)),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.weight(1f)
+                        )
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Icon(
+                                imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                contentDescription = if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña"
+                            )
+                        }
+                    }
                 }
             }
 

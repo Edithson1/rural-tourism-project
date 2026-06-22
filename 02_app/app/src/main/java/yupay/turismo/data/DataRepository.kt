@@ -25,8 +25,8 @@ class DataRepository(
         appSettingsDao.saveSettings(settings)
     }
 
-    suspend fun insertVisit(visit: Visit) {
-        visitDao.insertVisit(visit)
+    suspend fun insertVisit(visit: Visit): Long {
+        return visitDao.insertVisit(visit)
     }
 
     suspend fun getVisitById(id: Int): Visit? {
@@ -45,8 +45,8 @@ class DataRepository(
         productDao.replaceProducts(products)
     }
 
-    suspend fun insertProduct(product: Product) {
-        productDao.insertProduct(product)
+    suspend fun insertProduct(product: Product): Long {
+        return productDao.insertProduct(product)
     }
 
     suspend fun updateProduct(product: Product) {

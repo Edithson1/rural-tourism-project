@@ -27,6 +27,7 @@ fun OnboardingLandscapeContent(
     pagerState: PagerState,
     selectedLanguage: String,
     onLanguageChange: (String) -> Unit,
+    onOtherLanguagesClick: () -> Unit,
     onNext: () -> Unit
 ) {
     val context = LocalContext.current
@@ -133,7 +134,8 @@ fun OnboardingLandscapeContent(
 
                 LanguageSelector(
                     selectedLanguage = selectedLanguage,
-                    onLanguageChange = onLanguageChange
+                    onLanguageChange = onLanguageChange,
+                    onOtherLanguagesClick = onOtherLanguagesClick
                 )
             }
         }

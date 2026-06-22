@@ -8,6 +8,8 @@ import kotlinx.serialization.Serializable
 @Entity(tableName = "visits")
 data class Visit(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    // id de esta visita en el servidor. null = aún no subida a la nube.
+    val remoteId: Long? = null,
     val deviceId: String = "",
     val nationality: String,
     val nationalityFlag: String,

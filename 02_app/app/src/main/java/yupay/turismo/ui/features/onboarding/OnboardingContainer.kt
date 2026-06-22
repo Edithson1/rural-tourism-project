@@ -36,6 +36,7 @@ fun OnboardingContainer(
                 pagerState = pagerState,
                 selectedLanguage = selectedLanguage,
                 onLanguageChange = onLanguageChange,
+                onOtherLanguagesClick = { navController.navigate(Routes.PROFILE_LANGUAGE) },
                 onNext = onNext
             )
         } else {
@@ -43,6 +44,7 @@ fun OnboardingContainer(
                 pagerState = pagerState,
                 selectedLanguage = selectedLanguage,
                 onLanguageChange = onLanguageChange,
+                onOtherLanguagesClick = { navController.navigate(Routes.PROFILE_LANGUAGE) },
                 onNext = onNext
             )
         }

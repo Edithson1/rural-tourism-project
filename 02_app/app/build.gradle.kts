@@ -29,6 +29,8 @@ android {
         }
     }
     compileOptions {
+        // Habilita java.time (Instant/OffsetDateTime) en minSdk 24 vía desugaring.
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
@@ -65,6 +67,19 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
+
+    // --- Integración con la API en la nube ---
+    // Cliente HTTP (OkHttp) + (de)serialización con kotlinx.serialization (ya presente).
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.logging.interceptor)
+    // Almacén seguro de sesión (tokens) fuera de Room.
+    implementation(libs.androidx.datastore.preferences)
+    // Login con Google nativo (Credential Manager / One Tap) → idToken → /auth/google/idtoken.
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
+    // java.time para minSdk 24.
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

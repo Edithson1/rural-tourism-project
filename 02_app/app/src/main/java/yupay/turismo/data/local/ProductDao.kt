@@ -12,7 +12,7 @@ interface ProductDao {
     fun getProductsByCategory(category: String): Flow<List<Product>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertProduct(product: Product)
+    suspend fun insertProduct(product: Product): Long
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertProducts(products: List<Product>)
@@ -31,6 +31,12 @@ interface ProductDao {
 
     @Query("SELECT * FROM products WHERE id = :id")
     suspend fun getProductById(id: Int): Product?
+
+    @Query("SELECT * FROM products")
+    suspend fun getAllOnce(): List<Product>
+
+    @Query("SELECT * FROM products WHERE remoteId = :remoteId LIMIT 1")
+    suspend fun getByRemoteId(remoteId: Long): Product?
 
     @Query("DELETE FROM products")
     suspend fun deleteAllProducts()

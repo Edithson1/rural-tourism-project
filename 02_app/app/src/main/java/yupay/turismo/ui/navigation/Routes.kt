@@ -19,6 +19,9 @@ object Routes {
     const val REGISTER = "register"
     const val LOGIN = "login"
     const val ACCOUNT_INFO = "account_info"
+    const val FORGOT_PASSWORD = "forgot_password"
+    const val RESET_PASSWORD = "reset_password"
+    const val VERIFY_OTP = "verify_otp?email={email}&flow={flow}"
     
     // Secondary / Detail Routes
     const val VISIT_DETAIL = "visit_detail/{visitId}"
@@ -38,6 +41,11 @@ object Routes {
     const val PRODUCT_CATALOG_SETUP = "product_catalog_setup"
     const val PRODUCT_EDITOR = "product_editor?productId={productId}"
     const val CURRENCY_SELECTION = "currency_selection"
+
+    /**
+     * Helper to create verify OTP route.
+     */
+    fun verifyOtp(email: String, flow: String) = "verify_otp?email=$email&flow=$flow"
 
     /**
      * Helper to create product editor route with ID.

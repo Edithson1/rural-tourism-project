@@ -24,6 +24,12 @@ import kotlinx.coroutines.flow.*
 import org.json.JSONObject
 import org.osmdroid.util.GeoPoint
 import java.io.ByteArrayOutputStream
+import yupay.turismo.data.repository.AuthResult
+import yupay.turismo.data.repository.ForgotStatus
+import yupay.turismo.data.repository.RegisterStatus
+import yupay.turismo.data.session.Session
+import yupay.turismo.data.sync.CloudSyncEngine
+import yupay.turismo.di.ServiceLocator
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: DataRepository
@@ -34,7 +40,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _countryFeatures = MutableStateFlow<List<CountryFeature>>(emptyList())
     val countryFeatures: StateFlow<List<CountryFeature>> = _countryFeatures.asStateFlow()
 
+    // ───────── Integración con la nube (auth + sync) ─────────
+    private val authRepository by lazy { ServiceLocator.authRepository }
+    private val cloudSync by lazy { ServiceLocator.cloudSyncRepository }
+    private val cloudSyncEngine by lazy { ServiceLocator.cloudSyncEngine }
+    private val sessionManager by lazy { ServiceLocator.sessionManager }
+
+    val cloudSession: StateFlow<Session?>
+    val syncState: StateFlow<CloudSyncEngine.SyncState>
+    val pendingSyncCount: StateFlow<Int>
+
+    private val _authState = MutableStateFlow(AuthUiState())
+    val authState: StateFlow<AuthUiState> = _authState.asStateFlow()
+    private var recoveryToken: String? = null
+
     init {
+        // Idempotente: garantiza los singletons aunque YupayApp no se haya ejecutado aún.
+        ServiceLocator.init(application)
+
         val database = AppDatabase.getDatabase(application)
         repository = DataRepository(database.appSettingsDao(), database.visitDao(), database.productDao())
         
@@ -54,6 +77,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
+        )
+
+        cloudSession = sessionManager.sessionFlow.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = null
+        )
+        syncState = cloudSyncEngine.state
+        pendingSyncCount = cloudSyncEngine.pendingCountFlow.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = 0
         )
 
         loadCountryFeatures()
@@ -138,20 +173,30 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 totalAmount = totalAmount,
                 currency = currentSettings?.preferredCurrency ?: "S/"
             )
-            repository.insertVisit(visit)
+            val newId = repository.insertVisit(visit).toInt()
+            if (currentSettings?.isLinked == true) cloudSync.enqueueVisitUpsert(newId)
         }
     }
 
     fun addProduct(product: Product) {
-        viewModelScope.launch { repository.insertProduct(product) }
+        viewModelScope.launch {
+            val newId = repository.insertProduct(product).toInt()
+            if (isLinked()) cloudSync.enqueueProductUpsert(newId)
+        }
     }
 
     fun updateProduct(product: Product) {
-        viewModelScope.launch { repository.updateProduct(product) }
+        viewModelScope.launch {
+            repository.updateProduct(product)
+            if (isLinked()) cloudSync.enqueueProductUpsert(product.id)
+        }
     }
 
     fun deleteProduct(product: Product) {
-        viewModelScope.launch { repository.deleteProduct(product) }
+        viewModelScope.launch {
+            if (isLinked()) cloudSync.enqueueProductDelete(product)
+            repository.deleteProduct(product)
+        }
     }
 
     suspend fun getProductById(id: Int): Product? {
@@ -211,7 +256,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (category != oldCategory && category != "Varios") {
                 val allProducts = repository.allProducts.first()
                 val productsToDelete = allProducts.filter { it.category != category }
-                productsToDelete.forEach { repository.deleteProduct(it) }
+                productsToDelete.forEach { p ->
+                    if (current.isLinked) cloudSync.enqueueProductDelete(p)
+                    repository.deleteProduct(p)
+                }
             }
 
             repository.saveSettings(current.copy(
@@ -221,6 +269,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 isOnboardingCompleted = true,
                 lastModified = System.currentTimeMillis()
             ))
+            if (current.isLinked) cloudSync.enqueueProfileUpdate()
         }
     }
 
@@ -255,6 +304,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    @Deprecated("Mock offline. Usar register()/login() reales con la API.")
     fun linkAccount(email: String, password: String) {
         viewModelScope.launch {
             val current = repository.getSettingsOnce() ?: AppSettings()
@@ -269,7 +319,214 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun clearAllAppData() {
         viewModelScope.launch {
+            // 1. Limpiar sesión y outbox de sincronización
+            sessionManager.clear()
+            cloudSync.clearOutbox()
+
+            // 2. Borrar tablas de Room
             repository.clearAllData()
+
+            // 3. Re-inicializar ajustes por defecto inmediatamente
+            val androidId = Settings.Secure.getString(
+                getApplication<Application>().contentResolver,
+                Settings.Secure.ANDROID_ID
+            ) ?: "unknown"
+
+            repository.saveSettings(AppSettings(
+                deviceId = androidId,
+                hardwareDeviceId = androidId,
+                entrepreneurTips = defaultTips,
+                mapSummary = defaultSummaries
+            ))
+
+            // 4. Limpiar estado de UI de auth
+            _authState.value = AuthUiState()
+        }
+    }
+
+    // ════════════════════ Autenticación con la API ════════════════════
+    // Estas funciones disparan estados en [authState]; la UI las observará en la fase de UI.
+
+    fun register(email: String, password: String) {
+        runAuth {
+            val s = repository.getSettingsOnce()
+            when (val r = authRepository.register(email, password, s?.businessName, s?.businessCategory)) {
+                is AuthResult.Ok -> when (r.value) {
+                    RegisterStatus.LOGGED_IN -> {
+                        cloudSyncEngine.firstLink()
+                        AuthUiState(event = AuthEvent.LoggedIn)
+                    }
+                    RegisterStatus.NEEDS_EMAIL_CONFIRMATION ->
+                        AuthUiState(
+                            event = AuthEvent.NeedsEmailConfirmation,
+                            info = "Revisa tu correo y confirma la cuenta para continuar."
+                        )
+                }
+                is AuthResult.Err -> AuthUiState(error = r.message)
+            }
+        }
+    }
+
+    /**
+     * Verifica el código de registro (OTP de signup) enviado al correo. Si es válido, queda
+     * la sesión iniciada y se suben los datos que el emprendedor ya tenía en la app (migrate).
+     */
+    fun verifySignupCode(email: String, code: String) {
+        runAuth {
+            when (val r = authRepository.verifySignupCode(email, code)) {
+                is AuthResult.Ok -> {
+                    cloudSyncEngine.firstLink()
+                    AuthUiState(event = AuthEvent.LoggedIn)
+                }
+                is AuthResult.Err -> AuthUiState(error = r.message)
+            }
+        }
+    }
+
+    fun login(email: String, password: String) {
+        runAuth {
+            when (val r = authRepository.login(email, password)) {
+                is AuthResult.Ok -> {
+                    cloudSyncEngine.firstLink()
+                    AuthUiState(event = AuthEvent.LoggedIn)
+                }
+                is AuthResult.Err -> AuthUiState(error = r.message)
+            }
+        }
+    }
+
+    /** Login/registro con Google nativo. El [idToken] lo entrega Credential Manager (fase UI). */
+    fun loginWithGoogle(idToken: String, nonce: String? = null) {
+        runAuth {
+            when (val r = authRepository.loginWithGoogleIdToken(idToken, nonce)) {
+                is AuthResult.Ok -> {
+                    cloudSyncEngine.firstLink()
+                    AuthUiState(event = AuthEvent.LoggedIn)
+                }
+                is AuthResult.Err -> AuthUiState(error = r.message)
+            }
+        }
+    }
+
+    /** Comprueba si un correo ya está registrado (para avisar antes de enviar el formulario). */
+    fun checkEmail(email: String, onResult: (exists: Boolean, confirmed: Boolean) -> Unit) {
+        viewModelScope.launch {
+            when (val r = authRepository.checkEmail(email)) {
+                is AuthResult.Ok -> onResult(r.value.exists, r.value.confirmed)
+                is AuthResult.Err -> onResult(false, false)
+            }
+        }
+    }
+
+    fun resendVerification(email: String) {
+        runAuth {
+            when (val r = authRepository.resendVerification(email)) {
+                is AuthResult.Ok -> AuthUiState(info = "Te reenviamos el correo de verificación.")
+                is AuthResult.Err -> AuthUiState(error = r.message)
+            }
+        }
+    }
+
+    fun forgotPassword(email: String) {
+        runAuth {
+            when (val r = authRepository.forgotPassword(email)) {
+                is AuthResult.Ok -> when (r.value) {
+                    ForgotStatus.SENT ->
+                        AuthUiState(event = AuthEvent.CodeSent, info = "Te enviamos un código a tu correo.")
+                    ForgotStatus.NOT_REGISTERED ->
+                        AuthUiState(error = "No hay ninguna cuenta registrada con ese correo.")
+                    ForgotStatus.OAUTH_ONLY ->
+                        AuthUiState(error = "Esa cuenta inicia sesión con Google; no tiene contraseña que restablecer.")
+                }
+                is AuthResult.Err -> AuthUiState(error = r.message)
+            }
+        }
+    }
+
+    /** Paso 1 del reset de dos pantallas: valida el código y guarda el token de recuperación. */
+    fun verifyResetCode(email: String, code: String) {
+        runAuth {
+            when (val r = authRepository.verifyResetCode(email, code)) {
+                is AuthResult.Ok -> {
+                    recoveryToken = r.value
+                    AuthUiState(event = AuthEvent.CodeValid)
+                }
+                is AuthResult.Err -> AuthUiState(error = r.message)
+            }
+        }
+    }
+
+    /** Paso 2 del reset de dos pantallas (usa el token de [verifyResetCode]). */
+    fun resetPassword(newPassword: String) {
+        runAuth {
+            val token = recoveryToken
+                ?: return@runAuth AuthUiState(error = "Primero valida el código de recuperación.")
+            when (val r = authRepository.resetPassword(newPassword, recoveryAccessToken = token)) {
+                is AuthResult.Ok -> {
+                    recoveryToken = null
+                    AuthUiState(event = AuthEvent.PasswordReset, info = "Contraseña actualizada. Inicia sesión.")
+                }
+                is AuthResult.Err -> AuthUiState(error = r.message)
+            }
+        }
+    }
+
+    /** Reset en un solo paso: código + nueva contraseña juntos (no llamar a verifyResetCode antes). */
+    fun resetPassword(email: String, code: String, newPassword: String) {
+        runAuth {
+            when (val r = authRepository.resetPassword(newPassword, email = email, code = code)) {
+                is AuthResult.Ok ->
+                    AuthUiState(event = AuthEvent.PasswordReset, info = "Contraseña actualizada. Inicia sesión.")
+                is AuthResult.Err -> AuthUiState(error = r.message)
+            }
+        }
+    }
+
+    fun logout() {
+        viewModelScope.launch {
+            authRepository.logout()
+            cloudSync.clearOutbox()
+            _authState.value = AuthUiState(event = AuthEvent.LoggedOut)
+        }
+    }
+
+    fun deleteAccount() {
+        runAuth {
+            when (val r = authRepository.deleteAccount()) {
+                is AuthResult.Ok -> {
+                    cloudSync.clearOutbox()
+                    repository.clearAllData()
+                    AuthUiState(event = AuthEvent.AccountDeleted)
+                }
+                is AuthResult.Err -> AuthUiState(error = r.message)
+            }
+        }
+    }
+
+    /** Sincronización manual (botón "Sincronizar ahora"). */
+    fun syncNow() {
+        viewModelScope.launch { cloudSyncEngine.syncNow() }
+    }
+
+    fun consumeAuthEvent() {
+        _authState.value = _authState.value.copy(event = null)
+    }
+
+    fun clearAuthMessages() {
+        _authState.value = _authState.value.copy(error = null, info = null)
+    }
+
+    private suspend fun isLinked(): Boolean = repository.getSettingsOnce()?.isLinked == true
+
+    private fun runAuth(block: suspend () -> AuthUiState) {
+        viewModelScope.launch {
+            _authState.value = _authState.value.copy(loading = true, error = null, info = null, event = null)
+            val result = try {
+                block()
+            } catch (e: Exception) {
+                AuthUiState(error = e.message ?: "Error inesperado.")
+            }
+            _authState.value = result.copy(loading = false)
         }
     }
 
@@ -295,6 +552,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         profilePicture = byteArray,
                         lastModified = System.currentTimeMillis()
                     ))
+                    if (current.isLinked) cloudSync.enqueueProfileUpdate()
                 }
                 
                 if (resizedBitmap != bitmap) resizedBitmap.recycle()
@@ -387,4 +645,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
         return points
     }
+}
+
+/** Estado observable de los flujos de autenticación (para la UI). */
+data class AuthUiState(
+    val loading: Boolean = false,
+    val error: String? = null,
+    val info: String? = null,
+    val event: AuthEvent? = null
+)
+
+/** Eventos de un solo uso emitidos por los flujos de autenticación. */
+sealed interface AuthEvent {
+    object LoggedIn : AuthEvent
+    object NeedsEmailConfirmation : AuthEvent
+    object CodeSent : AuthEvent
+    object CodeValid : AuthEvent
+    object PasswordReset : AuthEvent
+    object LoggedOut : AuthEvent
+    object AccountDeleted : AuthEvent
 }

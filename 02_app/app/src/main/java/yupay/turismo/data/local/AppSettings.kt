@@ -25,8 +25,13 @@ data class AppSettings(
     val preferredCurrency: String = "S/",
     val isLinked: Boolean = false,
     val accountEmail: String = "",
+    // DEPRECADO: no debe persistir la contraseña en claro. El flujo de auth con la API
+    // guarda los tokens en SessionManager (DataStore), no aquí. Se conserva el campo solo
+    // por compatibilidad de UI; a eliminar en la fase de integración de UI.
     val accountPassword: String = "",
-    val lastModified: Long = 0L
+    val lastModified: Long = 0L,
+    // Marca de agua (epoch ms) del último GET /sync/pull aplicado, para sync incremental.
+    val lastSyncAt: Long = 0L
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -50,6 +55,7 @@ data class AppSettings(
         if (accountEmail != other.accountEmail) return false
         if (accountPassword != other.accountPassword) return false
         if (lastModified != other.lastModified) return false
+        if (lastSyncAt != other.lastSyncAt) return false
         if (profilePicture != null) {
             if (other.profilePicture == null) return false
             if (!profilePicture.contentEquals(other.profilePicture)) return false
@@ -75,6 +81,7 @@ data class AppSettings(
         result = 31 * result + accountEmail.hashCode()
         result = 31 * result + accountPassword.hashCode()
         result = 31 * result + lastModified.hashCode()
+        result = 31 * result + lastSyncAt.hashCode()
         result = 31 * result + (profilePicture?.contentHashCode() ?: 0)
         return result
     }
