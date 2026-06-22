@@ -114,46 +114,46 @@ fun VerifyOtpScreen(
                     OtpBox(
                         value = otpValues[i],
                         onValueChange = { newValue ->
+                            val currentVal = otpValues[i].text
                             val text = newValue.text
                             
-                            // 1. Detección de Borrado
-                            if (text.isEmpty()) {
-                                otpValues[i] = TextFieldValue(" ", selection = TextRange(1))
-                                if (i > 0) {
+                            // 1. Detección de Borrado (Retroceso)
+                            if (text.length < currentVal.length || text.isEmpty()) {
+                                if (currentVal != " ") {
+                                    // Tenía un número, lo ponemos en blanco
+                                    otpValues[i] = TextFieldValue(" ", selection = TextRange(1))
+                                } else if (i > 0) {
+                                    // Ya estaba en blanco, borramos el anterior y retrocedemos
                                     otpValues[i - 1] = TextFieldValue(" ", selection = TextRange(1))
                                     focusRequesters[i - 1].requestFocus()
                                 }
                                 return@OtpBox
                             }
 
-                            // 2. Forzar cursor siempre a la derecha
-                            if (newValue.selection.start == 0 && text.isNotEmpty()) {
-                                otpValues[i] = newValue.copy(selection = TextRange(text.length))
-                                return@OtpBox
-                            }
-
+                            // 2. Extraer solo dígitos nuevos
                             val digits = text.filter { it.isDigit() }
                             
-                            if (digits.length > 1) {
-                                // Caso Pegado / Escritura rápida
-                                val oldChar = if (otpValues[i].text == " ") "" else otpValues[i].text
-                                val actualNewDigits = if (text.startsWith(oldChar) && oldChar.isNotEmpty()) {
-                                    text.substring(oldChar.length).filter { it.isDigit() }
+                            if (digits.isNotEmpty()) {
+                                if (digits.length == 1) {
+                                    // Entrada simple de un dígito (nuevo o reemplazo total)
+                                    otpValues[i] = TextFieldValue(digits, selection = TextRange(1))
+                                    if (i < otpLength - 1) focusRequesters[i + 1].requestFocus()
                                 } else {
-                                    digits
-                                }
+                                    // Reemplazo (ej: "12" donde "1" era el viejo) o Pegado
+                                    // Determinamos cuál es el nuevo caracter
+                                    val newDigit = if (text.startsWith(currentVal) && currentVal != " ") {
+                                        text.substring(currentVal.length).filter { it.isDigit() }.lastOrNull()?.toString()
+                                    } else {
+                                        digits.last().toString()
+                                    }
 
-                                actualNewDigits.take(otpLength - i).forEachIndexed { index, char ->
-                                    otpValues[i + index] = TextFieldValue(char.toString(), selection = TextRange(1))
+                                    if (newDigit != null) {
+                                        otpValues[i] = TextFieldValue(newDigit, selection = TextRange(1))
+                                        if (i < otpLength - 1) focusRequesters[i + 1].requestFocus()
+                                    }
                                 }
-                                val nextIdx = (i + actualNewDigits.length).coerceAtMost(otpLength - 1)
-                                focusRequesters[nextIdx].requestFocus()
-                            } else if (digits.length == 1) {
-                                // Caso un solo dígito (nuevo o sobrescrito)
-                                otpValues[i] = TextFieldValue(digits, selection = TextRange(1))
-                                if (i < otpLength - 1) focusRequesters[i + 1].requestFocus()
                             } else {
-                                // Si no es dígito ni vacío, restaurar espacio semilla
+                                // Si no es dígito, restaurar espacio semilla
                                 otpValues[i] = TextFieldValue(" ", selection = TextRange(1))
                             }
                         },
@@ -258,9 +258,9 @@ fun OtpBox(
                     fontWeight = FontWeight.ExtraBold,
                     color = if (value.text == " ") Color.Transparent else MaterialTheme.colorScheme.onSurface
                 ),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
-                cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary)
+                cursorBrush = androidx.compose.ui.graphics.SolidColor(Color.Transparent)
             )
         }
     }
