@@ -388,6 +388,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             when (val r = authRepository.login(email, password)) {
                 is AuthResult.Ok -> {
                     cloudSyncEngine.firstLink()
+                    markOnboardingCompleted()
                     AuthUiState(event = AuthEvent.LoggedIn)
                 }
                 is AuthResult.Err -> AuthUiState(error = r.message)
@@ -395,13 +396,45 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /** Login/registro con Google nativo. El [idToken] lo entrega Credential Manager (fase UI). */
-    fun loginWithGoogle(idToken: String, nonce: String? = null) {
+    /**
+     * LOGIN con Google (pantalla de inicio de sesión).
+     * - Cuenta nueva (no existía en Supabase): inicia sesión y **siembra datos por defecto**
+     *   (nombre/sector/productos) — caso 1.
+     * - Cuenta existente: login normal y baja sus datos — caso 2.
+     */
+    fun signInWithGoogle(idToken: String, nonce: String? = null) {
         runAuth {
             when (val r = authRepository.loginWithGoogleIdToken(idToken, nonce)) {
                 is AuthResult.Ok -> {
+                    if (r.value) seedDefaultBusinessData() // isNewUser → datos por defecto
                     cloudSyncEngine.firstLink()
+                    markOnboardingCompleted()
                     AuthUiState(event = AuthEvent.LoggedIn)
+                }
+                is AuthResult.Err -> AuthUiState(error = r.message)
+            }
+        }
+    }
+
+    /**
+     * REGISTRO con Google (pantalla de registro).
+     * - Cuenta nueva: crea el usuario (sin contraseña) y **sube los datos** que ya tenía la app
+     *   — caso 3. La contraseña se establece luego en "Información de cuenta".
+     * - Cuenta ya registrada: NO registra; avisa "cuenta ya usada" — caso 4.
+     */
+    fun signUpWithGoogle(idToken: String, nonce: String? = null) {
+        runAuth {
+            when (val r = authRepository.loginWithGoogleIdToken(idToken, nonce)) {
+                is AuthResult.Ok -> {
+                    if (r.value) {
+                        cloudSyncEngine.firstLink()
+                        markOnboardingCompleted()
+                        AuthUiState(event = AuthEvent.LoggedIn)
+                    } else {
+                        // La cuenta de Google ya existía → no se permite "registrar".
+                        authRepository.discardLocalSession()
+                        AuthUiState(event = AuthEvent.AccountAlreadyExists)
+                    }
                 }
                 is AuthResult.Err -> AuthUiState(error = r.message)
             }
@@ -514,6 +547,51 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun clearAuthMessages() {
         _authState.value = _authState.value.copy(error = null, info = null)
+    }
+
+    /** Establece/cambia la contraseña del usuario autenticado (p.ej. cuentas creadas con Google). */
+    fun changeAccountPassword(newPassword: String) {
+        runAuth {
+            when (val r = authRepository.setPasswordWithSession(newPassword)) {
+                is AuthResult.Ok ->
+                    AuthUiState(event = AuthEvent.PasswordReset, info = "Contraseña actualizada.")
+                is AuthResult.Err -> AuthUiState(error = r.message)
+            }
+        }
+    }
+
+    /** Surface de errores de la UI (p.ej. fallo/cancelación del selector de Google). */
+    fun setAuthError(message: String) {
+        _authState.value = _authState.value.copy(loading = false, error = message)
+    }
+
+    /** Caso 1: cuenta de Google nueva → datos por defecto del emprendimiento (si no hay ya). */
+    private suspend fun seedDefaultBusinessData() {
+        val current = repository.getSettingsOnce() ?: AppSettings()
+        repository.saveSettings(
+            current.copy(
+                businessName = current.businessName.ifBlank { "Mi Emprendimiento" },
+                businessCategory = current.businessCategory.ifBlank { "Varios" },
+                isOnboardingCompleted = true,
+                lastModified = System.currentTimeMillis()
+            )
+        )
+        if (repository.allProducts.first().isEmpty()) {
+            repository.insertProducts(
+                listOf(
+                    Product(name = "Habitación", basePrice = 50.0, category = "Hospedaje", isDefault = true),
+                    Product(name = "Almuerzo", basePrice = 15.0, category = "Alimentación", isDefault = true),
+                    Product(name = "Recuerdo / Artesanía", basePrice = 20.0, category = "Artesanía", isDefault = true)
+                )
+            )
+        }
+    }
+
+    private suspend fun markOnboardingCompleted() {
+        val s = repository.getSettingsOnce() ?: return
+        if (!s.isOnboardingCompleted) {
+            repository.saveSettings(s.copy(isOnboardingCompleted = true, lastModified = System.currentTimeMillis()))
+        }
     }
 
     private suspend fun isLinked(): Boolean = repository.getSettingsOnce()?.isLinked == true
@@ -664,4 +742,5 @@ sealed interface AuthEvent {
     object PasswordReset : AuthEvent
     object LoggedOut : AuthEvent
     object AccountDeleted : AuthEvent
+    object AccountAlreadyExists : AuthEvent
 }

@@ -70,6 +70,15 @@ class CloudSyncEngine(
                     }
                 }
         }
+        scope.launch {
+            repo.unsyncedVisitsCountFlow
+                .distinctUntilChanged()
+                .collect { count ->
+                    if (count > 0 && networkMonitor.isOnline.value && session.isLoggedIn()) {
+                        syncNow()
+                    }
+                }
+        }
     }
 
     private suspend fun guarded(wait: Boolean, block: suspend () -> SyncOutcome): SyncOutcome {

@@ -1,5 +1,6 @@
 package yupay.turismo.ui.features.auth
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,20 +12,21 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import yupay.turismo.ui.MainViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountInfoScreen(
     viewModel: MainViewModel,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onChangePassword: () -> Unit
 ) {
     val settings by viewModel.appSettings.collectAsState()
-    var passwordVisible by remember { mutableStateOf(false) }
+    val session by viewModel.cloudSession.collectAsState()
+    val email = session?.email?.ifBlank { null } ?: settings?.accountEmail ?: "No disponible"
 
     Scaffold(
         topBar = {
@@ -59,7 +61,7 @@ fun AccountInfoScreen(
                 "Tu cuenta está vinculada y sincronizada",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                textAlign = TextAlign.Center
             )
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -70,29 +72,36 @@ fun AccountInfoScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text("Correo electrónico", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
-                    Text(settings?.accountEmail ?: "No disponible", fontSize = 16.sp, fontWeight = FontWeight.Medium)
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    Text("Contraseña", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        val pass = settings?.accountPassword ?: "********"
+                    Text(email, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Establecer / cambiar contraseña (también para cuentas creadas con Google).
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onChangePassword() }
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Establecer / cambiar contraseña", fontSize = 16.sp, fontWeight = FontWeight.Medium)
                         Text(
-                            text = if (passwordVisible) pass else "•".repeat(pass.length.coerceAtLeast(8)),
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier.weight(1f)
+                            "Si entraste con Google, crea una contraseña para también usar tu correo",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                            Icon(
-                                imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                contentDescription = if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña"
-                            )
-                        }
                     }
+                    Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
@@ -101,7 +110,7 @@ fun AccountInfoScreen(
             Text(
                 "Tus datos se guardan automáticamente en nuestros servidores para que puedas acceder desde cualquier dispositivo.",
                 fontSize = 14.sp,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }

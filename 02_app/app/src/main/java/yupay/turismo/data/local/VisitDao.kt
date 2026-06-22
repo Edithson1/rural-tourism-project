@@ -38,6 +38,13 @@ interface VisitDao {
     @Query("SELECT * FROM visits ORDER BY registrationDate DESC")
     suspend fun getAllOnce(): List<Visit>
 
+    /** Visitas aún no subidas a la nube (sin id de servidor). */
+    @Query("SELECT * FROM visits WHERE remoteId IS NULL ORDER BY registrationDate ASC")
+    suspend fun getUnsynced(): List<Visit>
+
+    @Query("SELECT COUNT(*) FROM visits WHERE remoteId IS NULL")
+    fun countUnsyncedFlow(): Flow<Int>
+
     @Query("DELETE FROM visits")
     suspend fun deleteAllVisits()
 }

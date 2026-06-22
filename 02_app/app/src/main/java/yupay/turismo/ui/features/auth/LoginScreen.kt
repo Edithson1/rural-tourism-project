@@ -17,8 +17,10 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.navigation.NavController
+import kotlinx.coroutines.launch
 import yupay.turismo.ui.AuthEvent
 import yupay.turismo.ui.MainViewModel
 import yupay.turismo.ui.navigation.Routes
@@ -33,6 +35,8 @@ fun LoginScreen(
     onSuccess: () -> Unit
 ) {
     val authState by viewModel.authState.collectAsState()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -141,8 +145,14 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             OutlinedButton(
-                onClick = { 
-                    viewModel.loginWithGoogle("simulated_id_token")
+                onClick = {
+                    scope.launch {
+                        when (val result = GoogleAuthHelper.getIdToken(context)) {
+                            is GoogleAuthHelper.Result.Success -> viewModel.signInWithGoogle(result.idToken)
+                            is GoogleAuthHelper.Result.Error -> viewModel.setAuthError(result.message)
+                            GoogleAuthHelper.Result.Cancelled -> {}
+                        }
+                    }
                 },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(28.dp),

@@ -28,10 +28,17 @@ import yupay.turismo.ui.features.auth.components.PasswordValidationItem
 @Composable
 fun ResetPasswordScreen(
     viewModel: MainViewModel,
+    source: String = "reset",
     onBack: () -> Unit,
     onSuccess: () -> Unit
 ) {
     val authState by viewModel.authState.collectAsState()
+    val isAccount = source == "account"
+    val screenTitle = if (isAccount) "Establecer Contraseña" else "Nueva Contraseña"
+    val screenSubtitle = if (isAccount)
+        "Crea una contraseña para también poder iniciar sesión con tu correo"
+    else
+        "Ingresa tu nueva contraseña para acceder a tu cuenta"
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -56,7 +63,7 @@ fun ResetPasswordScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Nueva Contraseña", fontWeight = FontWeight.Bold) },
+                title = { Text(screenTitle, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
@@ -74,7 +81,7 @@ fun ResetPasswordScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                "Ingresa tu nueva contraseña para acceder a tu cuenta",
+                screenSubtitle,
                 fontSize = 16.sp,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -143,7 +150,10 @@ fun ResetPasswordScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             Button(
-                onClick = { viewModel.resetPassword(password) },
+                onClick = {
+                    if (isAccount) viewModel.changeAccountPassword(password)
+                    else viewModel.resetPassword(password)
+                },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(28.dp),
                 enabled = isFormValid && !authState.loading

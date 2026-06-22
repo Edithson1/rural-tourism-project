@@ -20,7 +20,8 @@ object Routes {
     const val LOGIN = "login"
     const val ACCOUNT_INFO = "account_info"
     const val FORGOT_PASSWORD = "forgot_password"
-    const val RESET_PASSWORD = "reset_password"
+    // source = "reset" (desde olvidé contraseña) | "account" (desde info de cuenta, logueado)
+    const val RESET_PASSWORD = "reset_password?source={source}"
     const val VERIFY_OTP = "verify_otp?email={email}&flow={flow}"
     
     // Secondary / Detail Routes
@@ -46,6 +47,11 @@ object Routes {
      * Helper to create verify OTP route.
      */
     fun verifyOtp(email: String, flow: String) = "verify_otp?email=$email&flow=$flow"
+
+    /**
+     * Helper to create reset password route. source: "reset" (olvidé) o "account" (logueado).
+     */
+    fun resetPassword(source: String = "reset") = "reset_password?source=$source"
 
     /**
      * Helper to create product editor route with ID.

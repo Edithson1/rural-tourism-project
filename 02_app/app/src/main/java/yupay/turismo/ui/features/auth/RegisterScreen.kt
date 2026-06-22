@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.compose.ui.text.input.VisualTransformation
+import kotlinx.coroutines.launch
 import yupay.turismo.ui.AuthEvent
 import yupay.turismo.ui.MainViewModel
 import yupay.turismo.ui.features.auth.components.PasswordValidationItem
@@ -37,10 +38,12 @@ fun RegisterScreen(
     onSuccess: () -> Unit
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val authState by viewModel.authState.collectAsState()
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+    var showAlreadyExistsDialog by remember { mutableStateOf(false) }
 
     val hasLength = password.length >= 8
     val hasUpper = password.any { it.isUpperCase() }
@@ -58,6 +61,10 @@ fun RegisterScreen(
             }
             AuthEvent.LoggedIn -> {
                 onSuccess()
+                viewModel.consumeAuthEvent()
+            }
+            AuthEvent.AccountAlreadyExists -> {
+                showAlreadyExistsDialog = true
                 viewModel.consumeAuthEvent()
             }
             else -> {}
@@ -164,9 +171,14 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedButton(
-                onClick = { 
-                    // Simulado para demostración de UI, en realidad usaría Credential Manager
-                    viewModel.loginWithGoogle("simulated_id_token")
+                onClick = {
+                    scope.launch {
+                        when (val result = GoogleAuthHelper.getIdToken(context)) {
+                            is GoogleAuthHelper.Result.Success -> viewModel.signUpWithGoogle(result.idToken)
+                            is GoogleAuthHelper.Result.Error -> viewModel.setAuthError(result.message)
+                            GoogleAuthHelper.Result.Cancelled -> {}
+                        }
+                    }
                 },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(28.dp),
@@ -179,5 +191,30 @@ fun RegisterScreen(
                 }
             }
         }
+    }
+
+    if (showAlreadyExistsDialog) {
+        AlertDialog(
+            onDismissRequest = { showAlreadyExistsDialog = false },
+            icon = {
+                Icon(
+                    Icons.Default.Block,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(40.dp)
+                )
+            },
+            title = { Text("Cuenta ya registrada") },
+            text = { Text("Esta cuenta de Google ya está registrada. Inicia sesión en su lugar.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showAlreadyExistsDialog = false
+                    navController.navigate(Routes.LOGIN)
+                }) { Text("Iniciar sesión") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAlreadyExistsDialog = false }) { Text("Cerrar") }
+            }
+        )
     }
 }

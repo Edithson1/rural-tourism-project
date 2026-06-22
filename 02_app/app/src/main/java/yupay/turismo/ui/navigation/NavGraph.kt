@@ -448,18 +448,29 @@ fun MainNavigation(
                                         popUpTo(0) { inclusive = true }
                                     }
                                 } else {
-                                    navController.navigate(Routes.RESET_PASSWORD)
+                                    navController.navigate(Routes.resetPassword("reset"))
                                 }
                             }
                         )
                     }
-                    composable(Routes.RESET_PASSWORD) {
+                    composable(
+                        Routes.RESET_PASSWORD,
+                        arguments = listOf(
+                            navArgument("source") { type = NavType.StringType; defaultValue = "reset" }
+                        )
+                    ) { backStackEntry ->
+                        val source = backStackEntry.arguments?.getString("source") ?: "reset"
                         ResetPasswordScreen(
                             viewModel = viewModel,
+                            source = source,
                             onBack = { navController.popBackStack() },
                             onSuccess = {
-                                navController.navigate(Routes.LOGIN) {
-                                    popUpTo(Routes.LOGIN) { inclusive = true }
+                                if (source == "account") {
+                                    navController.popBackStack()
+                                } else {
+                                    navController.navigate(Routes.LOGIN) {
+                                        popUpTo(Routes.LOGIN) { inclusive = true }
+                                    }
                                 }
                             }
                         )
@@ -467,7 +478,8 @@ fun MainNavigation(
                     composable(Routes.ACCOUNT_INFO) {
                         AccountInfoScreen(
                             viewModel = viewModel,
-                            onBack = { navController.popBackStack() }
+                            onBack = { navController.popBackStack() },
+                            onChangePassword = { navController.navigate(Routes.resetPassword("account")) }
                         )
                     }
                     composable(Routes.ADD_VISIT) {

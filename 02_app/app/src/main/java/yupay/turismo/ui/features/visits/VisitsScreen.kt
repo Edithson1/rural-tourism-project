@@ -253,7 +253,7 @@ fun VisitItem(visit: Visit, preferredCurrency: String, usdRate: Double, eurRate:
                 )
             }
 
-            if (visit.isSent) {
+            if (visit.remoteId != null) {
                 Icon(
                     imageVector = Icons.Default.CheckCircle,
                     contentDescription = "Enviado",

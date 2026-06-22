@@ -52,6 +52,9 @@ class CloudSyncRepository(
 ) {
     val pendingCountFlow = pendingOpDao.countFlow()
 
+    /** Nº de visitas locales aún no subidas a la nube (para disparar la sync). */
+    val unsyncedVisitsCountFlow = visitDao.countUnsyncedFlow()
+
     // ───────────────── Encolado (offline) ─────────────────
     suspend fun enqueueProductUpsert(localId: Int) =
         enqueue(PendingOp.ENTITY_PRODUCT, PendingOp.OP_UPDATE, localId, "")
@@ -130,6 +133,10 @@ class CloudSyncRepository(
             return SyncOutcome.Error("Cambios locales pendientes; se reintentará al reconectar.", offline = true)
         }
 
+        if (!pushPendingVisits()) {
+            return SyncOutcome.Error("Visitas pendientes de subir; se reintentará al reconectar.", offline = true)
+        }
+
         val settings = appSettingsDao.getSettingsOnce() ?: AppSettings()
         val since = if (settings.lastSyncAt > 0) millisToIso(settings.lastSyncAt) else null
         val pull = when (val r = api.pull(since)) {
@@ -147,6 +154,29 @@ class CloudSyncRepository(
             when (handleOp(op)) {
                 OpResult.SUCCESS, OpResult.DROP -> pendingOpDao.deleteById(op.id)
                 OpResult.RETRY -> return false
+            }
+        }
+        return true
+    }
+
+    /**
+     * Sube las visitas locales que aún no están en la nube (remoteId == null), creadas por
+     * cualquier vía (incluido el alta vía P2P/SyncViewModel, que no usa el outbox). Las visitas
+     * son append-only y el id de servidor se guarda al instante en `remoteId`, lo que hace que
+     * el detalle/lista pasen de "Pendiente de envío" a "Enviado".
+     * @return false si hubo que parar por falta de red/servidor (se reintenta luego).
+     */
+    private suspend fun pushPendingVisits(): Boolean {
+        for (v in visitDao.getUnsynced()) {
+            val now = System.currentTimeMillis()
+            val payload = v.copy(isSent = true, sentDate = now)
+            when (val r = api.createVisit(payload.toRequestDto())) {
+                is ApiResult.Ok ->
+                    visitDao.updateVisit(v.copy(remoteId = r.data.id, isSent = true, sentDate = now))
+                is ApiResult.Fail -> {
+                    if (r.offline || r.code in 500..599 || r.code == 401) return false
+                    // 4xx de cliente: saltar esta visita y seguir con las demás.
+                }
             }
         }
         return true

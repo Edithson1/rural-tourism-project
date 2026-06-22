@@ -202,6 +202,29 @@ class AuthRepository(
         }
     }
 
+    /**
+     * Descarta SOLO la sesión local (sin revocar en el servidor). Útil cuando, tras un
+     * `signInWithIdToken`, decidimos NO continuar (p.ej. registro con Google de una cuenta que
+     * ya existía): no debemos hacer logout global del usuario real en sus otros dispositivos.
+     */
+    suspend fun discardLocalSession() {
+        session.clear()
+        unmarkLinked()
+    }
+
+    /**
+     * Establece/cambia la contraseña del usuario AUTENTICADO usando su propio accessToken
+     * (no requiere el correo ni un código OTP). Habilita el login por correo+contraseña en
+     * cuentas creadas solo con Google (caso 3).
+     */
+    suspend fun setPasswordWithSession(newPassword: String): AuthResult<Unit> {
+        val token = session.accessTokenOnce()
+        if (token.isNullOrBlank()) return AuthResult.Err("No hay una sesión activa.")
+        return api.resetPassword(
+            ResetPasswordRequest(accessToken = token, newPassword = newPassword)
+        ).toUnit()
+    }
+
     // ───────────────────────── helpers ─────────────────────────
     private suspend fun deviceArgs(): Pair<String?, String> {
         val hw = appSettingsDao.getSettingsOnce()?.hardwareDeviceId?.ifBlank { null }

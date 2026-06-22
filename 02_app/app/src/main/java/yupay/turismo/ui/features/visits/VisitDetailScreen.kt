@@ -37,17 +37,16 @@ fun VisitDetailScreen(
     viewModel: MainViewModel,
     onBack: () -> Unit
 ) {
-    var visit by remember { mutableStateOf<Visit?>(null) }
+    // Observa la lista (reactivo): cuando la visita se sube y obtiene remoteId, el estado
+    // de abajo pasa de "Pendiente de envío" a "Enviado" sin reabrir la pantalla.
+    val allVisits by viewModel.allVisits.collectAsState()
+    val visit = allVisits.find { it.id == visitId }
     val settings by viewModel.appSettings.collectAsState()
     val language = settings?.language ?: "Español"
     val prefCurrency = settings?.preferredCurrency ?: "S/"
     val usdRate = settings?.usdExchangeRate ?: 3.8
     val eurRate = settings?.eurExchangeRate ?: 4.1
     val context = LocalContext.current
-    
-    LaunchedEffect(visitId) {
-        visit = viewModel.getVisitDetail(visitId)
-    }
 
     Scaffold(
         topBar = {
@@ -198,27 +197,28 @@ fun VisitDetailScreen(
 
                 Spacer(modifier = Modifier.height(48.dp))
 
-                // Status Card
+                // Status Card: "Enviado" si la visita ya está en la nube (tiene id de servidor).
+                val isSent = v.remoteId != null
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    color = (if (v.isSent) Color(0xFF4CAF50) else Color(0xFFFF9800)).copy(alpha = 0.1f),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, (if (v.isSent) Color(0xFF4CAF50) else Color(0xFFFF9800)).copy(alpha = 0.3f))
+                    color = (if (isSent) Color(0xFF4CAF50) else Color(0xFFFF9800)).copy(alpha = 0.1f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, (if (isSent) Color(0xFF4CAF50) else Color(0xFFFF9800)).copy(alpha = 0.3f))
                 ) {
                     Row(
                         modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = if (v.isSent) Icons.Default.CheckCircle else Icons.Default.Schedule,
+                            imageVector = if (isSent) Icons.Default.CheckCircle else Icons.Default.Schedule,
                             contentDescription = null,
-                            tint = if (v.isSent) Color(0xFF2E7D32) else Color(0xFFE65100),
+                            tint = if (isSent) Color(0xFF2E7D32) else Color(0xFFE65100),
                             modifier = Modifier.size(24.dp)
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = if (v.isSent) UiTranslations.getString(context, "sent_record", language) else UiTranslations.getString(context, "pending_record", language),
-                            color = if (v.isSent) Color(0xFF2E7D32) else Color(0xFFE65100),
+                            text = if (isSent) UiTranslations.getString(context, "sent_record", language) else UiTranslations.getString(context, "pending_record", language),
+                            color = if (isSent) Color(0xFF2E7D32) else Color(0xFFE65100),
                             fontWeight = FontWeight.Medium
                         )
                     }
