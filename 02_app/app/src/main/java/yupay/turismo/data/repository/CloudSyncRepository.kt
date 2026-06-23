@@ -113,12 +113,12 @@ class CloudSyncRepository(
             val migrateRes = api.migrate(buildMigrateRequest(settings, localProducts, localVisits))
             if (migrateRes is ApiResult.Fail) return migrateRes.toOutcome()
             when (val r2 = api.pull(null)) {
-                is ApiResult.Ok -> finishSync(applyPull(r2.data, replace = true), startedAt)
+                is ApiResult.Ok -> finishSync(applyPull(r2.data, replace = true), watermarkFrom(r2.data, startedAt))
                 is ApiResult.Fail -> return r2.toOutcome()
             }
         } else {
             // El servidor manda (login a cuenta existente, o nada que subir).
-            finishSync(applyPull(pull, replace = true), startedAt)
+            finishSync(applyPull(pull, replace = true), watermarkFrom(pull, startedAt))
         }
         pendingOpDao.clear()
         return SyncOutcome.Success
@@ -143,7 +143,7 @@ class CloudSyncRepository(
             is ApiResult.Ok -> r.data
             is ApiResult.Fail -> return r.toOutcome()
         }
-        finishSync(applyPull(pull, replace = false), startedAt)
+        finishSync(applyPull(pull, replace = false), watermarkFrom(pull, startedAt))
         return SyncOutcome.Success
     }
 
@@ -367,10 +367,26 @@ class CloudSyncRepository(
         return merged
     }
 
-    private suspend fun finishSync(merged: AppSettings, startedAt: Long) {
+    private suspend fun finishSync(merged: AppSettings, newWatermark: Long) {
         appSettingsDao.saveSettings(
-            merged.copy(lastSyncAt = startedAt, lastModified = System.currentTimeMillis())
+            merged.copy(lastSyncAt = newWatermark, lastModified = System.currentTimeMillis())
         )
+    }
+
+    /**
+     * Watermark del próximo `?since=`: la hora del SERVIDOR (no la del dispositivo), menos un
+     * margen de solape. Usar la hora del servidor evita que un reloj de dispositivo adelantado
+     * deje el `since` "en el futuro" y se salte cambios para siempre (clock skew). El solape
+     * reprocesa unas pocas filas, lo cual es inocuo porque [applyPull] es idempotente.
+     */
+    private fun watermarkFrom(pull: PullResponse, fallback: Long): Long {
+        val serverMs = parseIsoToMillis(pull.serverTime)
+        return (serverMs ?: fallback) - OVERLAP_MS
+    }
+
+    private companion object {
+        /** Margen de solape (ms) del watermark para tolerar lag de replicación / sub-segundo. */
+        const val OVERLAP_MS = 5_000L
     }
 
     private fun buildMigrateRequest(

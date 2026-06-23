@@ -129,6 +129,17 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
             }
             .launchIn(viewModelScope)
 
+        // Observar visitas: propaga al peer las altas y, sobre todo, los cambios de estado
+        // (isSent/remoteId) y las visitas que bajan de la nube. El handler de UpdateVisits sólo
+        // escribe si hay cambio real, lo que corta cualquier bucle de reenvío entre ambos lados.
+        repository.allVisits
+            .onEach { visits ->
+                if (!isProcessingRemoteUpdate && _isConnected.value) {
+                    syncManager.sendMessage(SyncMessage.UpdateVisits(visits))
+                }
+            }
+            .launchIn(viewModelScope)
+
         // Monitor de Red para Reconexión Automática
         networkMonitor.start()
         
@@ -562,6 +573,45 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
                             bridgeP2pChangesToCloud()
                             _ticks.value++
                         }
+                    } finally {
+                        delay(500)
+                        isProcessingRemoteUpdate = false
+                    }
+                }
+            }
+            is SyncMessage.UpdateVisits -> {
+                viewModelScope.launch {
+                    isProcessingRemoteUpdate = true
+                    try {
+                        val locals = repository.allVisits.first()
+                        var changed = false
+                        for (rv in message.visits) {
+                            val existing = locals.firstOrNull { it.registrationDate == rv.registrationDate }
+                            if (existing == null) {
+                                // Visita nueva (id=0 → autogenera; evita colisión de ID local).
+                                repository.insertVisit(rv.copy(id = 0))
+                                changed = true
+                            } else {
+                                // Merge idempotente y monótono de los campos de estado de sync.
+                                // Sólo se escribe si hay diferencia real → corta el bucle de reenvío.
+                                val merged = existing.copy(
+                                    remoteId = existing.remoteId ?: rv.remoteId,
+                                    isSent = existing.isSent || rv.isSent,
+                                    sentDate = existing.sentDate ?: rv.sentDate
+                                )
+                                if (merged != existing) {
+                                    repository.insertVisit(merged) // misma PK = update (REPLACE)
+                                    changed = true
+                                }
+                            }
+                        }
+                        if (changed) {
+                            addLog("Visitas reconciliadas con el remoto")
+                            bridgeP2pChangesToCloud()
+                            _ticks.value++
+                        }
+                    } catch (e: Exception) {
+                        Log.e("SyncViewModel", "Error en UpdateVisits", e)
                     } finally {
                         delay(500)
                         isProcessingRemoteUpdate = false

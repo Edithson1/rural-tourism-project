@@ -59,7 +59,7 @@ object ServiceLocator {
                 pendingOpDao = db.pendingOpDao()
             )
             networkMonitor = NetworkMonitor(app)
-            cloudSyncEngine = CloudSyncEngine(cloudSyncRepository, sessionManager, networkMonitor)
+            cloudSyncEngine = CloudSyncEngine(cloudSyncRepository, sessionManager, networkMonitor, apiService)
 
             initialized = true
         }

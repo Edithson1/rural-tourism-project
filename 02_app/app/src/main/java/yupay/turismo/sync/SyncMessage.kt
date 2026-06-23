@@ -20,6 +20,14 @@ sealed class SyncMessage {
     @Serializable
     data class NewVisit(val visit: Visit) : SyncMessage()
 
+    /**
+     * Lista de visitas para reconciliar con el peer: además de insertar las nuevas, ACTUALIZA
+     * las existentes (por `registrationDate`) — así el estado `isSent`/`remoteId` que el CLIENTE
+     * fija al subir a la nube llega al SERVIDOR, y las visitas que bajan de la API se propagan.
+     */
+    @Serializable
+    data class UpdateVisits(val visits: List<Visit>) : SyncMessage()
+
     @Serializable
     data class UpdateSettings(val settings: AppSettings) : SyncMessage()
 

@@ -163,7 +163,9 @@ data class PullResponse(
     val user: UserProfileResponseDto? = null,
     val products: List<ProductResponseDto> = emptyList(),
     val visits: List<VisitResponseDto> = emptyList(),
-    val content: List<ContentResponseDto> = emptyList()
+    val content: List<ContentResponseDto> = emptyList(),
+    /** Hora del servidor (ISO 8601) al inicio del pull; el cliente la usa como watermark. */
+    val serverTime: String? = null
 )
 
 // ---------------- genéricos ----------------

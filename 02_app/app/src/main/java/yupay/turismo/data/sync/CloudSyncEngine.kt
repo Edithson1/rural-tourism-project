@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import yupay.turismo.data.remote.RealtimeClient
+import yupay.turismo.data.remote.YupayApiService
 import yupay.turismo.data.repository.CloudSyncRepository
 import yupay.turismo.data.repository.SyncOutcome
 import yupay.turismo.data.session.SessionManager
@@ -23,9 +25,13 @@ import yupay.turismo.utils.NetworkMonitor
 class CloudSyncEngine(
     private val repo: CloudSyncRepository,
     private val session: SessionManager,
-    private val networkMonitor: NetworkMonitor
+    private val networkMonitor: NetworkMonitor,
+    api: YupayApiService
 ) {
     private val mutex = Mutex()
+
+    /** Realtime: al notificar un cambio remoto, dispara un pull incremental. */
+    private val realtime = RealtimeClient(api, session, networkMonitor) { syncNow() }
 
     private val _state = MutableStateFlow<SyncState>(SyncState.Idle)
     val state: StateFlow<SyncState> = _state.asStateFlow()
@@ -85,6 +91,24 @@ class CloudSyncEngine(
                     }
                 }
         }
+        // Sync en tiempo real: Realtime es la vía principal; el poll de respaldo de abajo cubre
+        // cortes del WebSocket o eventos perdidos.
+        realtime.start(scope)
+        // Poll de respaldo (red de seguridad): un pull incremental periódico mientras hay red+sesión.
+        // Barato y protegido por el Mutex (no se solapa con otros syncs).
+        scope.launch {
+            while (true) {
+                delay(POLL_INTERVAL_MS)
+                if (networkMonitor.isOnline.value && session.isLoggedIn()) {
+                    syncNow()
+                }
+            }
+        }
+    }
+
+    private companion object {
+        /** Periodo del poll de respaldo (ms). Realtime entrega los cambios casi al instante. */
+        const val POLL_INTERVAL_MS = 60_000L
     }
 
     private suspend fun guarded(wait: Boolean, block: suspend () -> SyncOutcome): SyncOutcome {
