@@ -46,6 +46,12 @@ class CloudSyncEngine(
     suspend fun syncNow(): SyncOutcome = guarded(wait = false) { repo.syncNow() }
 
     /**
+     * Sube a la nube los cambios que entraron por P2P/LAN (no pasan por el outbox). Reconcilia
+     * el estado local completo contra el servidor. Lo dispara la capa P2P ([SyncViewModel]).
+     */
+    suspend fun reconcileFromP2p(): SyncOutcome = guarded(wait = false) { repo.reconcileLocalToCloud() }
+
+    /**
      * Arranca los observadores que disparan la sync sola:
      *  - al estar online + con sesión (reconexión / arranque),
      *  - al crecer la cola de cambios pendientes mientras hay red.

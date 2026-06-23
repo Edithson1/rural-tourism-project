@@ -1,19 +1,32 @@
 package yupay.turismo.ui.features.splash
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Landscape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import yupay.turismo.R
 
 @Composable
 fun SplashScreen(isReady: Boolean, onTimeout: () -> Unit) {
@@ -44,23 +57,7 @@ fun SplashScreen(isReady: Boolean, onTimeout: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
             ) {
-                // Logo Placeholder
-                Surface(
-                    modifier = Modifier
-                        .size(100.dp)
-                        .clip(RoundedCornerShape(16.dp)),
-                    color = MaterialTheme.colorScheme.surface,
-                    shadowElevation = 4.dp
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Default.Landscape,
-                            contentDescription = "Logo",
-                            modifier = Modifier.size(60.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
+                AnimatedLogo(size = 110.dp)
 
                 Spacer(modifier = Modifier.width(32.dp))
 
@@ -83,35 +80,19 @@ fun SplashScreen(isReady: Boolean, onTimeout: () -> Unit) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                // Logo Placeholder
-                Surface(
-                    modifier = Modifier
-                        .size(120.dp)
-                        .clip(RoundedCornerShape(16.dp)),
-                    color = MaterialTheme.colorScheme.surface,
-                    shadowElevation = 4.dp
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Default.Landscape,
-                            contentDescription = "Logo",
-                            modifier = Modifier.size(80.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-                
+                AnimatedLogo(size = 140.dp)
+
                 Spacer(modifier = Modifier.height(24.dp))
-                
+
                 Text(
                     text = "Yupay Turismo",
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
                 )
-                
+
                 Spacer(modifier = Modifier.height(100.dp))
-                
+
                 CircularProgressIndicator(
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(40.dp)
@@ -121,3 +102,49 @@ fun SplashScreen(isReady: Boolean, onTimeout: () -> Unit) {
     }
 }
 
+/**
+ * Logo de la marca (vector `R.drawable.logo`) animado: entra con fade + escala con un pequeño
+ * rebote y luego late suavemente. Se tiñe con el color primario del tema, así que adopta los
+ * colores representativos según el modo del dispositivo (marrón en claro, azul en oscuro).
+ */
+@Composable
+private fun AnimatedLogo(size: Dp) {
+    val scale = remember { Animatable(0.6f) }
+    val alpha = remember { Animatable(0f) }
+
+    LaunchedEffect(Unit) {
+        launch { alpha.animateTo(1f, animationSpec = tween(durationMillis = 700)) }
+        scale.animateTo(
+            targetValue = 1f,
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessLow
+            )
+        )
+    }
+
+    val infinite = rememberInfiniteTransition(label = "logoPulse")
+    val pulse by infinite.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.06f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1100, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulse"
+    )
+
+    Image(
+        painter = painterResource(id = R.drawable.logo),
+        contentDescription = "Yupay Turismo",
+        modifier = Modifier
+            .size(size)
+            .graphicsLayer {
+                val s = scale.value * pulse
+                scaleX = s
+                scaleY = s
+                this.alpha = alpha.value
+            },
+        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
+    )
+}

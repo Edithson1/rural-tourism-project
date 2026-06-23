@@ -152,11 +152,9 @@ fun ProfileScreen(
                     TextButton(
                         onClick = {
                             showLogoutDialog = false
-                            syncViewModel.logout {
-                                navController.navigate("onboarding") {
-                                    popUpTo(0) { inclusive = true }
-                                }
-                            }
+                            // El reset del servidor + la navegación al onboarding los maneja
+                            // el resetEvent del SyncViewModel (centralizado en MainNavigation).
+                            syncViewModel.logout()
                         },
                         colors = ButtonDefaults.textButtonColors(contentColor = Color.Red)
                     ) {

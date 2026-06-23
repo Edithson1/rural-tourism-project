@@ -147,6 +147,76 @@ class CloudSyncRepository(
         return SyncOutcome.Success
     }
 
+    // ───────────────── Puente P2P → nube ─────────────────
+    /**
+     * Reconcilia el estado LOCAL completo hacia la nube. Pensado para los cambios que entran por
+     * P2P/LAN (paquete `sync/`), que NO pasan por el outbox de la nube y por tanto nunca llegarían
+     * a la API por sí solos. Hace que el servidor refleje exactamente lo que hay en Room:
+     *  - sube el perfil / datos del usuario,
+     *  - reconcilia el catálogo (crea los nuevos, actualiza los existentes y BORRA del servidor los
+     *    que ya no están localmente),
+     *  - sube las visitas nuevas (append-only).
+     * Es idempotente y seguro de reintentar. Sólo escribe en Room cuando asigna un `remoteId`
+     * nuevo (para no provocar reenvíos P2P innecesarios).
+     */
+    suspend fun reconcileLocalToCloud(): SyncOutcome {
+        if (!session.isLoggedIn()) return SyncOutcome.NotLoggedIn
+
+        // 1) Perfil / datos del usuario.
+        val settings = appSettingsDao.getSettingsOnce() ?: AppSettings()
+        (api.updateMe(settings.toProfileRequestDto()) as? ApiResult.Fail)?.let {
+            if (it.isRetryable()) return it.toOutcome() // 4xx de cliente: continuar
+        }
+
+        // 2) Catálogo: el servidor debe quedar igual que lo local.
+        val serverProducts = when (val r = api.listProducts()) {
+            is ApiResult.Ok -> r.data
+            is ApiResult.Fail -> return r.toOutcome()
+        }
+        val localProducts = productDao.getAllOnce()
+        val keepRemoteIds = localProducts.mapNotNull { it.remoteId }.toSet()
+
+        // Borrar del servidor los productos que ya no existen localmente.
+        for (sp in serverProducts) {
+            if (sp.id !in keepRemoteIds) {
+                val r = api.deleteProduct(sp.id)
+                if (r is ApiResult.Fail && r.code != 404 && r.isRetryable()) return r.toOutcome()
+            }
+        }
+
+        // Subir los locales: crear los nuevos (sin remoteId) y actualizar los existentes.
+        for (lp in localProducts) {
+            if (lp.remoteId == null) {
+                when (val r = api.createProduct(lp.toRequestDto())) {
+                    is ApiResult.Ok -> productDao.updateProduct(lp.copy(remoteId = r.data.id))
+                    is ApiResult.Fail -> if (r.isRetryable()) return r.toOutcome()
+                }
+            } else {
+                when (val r = api.updateProduct(lp.remoteId, lp.toRequestDto())) {
+                    is ApiResult.Ok -> Unit // sin escritura local: evita reenvíos P2P en bucle
+                    is ApiResult.Fail -> when {
+                        r.code == 404 -> when (val c = api.createProduct(lp.toRequestDto())) {
+                            is ApiResult.Ok -> productDao.updateProduct(lp.copy(remoteId = c.data.id))
+                            is ApiResult.Fail -> if (c.isRetryable()) return c.toOutcome()
+                        }
+                        r.isRetryable() -> return r.toOutcome()
+                        else -> Unit
+                    }
+                }
+            }
+        }
+
+        // 3) Visitas nuevas (append-only; reutiliza el mismo empuje que la sync normal).
+        if (!pushPendingVisits()) {
+            return SyncOutcome.Error("Visitas pendientes de subir; se reintentará.", offline = true)
+        }
+
+        return SyncOutcome.Success
+    }
+
+    /** Fallos por los que conviene reintentar luego (no son errores de cliente 4xx). */
+    private fun ApiResult.Fail.isRetryable(): Boolean = offline || code in 500..599 || code == 401
+
     // ───────────────── Outbox ─────────────────
     /** @return true si se drenó por completo; false si hubo que parar (reintentar luego). */
     private suspend fun drainOutbox(): Boolean {

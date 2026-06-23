@@ -12,8 +12,10 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import yupay.turismo.data.AppReset
 import yupay.turismo.data.DataRepository
 import yupay.turismo.data.local.AppDatabase
+import yupay.turismo.data.local.DefaultContent
 import yupay.turismo.data.local.AppSettings
 import yupay.turismo.data.local.Visit
 import yupay.turismo.data.local.Product
@@ -137,19 +139,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private val defaultTips = mapOf(
-        "Español" to "La hospitalidad es la clave.\nSiempre recibe a tus turistas con una sonrisa.\nConoce bien tu historia local para compartirla.\nManten tus espacios limpios y ordenados.\nOfrece productos locales de calidad.",
-        "Quechua" to "Allin chaskiymi ancha allin.\nTuristaykikunataqa sapa kutin p'isñuywan chaskiy.\nLlaqtaykiq kawsayninta allinta yachay willanaykipaq.\nKuyuchiy wasiykikunata ch'uya hinaspa allichasqa.\nAllin llaqtaykiq rurunkunata quy.",
-        "Inglés" to "Hospitality is the key.\nAlways welcome your tourists with a smile.\nKnow your local history well to share it.\nKeep your spaces clean and organized.\nOffer quality local products.",
-        "Portugués" to "A hospitalidade é a chave.\nSempre receba seus turistas com um sorriso.\nConheça bem sua história local para compartilhá-la.\nMantenha seus espaços limpos e organizados.\nOfereça produtos locais de qualidade."
-    )
-
-    private val defaultSummaries = mapOf(
-        "Español" to "Este mapa muestra la distribución de tus visitas.\nLos puntos azules representan hospedaje.\nLos puntos verdes son de alimentación.\nLos puntos rojos indican artesanía.\nUsa el zoom para ver más detalles.",
-        "Quechua" to "Kay saywitipim watukuyniykikuna rakisqa kachkan.\nAnqas unanchakunaqa puñuy wasim.\nQ'umir unanchakunaqa mikhuy wasim.\nPuka unanchakunaqa makipi rurasqakuna.\nHatunyachiy aswan allinta qhawanaykipaq.",
-        "Inglés" to "This map shows the distribution of your visits.\nBlue points represent lodging.\nGreen points are for food services.\nRed points indicate handicrafts.\nUse zoom to see more details.",
-        "Portugués" to "Este mapa mostra a distribuição das suas visitas.\nOs pontos azuis representam hospedagem.\nOs pontos verdes são de alimentação.\nOs pontos vermelhos indicam artesanato.\nUse o zoom para ver mais detalhes."
-    )
+    private val defaultTips = DefaultContent.tips
+    private val defaultSummaries = DefaultContent.summaries
 
     fun addVisit(
         nationality: String,
@@ -319,27 +310,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun clearAllAppData() {
         viewModelScope.launch {
-            // 1. Limpiar sesión y outbox de sincronización
-            sessionManager.clear()
-            cloudSync.clearOutbox()
-
-            // 2. Borrar tablas de Room
-            repository.clearAllData()
-
-            // 3. Re-inicializar ajustes por defecto inmediatamente
-            val androidId = Settings.Secure.getString(
-                getApplication<Application>().contentResolver,
-                Settings.Secure.ANDROID_ID
-            ) ?: "unknown"
-
-            repository.saveSettings(AppSettings(
-                deviceId = androidId,
-                hardwareDeviceId = androidId,
-                entrepreneurTips = defaultTips,
-                mapSummary = defaultSummaries
-            ))
-
-            // 4. Limpiar estado de UI de auth
+            // Reset total a estado de fábrica (sesión + outbox + Room + ajustes por defecto).
+            // Mismo comportamiento que el reset del servidor al cancelar el P2P (AppReset).
+            AppReset.factoryReset(getApplication())
             _authState.value = AuthUiState()
         }
     }
@@ -562,7 +535,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     /** Surface de errores de la UI (p.ej. fallo/cancelación del selector de Google). */
     fun setAuthError(message: String) {
-        _authState.value = _authState.value.copy(loading = false, error = message)
+        _authState.value = _authState.value.copy(loading = false, googleLoading = false, error = message)
+    }
+
+    /**
+     * Marca el inicio del flujo con Google (clic en "Continuar con Google"): enciende la pantalla
+     * de carga de inmediato y limpia mensajes previos. La carga se mantiene durante la obtención
+     * del idToken y la llamada a la API, y se apaga sola al terminar [signInWithGoogle] /
+     * [signUpWithGoogle] (vía [runAuth]) o ante error/cancelación.
+     */
+    fun beginGoogleAuth() {
+        _authState.value = _authState.value.copy(
+            googleLoading = true, error = null, info = null, event = null
+        )
+    }
+
+    /** El usuario canceló el selector de Google: apaga la pantalla de carga y vuelve al flujo normal. */
+    fun cancelGoogleAuth() {
+        _authState.value = _authState.value.copy(googleLoading = false)
     }
 
     /** Caso 1: cuenta de Google nueva → datos por defecto del emprendimiento (si no hay ya). */
@@ -728,6 +718,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 /** Estado observable de los flujos de autenticación (para la UI). */
 data class AuthUiState(
     val loading: Boolean = false,
+    /**
+     * Carga específica del flujo con Google: cubre TODO el proceso (obtener el idToken con
+     * Credential Manager + llamada a la API), para mostrar una pantalla de carga desde el clic
+     * del botón hasta la respuesta. Separado de [loading] para no alterar el flujo de correo.
+     */
+    val googleLoading: Boolean = false,
     val error: String? = null,
     val info: String? = null,
     val event: AuthEvent? = null

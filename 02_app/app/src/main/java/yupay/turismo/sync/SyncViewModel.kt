@@ -7,10 +7,13 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import yupay.turismo.data.AppReset
+import yupay.turismo.di.ServiceLocator
 import yupay.turismo.data.DataRepository
 import yupay.turismo.data.local.AppDatabase
 import yupay.turismo.data.local.AppSettings
@@ -50,6 +53,11 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
     private val _syncCompleted = MutableSharedFlow<Unit>()
     val syncCompleted = _syncCompleted.asSharedFlow()
 
+    // Reset total del dispositivo SERVIDOR al cancelar la vinculación P2P (desde cualquier lado):
+    // la UI lo observa para navegar al onboarding (estado de fábrica).
+    private val _resetEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val resetEvent = _resetEvent.asSharedFlow()
+
     private val _latency = MutableStateFlow(0L)
     val latency = _latency.asStateFlow()
 
@@ -59,6 +67,9 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
     private var lastRemoteIp: String? = sharedPrefs.getString("last_ip", null)
     private var lastRemotePort: Int = sharedPrefs.getInt("last_port", 51234)
     private var isProcessingRemoteUpdate = false
+
+    // Puente P2P → nube: sube a la API los cambios que llegan por LAN (con debounce).
+    private var cloudBridgeJob: Job? = null
     
     // Heartbeat tracking
     private var lastResponseTimestamp: Long = 0L
@@ -359,11 +370,15 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
             // 5. Notificar navegación inmediata
             withContext(Dispatchers.Main) {
                 onComplete()
+                // El SERVIDOR resetea a fábrica al cancelar el P2P → la UI navega al onboarding
+                // (cubre el caso en que el corte lo provoca el CLIENTE vía RemoteLogout).
+                _resetEvent.tryEmit(Unit)
             }
 
-            // 6. Limpiar base de datos local en segundo plano
+            // 6. Reset TOTAL en segundo plano: igual que el "cerrar sesión" de cuenta online
+            //    (sesión de nube + outbox + Room + re-siembra de ajustes por defecto).
             withContext(Dispatchers.IO) {
-                repository.clearAllData()
+                AppReset.factoryReset(getApplication())
                 // Asegurar que Room guarde los cambios en disco inmediatamente
                 AppDatabase.getDatabase(getApplication()).openHelper.writableDatabase.execSQL("PRAGMA checkpoint(FULL)")
             }
@@ -522,6 +537,9 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
                             saveSyncState()
                         }
 
+                        // Si este equipo tiene cuenta online, propaga lo recibido por P2P a la nube.
+                        bridgeP2pChangesToCloud()
+
                         _ticks.value++
                         _syncCompleted.emit(Unit)
                     } catch (e: Exception) {
@@ -541,6 +559,7 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
                             // Resetear ID para evitar sobrescribir visitas locales por colisión de ID
                             repository.insertVisit(message.visit.copy(id = 0))
                             addLog("Nueva visita recibida")
+                            bridgeP2pChangesToCloud()
                             _ticks.value++
                         }
                     } finally {
@@ -562,6 +581,7 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
                             isProcessingRemoteUpdate = true
                             repository.saveSettings(message.settings)
                             addLog("Ajustes actualizados remotamente")
+                            bridgeP2pChangesToCloud()
                             _ticks.value++
                         } else if (localSettings.lastModified > message.settings.lastModified) {
                             // Si recibimos un ajuste viejo, forzamos el envío de nuestro ajuste nuevo
@@ -579,6 +599,7 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
                     try {
                         repository.replaceAllProducts(message.products.map { it.copy(id = 0) })
                         addLog("Catálogo de productos actualizado remotamente")
+                        bridgeP2pChangesToCloud()
                         _ticks.value++
                     } finally {
                         delay(500)
@@ -636,6 +657,27 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
         _acks.value = Pair(currentAcks.first, currentAcks.second + 1)
         syncManager.sendMessage(SyncMessage.Ping(System.currentTimeMillis()))
         addLog("Enviando señal (Ping)...")
+    }
+
+    /**
+     * Sube a la nube (sólo si ESTE equipo tiene una cuenta online) los cambios que acaban de
+     * entrar por P2P. Con debounce para agrupar ráfagas de mensajes de la LAN. Si el equipo no
+     * tiene cuenta online, no hace nada: el P2P sigue funcionando igual que antes.
+     */
+    private fun bridgeP2pChangesToCloud() {
+        cloudBridgeJob?.cancel()
+        cloudBridgeJob = viewModelScope.launch {
+            delay(1500) // debounce: agrupa la ráfaga de mensajes P2P en una sola subida
+            try {
+                ServiceLocator.init(getApplication())
+                if (ServiceLocator.sessionManager.isLoggedIn()) {
+                    addLog("Subiendo cambios a la nube...")
+                    ServiceLocator.cloudSyncEngine.reconcileFromP2p()
+                }
+            } catch (e: Exception) {
+                Log.e("SyncViewModel", "Error subiendo cambios P2P a la nube", e)
+            }
+        }
     }
 
     private fun sendAllData() {

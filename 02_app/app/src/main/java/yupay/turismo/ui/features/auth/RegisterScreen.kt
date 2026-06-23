@@ -21,9 +21,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.compose.ui.text.input.VisualTransformation
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import yupay.turismo.ui.AuthEvent
 import yupay.turismo.ui.MainViewModel
+import yupay.turismo.ui.components.LoadingOverlay
 import yupay.turismo.ui.features.auth.components.PasswordValidationItem
 import yupay.turismo.ui.navigation.Routes
 import yupay.turismo.utils.UiTranslations
@@ -71,6 +73,7 @@ fun RegisterScreen(
         }
     }
 
+    Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -172,17 +175,23 @@ fun RegisterScreen(
 
             OutlinedButton(
                 onClick = {
+                    viewModel.beginGoogleAuth() // muestra la pantalla de carga de inmediato
                     scope.launch {
-                        when (val result = GoogleAuthHelper.getIdToken(context)) {
-                            is GoogleAuthHelper.Result.Success -> viewModel.signUpWithGoogle(result.idToken)
-                            is GoogleAuthHelper.Result.Error -> viewModel.setAuthError(result.message)
-                            GoogleAuthHelper.Result.Cancelled -> {}
+                        try {
+                            when (val result = GoogleAuthHelper.getIdToken(context)) {
+                                is GoogleAuthHelper.Result.Success -> viewModel.signUpWithGoogle(result.idToken)
+                                is GoogleAuthHelper.Result.Error -> viewModel.setAuthError(result.message)
+                                GoogleAuthHelper.Result.Cancelled -> viewModel.cancelGoogleAuth()
+                            }
+                        } catch (e: CancellationException) {
+                            viewModel.cancelGoogleAuth() // p.ej. salió de la pantalla: apaga la carga
+                            throw e
                         }
                     }
                 },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(28.dp),
-                enabled = !authState.loading
+                enabled = !authState.loading && !authState.googleLoading
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.AccountCircle, contentDescription = null)
@@ -190,6 +199,11 @@ fun RegisterScreen(
                     Text("Continuar con Google", fontSize = 16.sp)
                 }
             }
+        }
+    }
+
+        if (authState.googleLoading) {
+            LoadingOverlay(message = "Conectando con Google…")
         }
     }
 

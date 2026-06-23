@@ -13,12 +13,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import yupay.turismo.sync.SyncViewModel
 import yupay.turismo.ui.MainViewModel
@@ -102,6 +106,33 @@ fun MainNavigation(
             entrepreneurTips = it.entrepreneurTips[it.language] ?: it.entrepreneurTips["Español"] ?: ""
             mapSummary = it.mapSummary[it.language] ?: it.mapSummary["Español"] ?: ""
             profilePicture = it.profilePicture
+        }
+    }
+
+    // Reset total del dispositivo SERVIDOR al cancelar el P2P (lo dispare el servidor o el
+    // cliente): vuelve al onboarding con el estado de fábrica.
+    LaunchedEffect(Unit) {
+        syncViewModel.resetEvent.collect {
+            navController.navigate(Routes.ONBOARDING) {
+                popUpTo(0) { inclusive = true }
+                launchSingleTop = true
+            }
+        }
+    }
+
+    // Sync online "en vivo": baja periódicamente los cambios hechos en OTRO dispositivo de la
+    // misma cuenta. Sin esto, el pull sólo ocurría al cambiar algo localmente o al reconectar, así
+    // que el otro equipo nunca veía los cambios. Sólo con sesión y en primer plano (RESUMED), para
+    // no gastar batería/datos en segundo plano. El push/outbox existente no se toca.
+    val cloudSession by viewModel.cloudSession.collectAsState()
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(cloudSession != null, lifecycleOwner) {
+        if (cloudSession == null) return@LaunchedEffect
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            while (true) {
+                viewModel.syncNow()
+                delay(15_000)
+            }
         }
     }
 

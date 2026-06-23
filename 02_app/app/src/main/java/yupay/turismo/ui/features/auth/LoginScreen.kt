@@ -20,9 +20,11 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.navigation.NavController
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import yupay.turismo.ui.AuthEvent
 import yupay.turismo.ui.MainViewModel
+import yupay.turismo.ui.components.LoadingOverlay
 import yupay.turismo.ui.navigation.Routes
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -48,6 +50,7 @@ fun LoginScreen(
         }
     }
 
+    Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -146,17 +149,23 @@ fun LoginScreen(
 
             OutlinedButton(
                 onClick = {
+                    viewModel.beginGoogleAuth() // muestra la pantalla de carga de inmediato
                     scope.launch {
-                        when (val result = GoogleAuthHelper.getIdToken(context)) {
-                            is GoogleAuthHelper.Result.Success -> viewModel.signInWithGoogle(result.idToken)
-                            is GoogleAuthHelper.Result.Error -> viewModel.setAuthError(result.message)
-                            GoogleAuthHelper.Result.Cancelled -> {}
+                        try {
+                            when (val result = GoogleAuthHelper.getIdToken(context)) {
+                                is GoogleAuthHelper.Result.Success -> viewModel.signInWithGoogle(result.idToken)
+                                is GoogleAuthHelper.Result.Error -> viewModel.setAuthError(result.message)
+                                GoogleAuthHelper.Result.Cancelled -> viewModel.cancelGoogleAuth()
+                            }
+                        } catch (e: CancellationException) {
+                            viewModel.cancelGoogleAuth() // p.ej. salió de la pantalla: apaga la carga
+                            throw e
                         }
                     }
                 },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(28.dp),
-                enabled = !authState.loading
+                enabled = !authState.loading && !authState.googleLoading
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.AccountCircle, contentDescription = null)
@@ -186,6 +195,11 @@ fun LoginScreen(
                     Text("Vincular sin cuenta (Offline)", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
             }
+        }
+    }
+
+        if (authState.googleLoading) {
+            LoadingOverlay(message = "Iniciando sesión con Google…")
         }
     }
 }
