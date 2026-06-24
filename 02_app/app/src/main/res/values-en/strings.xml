@@ -379,4 +379,12 @@
     <string name="map_cd_back">Back</string>
     <string name="onboarding_other_languages">Other languages</string>
     <string name="onboarding_cd_options">Options</string>
+    <!-- Dashboard: per-tab summary messages (sound button) -->
+    <string name="insights_msg_empty">Not enough data yet.\nLog visits to see your summary.</string>
+    <string name="insights_msg_summary">You received %1$d tourists in total.\nYour top country is %2$s and your star product is %3$s.\nTotal revenue: %4$s.</string>
+    <string name="insights_msg_visitors">%1$d tourists visited you.\nMost of them come from %2$s.\nYour busiest day is %3$s.</string>
+    <string name="insights_msg_sales">You sold %1$d products.\nTotal revenue: %2$s, with an average ticket of %3$s.\nBest seller: %4$s.</string>
+    <string name="insights_msg_times">Your peak hour is %1$s.\nYour busiest day is %2$s.</string>
+    <!-- Profile: short linked-account indicator -->
+    <string name="profile_account_connected">Connected</string>
 </resources>

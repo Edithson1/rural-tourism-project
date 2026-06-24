@@ -521,7 +521,9 @@ fun SettingsSection(
             SettingsItem(
                 icon = if (isLinked) Icons.Default.CloudDone else if (canLink) Icons.Default.CloudQueue else Icons.Default.CloudOff,
                 title = if (isLinked) UiTranslations.getString(context, "profile_account_linked", language) else UiTranslations.getString(context, "profile_account_link_api", language),
-                value = if (isLinked) settings?.accountEmail ?: "" else if (!canLink) UiTranslations.getString(context, "profile_account_locked", language, visitsCount) else UiTranslations.getString(context, "profile_account_available", language),
+                // Cuando está vinculada mostramos un indicador corto ("Conectado") en lugar del
+                // correo, que ocupaba demasiado espacio y forzaba el título a dos líneas.
+                value = if (isLinked) UiTranslations.getString(context, "profile_account_connected", language) else if (!canLink) UiTranslations.getString(context, "profile_account_locked", language, visitsCount) else UiTranslations.getString(context, "profile_account_available", language),
                 titleColor = if (isLinked || canLink) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
                 onClick = {
                     if (isLinked) {

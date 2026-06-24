@@ -1,5 +1,6 @@
 package yupay.turismo.ui.features.dashboard
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -9,6 +10,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -18,6 +20,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import yupay.turismo.data.local.Visit
 import yupay.turismo.data.local.AppSettings
 import yupay.turismo.ui.features.dashboard.components.FilterSelector
+import yupay.turismo.ui.features.dashboard.components.InsightMessageOverlay
 import yupay.turismo.ui.features.dashboard.tabs.SalesTab
 import yupay.turismo.ui.features.dashboard.tabs.SummaryTab
 import yupay.turismo.ui.features.dashboard.tabs.TimesTab
@@ -53,6 +56,7 @@ fun DashboardScreen(
     val visitorsSeries by dashboardViewModel.visitorsSeries.collectAsState()
 
     var selectedTab by remember { mutableStateOf(DashboardTab.SUMMARY) }
+    var insightMessage by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(visits, settings) {
         dashboardViewModel.updateVisits(visits)
@@ -76,8 +80,8 @@ fun DashboardScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    val summary = dashboardViewModel.getInsightsSummary(language)
-                    android.widget.Toast.makeText(context, summary, android.widget.Toast.LENGTH_LONG).show()
+                    // Resumen distinto según la pestaña en la que está el usuario al pulsar.
+                    insightMessage = dashboardViewModel.getTabSummary(context, selectedTab, language)
                 },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -88,7 +92,8 @@ fun DashboardScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+            Column(modifier = Modifier.fillMaxSize()) {
             // Filtro de periodo compartido por todas las pestañas
             FilterSelector(currentFilter, language) { dashboardViewModel.setFilter(it) }
 
@@ -145,6 +150,15 @@ fun DashboardScreen(
                     partOfDay = partOfDay
                 )
             }
+            }
+
+            // Mensaje de resumen animado (aparece como subtítulo sobre el contenido)
+            InsightMessageOverlay(
+                message = insightMessage,
+                language = language,
+                onDismiss = { insightMessage = null },
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
         }
     }
 }

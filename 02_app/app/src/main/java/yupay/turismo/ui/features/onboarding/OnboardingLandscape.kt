@@ -1,5 +1,6 @@
 package yupay.turismo.ui.features.onboarding
 
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
@@ -40,23 +41,23 @@ fun OnboardingLandscapeContent(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(48.dp)
     ) {
-        // Left Column: Dynamic Illustration
-        // We use userScrollEnabled = true on both to allow swiping from anywhere.
-        // Since they share the same pagerState, they will remain synchronized.
-        Box(modifier = Modifier.weight(1f)) {
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.fillMaxSize(),
-                userScrollEnabled = true
-            ) { pageIndex ->
-                val icon = when (pageIndex) {
-                    0 -> Icons.Default.WifiOff
-                    1 -> Icons.Default.AutoGraph
-                    else -> Icons.Default.Lightbulb
-                }
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                    OnboardingIcon(icon, modifier = Modifier.aspectRatio(1f).fillMaxWidth(0.85f))
-                }
+        // Columna izquierda: ilustración dinámica.
+        // Antes había un segundo HorizontalPager compartiendo el mismo PagerState que el texto,
+        // pero dos pagers sobre un único estado no se mantienen sincronizados y la imagen no
+        // cambiaba. Ahora la ilustración se deriva del estado del pager de texto (única fuente
+        // de verdad) con un Crossfade, de modo que imagen y texto cambian siempre a la vez.
+        Crossfade(
+            targetState = pagerState.currentPage,
+            modifier = Modifier.weight(1f).fillMaxSize(),
+            label = "onboarding_icon"
+        ) { pageIndex ->
+            val icon = when (pageIndex) {
+                0 -> Icons.Default.WifiOff
+                1 -> Icons.Default.AutoGraph
+                else -> Icons.Default.Lightbulb
+            }
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                OnboardingIcon(icon, modifier = Modifier.aspectRatio(1f).fillMaxWidth(0.85f))
             }
         }
 

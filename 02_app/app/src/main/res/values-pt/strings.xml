@@ -378,4 +378,12 @@
     <string name="scanner_error">Erro ao abrir o scanner</string>
     <string name="scanner_timeout_title">Tempo do scanner esgotado</string>
     <string name="scanner_timeout_desc">Nenhum código foi detectado no tempo limite (45s).</string>
+    <!-- Dashboard: mensagens de resumo por aba (botão de som) -->
+    <string name="insights_msg_empty">Ainda não há dados suficientes.\nRegistre visitas para ver seu resumo.</string>
+    <string name="insights_msg_summary">Você recebeu %1$d turistas no total.\nSeu país líder é %2$s e seu produto estrela é %3$s.\nReceita total: %4$s.</string>
+    <string name="insights_msg_visitors">%1$d turistas visitaram você.\nA maioria vem de %2$s.\nSeu dia mais movimentado é %3$s.</string>
+    <string name="insights_msg_sales">Você vendeu %1$d produtos.\nReceita total: %2$s, com um ticket médio de %3$s.\nMais vendido: %4$s.</string>
+    <string name="insights_msg_times">Seu horário de pico é %1$s.\nSeu dia mais ativo é %2$s.</string>
+    <!-- Perfil: indicador curto de conta vinculada -->
+    <string name="profile_account_connected">Conectado</string>
 </resources>

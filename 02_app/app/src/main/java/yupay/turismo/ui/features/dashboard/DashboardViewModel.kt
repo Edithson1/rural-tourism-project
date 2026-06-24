@@ -1,5 +1,6 @@
 package yupay.turismo.ui.features.dashboard
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -7,6 +8,7 @@ import kotlinx.coroutines.flow.*
 import yupay.turismo.data.local.AppSettings
 import yupay.turismo.data.local.Visit
 import yupay.turismo.utils.CurrencyUtils
+import yupay.turismo.utils.UiTranslations
 import java.util.*
 
 class DashboardViewModel : ViewModel() {
@@ -248,16 +250,50 @@ class DashboardViewModel : ViewModel() {
         _filter.value = filter
     }
 
-    fun getInsightsSummary(language: String): String {
+    /**
+     * Devuelve un resumen corto (varias líneas) adaptado a la pestaña actual del dashboard.
+     * El texto cambia automáticamente conforme se registran más visitas/productos, ya que se
+     * apoya en los mismos flujos derivados que alimentan cada pestaña. Pensado para mostrarse
+     * como subtítulo/tarjeta y, más adelante, leerse con la función de audio.
+     */
+    fun getTabSummary(context: Context, tab: DashboardTab, language: String): String {
         val total = totalVisitors.value
-        val leader = leaderCountry.value
-        val star = starService.value
-
-        return when(language) {
-            "Quechua" -> "Kaymi rurukuna: Llapanpiqa $total watukuqkunan hamurqan. Ñawpaq suyuqa $leader kachkan. Aswan munasqa ruruqa $star."
-            "Inglés" -> "Here are the insights: A total of $total tourists visited. The leading country is $leader. The top product is $star."
-            "Portugués" -> "Aqui estão os resultados: Um total de $total turistas visitaram. O país líder é $leader. O produto principal é $star."
-            else -> "Aquí tienes los resultados: Un total de $total turistas visitaron tu negocio. El país líder es $leader y tu producto más vendido es $star."
+        if (total == 0) {
+            return UiTranslations.getString(context, "insights_msg_empty", language)
         }
+
+        val prefCurrency = _settings.value?.preferredCurrency ?: "S/"
+        fun money(amount: Double) = "$prefCurrency ${String.format("%.2f", amount)}"
+
+        return when (tab) {
+            DashboardTab.SUMMARY -> UiTranslations.getString(
+                context, "insights_msg_summary", language,
+                total, leaderCountry.value, starService.value, money(totalRevenue.value)
+            )
+            DashboardTab.VISITORS -> UiTranslations.getString(
+                context, "insights_msg_visitors", language,
+                total, leaderCountry.value, busiestWeekdayLabel(context, language)
+            )
+            DashboardTab.SALES -> UiTranslations.getString(
+                context, "insights_msg_sales", language,
+                totalItemsSold.value, money(totalRevenue.value),
+                money(averageTicket.value), starService.value
+            )
+            DashboardTab.TIMES -> {
+                val hour = peakHours.value.maxByOrNull { it.second }?.takeIf { it.second > 0 }?.first
+                val hourStr = hour?.let { "${it}h" } ?: "-"
+                UiTranslations.getString(
+                    context, "insights_msg_times", language,
+                    hourStr, busiestWeekdayLabel(context, language)
+                )
+            }
+        }
+    }
+
+    /** Etiqueta localizada del día de la semana con más visitas (o "-" si no hay datos). */
+    private fun busiestWeekdayLabel(context: Context, language: String): String {
+        val counts = visitsByWeekday.value
+        val idx = counts.indices.maxByOrNull { counts[it] }?.takeIf { counts[it] > 0 }
+        return idx?.let { UiTranslations.getString(context, WEEKDAY_KEYS[it], language) } ?: "-"
     }
 }

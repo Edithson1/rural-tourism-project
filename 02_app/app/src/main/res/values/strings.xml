@@ -388,4 +388,12 @@
     <string name="map_cd_back">Volver</string>
     <string name="onboarding_other_languages">Otros idiomas</string>
     <string name="onboarding_cd_options">Opciones</string>
+    <!-- Dashboard: mensajes de resumen por pestaña (botón de sonido) -->
+    <string name="insights_msg_empty">Aún no hay datos suficientes.\nRegistra visitas para ver tu resumen.</string>
+    <string name="insights_msg_summary">Recibiste %1$d turistas en total.\nTu país líder es %2$s y tu producto estrella es %3$s.\nIngresos totales: %4$s.</string>
+    <string name="insights_msg_visitors">Te visitaron %1$d turistas.\nLa mayoría provienen de %2$s.\nTu día más concurrido es el %3$s.</string>
+    <string name="insights_msg_sales">Vendiste %1$d productos.\nIngresos totales: %2$s, con un ticket promedio de %3$s.\nLo más vendido: %4$s.</string>
+    <string name="insights_msg_times">Tu hora pico es a las %1$s.\nTu día más activo es el %2$s.</string>
+    <!-- Perfil: indicador corto de cuenta vinculada -->
+    <string name="profile_account_connected">Conectado</string>
 </resources>

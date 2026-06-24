@@ -379,4 +379,12 @@
     <string name="map_cd_back">Kutiy</string>
     <string name="onboarding_other_languages">Huk simikuna</string>
     <string name="onboarding_cd_options">Akllaykuna</string>
+    <!-- Dashboard: sapanka pestaña pisichay willakuykuna (uyari nit ana) -->
+    <string name="insights_msg_empty">Manaraqmi achka willakuy kanchu.\nWatukuykunata qillqay pisichaykita rikunaykipaq.</string>
+    <string name="insights_msg_summary">Llapanpi %1$d watukuqkunan hamurqan.\nÑawpaq suyuyki %2$s, aswan munasqa ruruykiqa %3$s.\nLlapan qullqi: %4$s.</string>
+    <string name="insights_msg_visitors">%1$d watukuqkunam watukusunki.\nAchkanqa %2$s suyumantam.\nAswan hunt\'asqa p\'unchawniykiqa %3$s.</string>
+    <string name="insights_msg_sales">%1$d rurukunatam rantikurqanki.\nLlapan qullqi: %2$s, kuska rantiqa %3$s.\nAswan rantisqa: %4$s.</string>
+    <string name="insights_msg_times">Aswan hunt\'asqa urayki %1$s.\nAswan hunt\'asqa p\'unchawniyki %2$s.</string>
+    <!-- Perfil: cuenta watasqa pisi rikuchiq -->
+    <string name="profile_account_connected">Watasqa</string>
 </resources>
