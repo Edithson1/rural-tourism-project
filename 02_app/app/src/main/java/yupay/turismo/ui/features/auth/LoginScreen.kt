@@ -26,6 +26,7 @@ import yupay.turismo.ui.AuthEvent
 import yupay.turismo.ui.MainViewModel
 import yupay.turismo.ui.components.LoadingOverlay
 import yupay.turismo.ui.navigation.Routes
+import yupay.turismo.utils.UiTranslations
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,6 +38,8 @@ fun LoginScreen(
     onSuccess: () -> Unit
 ) {
     val authState by viewModel.authState.collectAsState()
+    val settings by viewModel.appSettings.collectAsState()
+    val language = settings?.language ?: "Español"
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var email by remember { mutableStateOf("") }
@@ -54,10 +57,10 @@ fun LoginScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Iniciar Sesión", fontWeight = FontWeight.Bold) },
+                title = { Text(UiTranslations.getString(context, "login_title", language), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                        Icon(Icons.Default.ArrowBack, contentDescription = UiTranslations.getString(context, "btn_back", language))
                     }
                 }
             )
@@ -72,7 +75,7 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                "Ingresa tus credenciales para acceder a tu cuenta sincronizada",
+                UiTranslations.getString(context, "login_subtitle", language),
                 fontSize = 16.sp,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -83,7 +86,7 @@ fun LoginScreen(
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
-                label = { Text("Correo electrónico") },
+                label = { Text(UiTranslations.getString(context, "auth_email_label", language)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
@@ -95,7 +98,7 @@ fun LoginScreen(
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("Contraseña") },
+                label = { Text(UiTranslations.getString(context, "auth_password_label", language)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -104,7 +107,7 @@ fun LoginScreen(
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
                             imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                            contentDescription = if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña"
+                            contentDescription = if (passwordVisible) UiTranslations.getString(context, "auth_cd_hide_password", language) else UiTranslations.getString(context, "auth_cd_show_password", language)
                         )
                     }
                 }
@@ -114,7 +117,7 @@ fun LoginScreen(
                 onClick = { navController.navigate(Routes.FORGOT_PASSWORD) },
                 modifier = Modifier.align(Alignment.End)
             ) {
-                Text("¿Olvidaste tu contraseña?")
+                Text(UiTranslations.getString(context, "login_forgot_password", language))
             }
 
             if (authState.error != null) {
@@ -137,13 +140,13 @@ fun LoginScreen(
                 if (authState.loading) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
                 } else {
-                    Text("Entrar", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text(UiTranslations.getString(context, "login_btn_enter", language), fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Text("O", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(UiTranslations.getString(context, "auth_divider_or", language), color = MaterialTheme.colorScheme.onSurfaceVariant)
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -170,7 +173,7 @@ fun LoginScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.AccountCircle, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Continuar con Google", fontSize = 16.sp)
+                    Text(UiTranslations.getString(context, "auth_continue_google", language), fontSize = 16.sp)
                 }
             }
 
@@ -192,14 +195,14 @@ fun LoginScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.QrCode, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Vincular sin cuenta (Offline)", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text(UiTranslations.getString(context, "login_link_offline", language), fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
     }
 
         if (authState.googleLoading) {
-            LoadingOverlay(message = "Iniciando sesión con Google…")
+            LoadingOverlay(message = UiTranslations.getString(context, "auth_google_signing_in", language))
         }
     }
 }

@@ -14,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -23,6 +24,7 @@ import yupay.turismo.ui.MainViewModel
 import androidx.compose.ui.text.input.VisualTransformation
 import yupay.turismo.ui.AuthEvent
 import yupay.turismo.ui.features.auth.components.PasswordValidationItem
+import yupay.turismo.utils.UiTranslations
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,12 +35,15 @@ fun ResetPasswordScreen(
     onSuccess: () -> Unit
 ) {
     val authState by viewModel.authState.collectAsState()
+    val settings by viewModel.appSettings.collectAsState()
+    val language = settings?.language ?: "Español"
+    val context = LocalContext.current
     val isAccount = source == "account"
-    val screenTitle = if (isAccount) "Establecer Contraseña" else "Nueva Contraseña"
+    val screenTitle = if (isAccount) UiTranslations.getString(context, "reset_title_account", language) else UiTranslations.getString(context, "reset_title", language)
     val screenSubtitle = if (isAccount)
-        "Crea una contraseña para también poder iniciar sesión con tu correo"
+        UiTranslations.getString(context, "reset_subtitle_account", language)
     else
-        "Ingresa tu nueva contraseña para acceder a tu cuenta"
+        UiTranslations.getString(context, "reset_subtitle", language)
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -66,7 +71,7 @@ fun ResetPasswordScreen(
                 title = { Text(screenTitle, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                        Icon(Icons.Default.ArrowBack, contentDescription = UiTranslations.getString(context, "btn_back", language))
                     }
                 }
             )
@@ -92,7 +97,7 @@ fun ResetPasswordScreen(
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("Nueva contraseña") },
+                label = { Text(UiTranslations.getString(context, "reset_new_password_label", language)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -101,7 +106,7 @@ fun ResetPasswordScreen(
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
                             imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                            contentDescription = if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña"
+                            contentDescription = if (passwordVisible) UiTranslations.getString(context, "auth_cd_hide_password", language) else UiTranslations.getString(context, "auth_cd_show_password", language)
                         )
                     }
                 }
@@ -112,7 +117,7 @@ fun ResetPasswordScreen(
             OutlinedTextField(
                 value = confirmPassword,
                 onValueChange = { confirmPassword = it },
-                label = { Text("Confirmar contraseña") },
+                label = { Text(UiTranslations.getString(context, "reset_confirm_password_label", language)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -121,7 +126,7 @@ fun ResetPasswordScreen(
                     IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
                         Icon(
                             imageVector = if (confirmPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                            contentDescription = if (confirmPasswordVisible) "Ocultar contraseña" else "Mostrar contraseña"
+                            contentDescription = if (confirmPasswordVisible) UiTranslations.getString(context, "auth_cd_hide_password", language) else UiTranslations.getString(context, "auth_cd_show_password", language)
                         )
                     }
                 }
@@ -130,12 +135,12 @@ fun ResetPasswordScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Column(modifier = Modifier.fillMaxWidth()) {
-                PasswordValidationItem("Mínimo 8 caracteres", hasLength, password.isNotEmpty())
-                PasswordValidationItem("Al menos una mayúscula", hasUpper, password.isNotEmpty())
-                PasswordValidationItem("Al menos una minúscula", hasLower, password.isNotEmpty())
-                PasswordValidationItem("Al menos un número", hasDigit, password.isNotEmpty())
-                PasswordValidationItem("Al menos un carácter especial", hasSpecial, password.isNotEmpty())
-                PasswordValidationItem("Las contraseñas coinciden", matches, confirmPassword.isNotEmpty())
+                PasswordValidationItem(UiTranslations.getString(context, "pwd_rule_min_length", language), hasLength, password.isNotEmpty())
+                PasswordValidationItem(UiTranslations.getString(context, "pwd_rule_upper", language), hasUpper, password.isNotEmpty())
+                PasswordValidationItem(UiTranslations.getString(context, "pwd_rule_lower", language), hasLower, password.isNotEmpty())
+                PasswordValidationItem(UiTranslations.getString(context, "pwd_rule_digit", language), hasDigit, password.isNotEmpty())
+                PasswordValidationItem(UiTranslations.getString(context, "pwd_rule_special", language), hasSpecial, password.isNotEmpty())
+                PasswordValidationItem(UiTranslations.getString(context, "pwd_rule_match", language), matches, confirmPassword.isNotEmpty())
             }
 
             if (authState.error != null) {
@@ -161,7 +166,7 @@ fun ResetPasswordScreen(
                 if (authState.loading) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
                 } else {
-                    Text("Actualizar Contraseña", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text(UiTranslations.getString(context, "reset_btn_update", language), fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }

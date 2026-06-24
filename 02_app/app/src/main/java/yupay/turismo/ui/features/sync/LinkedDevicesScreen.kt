@@ -57,7 +57,7 @@ fun LinkedDevicesScreen(navController: NavController, syncViewModel: SyncViewMod
                 LazyColumn(modifier = Modifier.weight(1f)) {
                     item {
                         DeviceItem(
-                            name = remoteDeviceName ?: "Desconocido",
+                            name = remoteDeviceName ?: UiTranslations.getString(context, "linked_devices_unknown", language),
                             isActive = isConnected,
                             language = language,
                             onDisconnect = {
@@ -148,7 +148,7 @@ fun LinkedDevicesScreen(navController: NavController, syncViewModel: SyncViewMod
     }
 
     if (showConnectionRequiredDialog) {
-        ConnectionRequiredDialog(onDismiss = { showConnectionRequiredDialog = false })
+        ConnectionRequiredDialog(language = language, onDismiss = { showConnectionRequiredDialog = false })
     }
 }
 

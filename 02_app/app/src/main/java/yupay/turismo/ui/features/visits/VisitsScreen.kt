@@ -256,14 +256,14 @@ fun VisitItem(visit: Visit, preferredCurrency: String, usdRate: Double, eurRate:
             if (visit.remoteId != null) {
                 Icon(
                     imageVector = Icons.Default.CheckCircle,
-                    contentDescription = "Enviado",
+                    contentDescription = UiTranslations.getString(context, "visits_cd_sent", language),
                     tint = Color(0xFF4CAF50),
                     modifier = Modifier.size(24.dp)
                 )
             } else {
                 Icon(
                     imageVector = Icons.Default.Schedule,
-                    contentDescription = "Pendiente",
+                    contentDescription = UiTranslations.getString(context, "visits_cd_pending", language),
                     tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
                     modifier = Modifier.size(24.dp)
                 )

@@ -57,7 +57,7 @@ fun ProfileSetupScreen(
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = UiTranslations.getString(context, "btn_back", selectedLanguage),
                             tint = MaterialTheme.colorScheme.onBackground
                         )
                     }

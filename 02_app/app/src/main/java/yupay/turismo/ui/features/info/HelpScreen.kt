@@ -13,6 +13,7 @@ fun HelpScreen(
     InfoTextScreen(
         title = UiTranslations.getString(context, "profile_help", language),
         content = UiTranslations.getString(context, "help_content", language),
+        language = language,
         onBack = onBack
     )
 }

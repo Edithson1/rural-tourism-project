@@ -93,7 +93,7 @@ fun TipDetailScreen(
                             )
                         } else {
                             Text(
-                                text = "No hay consejos disponibles en este momento.",
+                                text = UiTranslations.getString(context, "tip_detail_empty", language),
                                 fontSize = 18.sp,
                                 lineHeight = 28.sp,
                                 color = MaterialTheme.colorScheme.onBackground
@@ -116,7 +116,8 @@ fun TipDetailScreen(
                         onPlayPauseClick = { isPlaying = !isPlaying },
                         onSeek = { fraction -> currentTime = (totalDuration * fraction).toLong() },
                         onFastForward = { currentTime = (currentTime + 10000L).coerceAtMost(totalDuration.toLong()) },
-                        onRewind = { currentTime = (currentTime - 10000L).coerceAtLeast(0L) }
+                        onRewind = { currentTime = (currentTime - 10000L).coerceAtLeast(0L) },
+                        language = language
                     )
                 }
             }
@@ -147,7 +148,7 @@ fun TipDetailScreen(
                         )
                     } else {
                         Text(
-                            text = "No hay consejos disponibles en este momento.",
+                            text = UiTranslations.getString(context, "tip_detail_empty", language),
                             fontSize = 18.sp,
                             lineHeight = 28.sp,
                             color = MaterialTheme.colorScheme.onBackground
@@ -165,7 +166,8 @@ fun TipDetailScreen(
                     onPlayPauseClick = { isPlaying = !isPlaying },
                     onSeek = { fraction -> currentTime = (totalDuration * fraction).toLong() },
                     onFastForward = { currentTime = (currentTime + 10000L).coerceAtMost(totalDuration.toLong()) },
-                    onRewind = { currentTime = (currentTime - 10000L).coerceAtLeast(0L) }
+                    onRewind = { currentTime = (currentTime - 10000L).coerceAtLeast(0L) },
+                    language = language
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))

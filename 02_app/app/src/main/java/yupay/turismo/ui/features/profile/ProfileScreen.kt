@@ -1,5 +1,10 @@
 package yupay.turismo.ui.features.profile
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -23,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import yupay.turismo.ui.MainViewModel
@@ -50,7 +56,30 @@ fun ProfileScreen(
     val isConnected by syncViewModel.isConnected.collectAsState()
     val remoteDeviceName by syncViewModel.remoteDeviceName.collectAsState()
     val context = LocalContext.current
-    
+
+    val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
+    // En Android 13+ hay que pedir POST_NOTIFICATIONS antes de poder mostrar notificaciones.
+    val notifPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        // Sólo activamos si el usuario concedió el permiso; si lo niega, el switch sigue en off.
+        if (granted) viewModel.setNotificationsEnabled(true)
+    }
+    val onToggleNotifications: (Boolean) -> Unit = { enabled ->
+        if (enabled) {
+            val needsPermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+                PackageManager.PERMISSION_GRANTED
+            if (needsPermission) {
+                notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else {
+                viewModel.setNotificationsEnabled(true)
+            }
+        } else {
+            viewModel.setNotificationsEnabled(false)
+        }
+    }
+
     var showVoiceSpeedModal by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showFullResetDialog by remember { mutableStateOf(false) }
@@ -78,7 +107,9 @@ fun ProfileScreen(
                         }
                     },
                     onFullResetClick = { showFullResetDialog = true },
-                    visitsCount = visits.size
+                    visitsCount = visits.size,
+                    notificationsEnabled = notificationsEnabled,
+                    onToggleNotifications = onToggleNotifications
                 )
             } else {
                 PortraitProfileContent(
@@ -95,7 +126,9 @@ fun ProfileScreen(
                         }
                     },
                     onFullResetClick = { showFullResetDialog = true },
-                    visitsCount = visits.size
+                    visitsCount = visits.size,
+                    notificationsEnabled = notificationsEnabled,
+                    onToggleNotifications = onToggleNotifications
                 )
             }
 
@@ -170,14 +203,14 @@ fun ProfileScreen(
         }
 
         if (showConnectionRequiredDialog) {
-            ConnectionRequiredDialog(onDismiss = { showConnectionRequiredDialog = false })
+            ConnectionRequiredDialog(language = language, onDismiss = { showConnectionRequiredDialog = false })
         }
 
         if (showFullResetDialog) {
             AlertDialog(
                 onDismissRequest = { showFullResetDialog = false },
-                title = { Text("¿Cerrar sesión y borrar todo?") },
-                text = { Text("Esta acción eliminará todos los datos de la aplicación (ajustes, visitas y productos) y volverá al inicio. Esta acción no se puede deshacer.") },
+                title = { Text(UiTranslations.getString(context, "profile_full_reset_title", language)) },
+                text = { Text(UiTranslations.getString(context, "profile_full_reset_desc", language)) },
                 confirmButton = {
                     TextButton(
                         onClick = {
@@ -189,12 +222,12 @@ fun ProfileScreen(
                         },
                         colors = ButtonDefaults.textButtonColors(contentColor = Color.Red)
                     ) {
-                        Text("Cerrar Sesión")
+                        Text(UiTranslations.getString(context, "profile_logout", language))
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showFullResetDialog = false }) {
-                        Text("Cancelar")
+                        Text(UiTranslations.getString(context, "btn_cancel", language))
                     }
                 }
             )
@@ -220,7 +253,9 @@ fun PortraitProfileContent(
     onLinkDeviceClick: () -> Unit,
     onLogoutClick: () -> Unit,
     onFullResetClick: () -> Unit,
-    visitsCount: Int
+    visitsCount: Int,
+    notificationsEnabled: Boolean,
+    onToggleNotifications: (Boolean) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -236,9 +271,10 @@ fun PortraitProfileContent(
         ProfileHeaderCard(settings, language, onNavigateToEdit)
         Spacer(modifier = Modifier.height(32.dp))
         SettingsSection(
-            settings, role, remoteDeviceName, language, onNavigateToLanguage, 
-            onVoiceSpeedClick, onLinkDeviceClick, onLogoutClick, navController, 
-            onNavigateToCatalog, onFullResetClick, visitsCount
+            settings, role, remoteDeviceName, language, onNavigateToLanguage,
+            onVoiceSpeedClick, onLinkDeviceClick, onLogoutClick, navController,
+            onNavigateToCatalog, onFullResetClick, visitsCount,
+            notificationsEnabled, onToggleNotifications
         )
         Spacer(modifier = Modifier.height(24.dp))
         InfoSection(language, onNavigateToHelp, onNavigateToPrivacy)
@@ -246,7 +282,7 @@ fun PortraitProfileContent(
         // Moved "Cerrar Sesión" here, visible only if linked
         if (settings?.isLinked == true) {
             Spacer(modifier = Modifier.height(24.dp))
-            FullResetButton(onFullResetClick)
+            FullResetButton(language, onFullResetClick)
         }
 
         Spacer(modifier = Modifier.height(40.dp))
@@ -271,7 +307,9 @@ fun LandscapeProfileContent(
     onLinkDeviceClick: () -> Unit,
     onLogoutClick: () -> Unit,
     onFullResetClick: () -> Unit,
-    visitsCount: Int
+    visitsCount: Int,
+    notificationsEnabled: Boolean,
+    onToggleNotifications: (Boolean) -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -302,9 +340,10 @@ fun LandscapeProfileContent(
                 .padding(vertical = 16.dp)
         ) {
             SettingsSection(
-                settings, role, remoteDeviceName, language, onNavigateToLanguage, 
-                onVoiceSpeedClick, onLinkDeviceClick, onLogoutClick, navController, 
-                onNavigateToCatalog, onFullResetClick, visitsCount
+                settings, role, remoteDeviceName, language, onNavigateToLanguage,
+                onVoiceSpeedClick, onLinkDeviceClick, onLogoutClick, navController,
+                onNavigateToCatalog, onFullResetClick, visitsCount,
+                notificationsEnabled, onToggleNotifications
             )
             Spacer(modifier = Modifier.height(24.dp))
             InfoSection(language, onNavigateToHelp, onNavigateToPrivacy)
@@ -312,7 +351,7 @@ fun LandscapeProfileContent(
             // Moved "Cerrar Sesión" here, visible only if linked
             if (settings?.isLinked == true) {
                 Spacer(modifier = Modifier.height(24.dp))
-                FullResetButton(onFullResetClick)
+                FullResetButton(language, onFullResetClick)
             }
 
             Spacer(modifier = Modifier.height(40.dp))
@@ -321,7 +360,8 @@ fun LandscapeProfileContent(
 }
 
 @Composable
-fun FullResetButton(onFullResetClick: () -> Unit) {
+fun FullResetButton(language: String, onFullResetClick: () -> Unit) {
+    val context = LocalContext.current
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -342,7 +382,7 @@ fun FullResetButton(onFullResetClick: () -> Unit) {
             )
             Spacer(modifier = Modifier.width(16.dp))
             Text(
-                text = "Cerrar Sesión (Borrar todo)",
+                text = UiTranslations.getString(context, "profile_full_reset_btn", language),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.Red
@@ -385,7 +425,7 @@ fun ProfileHeaderCard(settings: yupay.turismo.data.local.AppSettings?, language:
                 if (settings?.profilePicture != null) {
                     AsyncImage(
                         model = settings?.profilePicture,
-                        contentDescription = "Foto de perfil",
+                        contentDescription = UiTranslations.getString(context, "profile_cd_photo", language),
                         modifier = Modifier.fillMaxSize(),
                         contentScale = androidx.compose.ui.layout.ContentScale.Crop
                     )
@@ -403,7 +443,7 @@ fun ProfileHeaderCard(settings: yupay.turismo.data.local.AppSettings?, language:
             
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = settings?.businessName ?: "Cargando...",
+                    text = settings?.businessName ?: UiTranslations.getString(context, "profile_loading", language),
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -453,7 +493,9 @@ fun SettingsSection(
     navController: NavController,
     onNavigateToCatalog: () -> Unit,
     onFullResetClick: () -> Unit,
-    visitsCount: Int
+    visitsCount: Int,
+    notificationsEnabled: Boolean,
+    onToggleNotifications: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
     val isLinked = settings?.isLinked ?: false
@@ -478,8 +520,8 @@ fun SettingsSection(
             // New "Vincular cuenta" item
             SettingsItem(
                 icon = if (isLinked) Icons.Default.CloudDone else if (canLink) Icons.Default.CloudQueue else Icons.Default.CloudOff,
-                title = if (isLinked) "Cuenta vinculada" else "Vincular cuenta con la API",
-                value = if (isLinked) settings?.accountEmail ?: "" else if (!canLink) "Bloqueado ($visitsCount/5 visitas)" else "Disponible",
+                title = if (isLinked) UiTranslations.getString(context, "profile_account_linked", language) else UiTranslations.getString(context, "profile_account_link_api", language),
+                value = if (isLinked) settings?.accountEmail ?: "" else if (!canLink) UiTranslations.getString(context, "profile_account_locked", language, visitsCount) else UiTranslations.getString(context, "profile_account_available", language),
                 titleColor = if (isLinked || canLink) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
                 onClick = {
                     if (isLinked) {
@@ -511,7 +553,14 @@ fun SettingsSection(
                 value = "x${settings?.voiceSpeed ?: 1.0f}",
                 onClick = onVoiceSpeedClick
             )
-            
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+            SettingsToggleItem(
+                icon = if (notificationsEnabled) Icons.Default.Notifications else Icons.Default.NotificationsOff,
+                title = UiTranslations.getString(context, "profile_notifications", language),
+                checked = notificationsEnabled,
+                onCheckedChange = onToggleNotifications
+            )
+
             if (role == "CLIENT") {
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
                 SettingsItem(
@@ -623,6 +672,41 @@ fun SettingsItem(
     }
 }
 
+/** Variante de [SettingsItem] con un Switch en lugar del chevron (activar/desactivar). */
+@Composable
+fun SettingsToggleItem(
+    icon: ImageVector,
+    title: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onCheckedChange(!checked) }
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            icon,
+            contentDescription = null,
+            modifier = Modifier.size(24.dp),
+            tint = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Text(
+            text = title,
+            modifier = Modifier.weight(1f),
+            fontSize = 16.sp,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange
+        )
+    }
+}
+
 @Preview(showBackground = true, widthDp = 800, heightDp = 480)
 @Composable
 fun ProfileLandscapePreview() {
@@ -644,7 +728,9 @@ fun ProfileLandscapePreview() {
             onLinkDeviceClick = {},
             onLogoutClick = {},
             onFullResetClick = {},
-            visitsCount = 0
+            visitsCount = 0,
+            notificationsEnabled = false,
+            onToggleNotifications = {}
         )
     }
 }

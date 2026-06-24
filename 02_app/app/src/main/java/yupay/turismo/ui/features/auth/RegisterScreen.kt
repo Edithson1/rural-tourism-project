@@ -77,10 +77,10 @@ fun RegisterScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Registro", fontWeight = FontWeight.Bold) },
+                title = { Text(UiTranslations.getString(context, "register_title", language), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                        Icon(Icons.Default.ArrowBack, contentDescription = UiTranslations.getString(context, "btn_back", language))
                     }
                 }
             )
@@ -95,7 +95,7 @@ fun RegisterScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                "Crea tu cuenta para sincronizar tus datos en la nube",
+                UiTranslations.getString(context, "register_subtitle", language),
                 fontSize = 16.sp,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -106,7 +106,7 @@ fun RegisterScreen(
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
-                label = { Text("Correo electrónico") },
+                label = { Text(UiTranslations.getString(context, "auth_email_label", language)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
@@ -118,7 +118,7 @@ fun RegisterScreen(
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("Contraseña") },
+                label = { Text(UiTranslations.getString(context, "auth_password_label", language)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -127,7 +127,7 @@ fun RegisterScreen(
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
                             imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                            contentDescription = if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña"
+                            contentDescription = if (passwordVisible) UiTranslations.getString(context, "auth_cd_hide_password", language) else UiTranslations.getString(context, "auth_cd_show_password", language)
                         )
                     }
                 }
@@ -136,11 +136,11 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Column(modifier = Modifier.fillMaxWidth()) {
-                PasswordValidationItem("Mínimo 8 caracteres", hasLength, password.isNotEmpty())
-                PasswordValidationItem("Al menos una mayúscula", hasUpper, password.isNotEmpty())
-                PasswordValidationItem("Al menos una minúscula", hasLower, password.isNotEmpty())
-                PasswordValidationItem("Al menos un número", hasDigit, password.isNotEmpty())
-                PasswordValidationItem("Al menos un carácter especial", hasSpecial, password.isNotEmpty())
+                PasswordValidationItem(UiTranslations.getString(context, "pwd_rule_min_length", language), hasLength, password.isNotEmpty())
+                PasswordValidationItem(UiTranslations.getString(context, "pwd_rule_upper", language), hasUpper, password.isNotEmpty())
+                PasswordValidationItem(UiTranslations.getString(context, "pwd_rule_lower", language), hasLower, password.isNotEmpty())
+                PasswordValidationItem(UiTranslations.getString(context, "pwd_rule_digit", language), hasDigit, password.isNotEmpty())
+                PasswordValidationItem(UiTranslations.getString(context, "pwd_rule_special", language), hasSpecial, password.isNotEmpty())
             }
 
             if (authState.error != null) {
@@ -163,13 +163,13 @@ fun RegisterScreen(
                 if (authState.loading) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
                 } else {
-                    Text("Registrarse", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text(UiTranslations.getString(context, "register_btn_register", language), fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Text("O regístrate con", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(UiTranslations.getString(context, "register_divider_or", language), color = MaterialTheme.colorScheme.onSurfaceVariant)
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -196,14 +196,14 @@ fun RegisterScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.AccountCircle, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Continuar con Google", fontSize = 16.sp)
+                    Text(UiTranslations.getString(context, "auth_continue_google", language), fontSize = 16.sp)
                 }
             }
         }
     }
 
         if (authState.googleLoading) {
-            LoadingOverlay(message = "Conectando con Google…")
+            LoadingOverlay(message = UiTranslations.getString(context, "auth_google_connecting", language))
         }
     }
 
@@ -218,16 +218,16 @@ fun RegisterScreen(
                     modifier = Modifier.size(40.dp)
                 )
             },
-            title = { Text("Cuenta ya registrada") },
-            text = { Text("Esta cuenta de Google ya está registrada. Inicia sesión en su lugar.") },
+            title = { Text(UiTranslations.getString(context, "register_exists_title", language)) },
+            text = { Text(UiTranslations.getString(context, "register_exists_desc", language)) },
             confirmButton = {
                 TextButton(onClick = {
                     showAlreadyExistsDialog = false
                     navController.navigate(Routes.LOGIN)
-                }) { Text("Iniciar sesión") }
+                }) { Text(UiTranslations.getString(context, "register_exists_signin", language)) }
             },
             dismissButton = {
-                TextButton(onClick = { showAlreadyExistsDialog = false }) { Text("Cerrar") }
+                TextButton(onClick = { showAlreadyExistsDialog = false }) { Text(UiTranslations.getString(context, "auth_btn_close", language)) }
             }
         )
     }

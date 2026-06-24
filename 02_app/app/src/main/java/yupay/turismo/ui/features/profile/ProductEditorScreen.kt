@@ -129,7 +129,7 @@ fun ProductEditorScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = { if (hasChanges) showExitDialog = true else onBack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = UiTranslations.getString(context, "btn_back", language))
                     }
                 }
             )
@@ -258,12 +258,14 @@ fun ProductEditorScreen(
                 DateSelectionRow(
                     label = UiTranslations.getString(context, "catalog_discount_start", language),
                     date = startDate,
+                    language = language,
                     onDateChange = { startDate = it }
                 )
 
                 DateSelectionRow(
                     label = UiTranslations.getString(context, "catalog_discount_end", language),
                     date = endDate,
+                    language = language,
                     onDateChange = { endDate = it }
                 )
 
@@ -314,8 +316,8 @@ fun ProductEditorScreen(
         if (showInvalidDateWarning) {
             AlertDialog(
                 onDismissRequest = { showInvalidDateWarning = false },
-                title = { Text("Fechas inválidas") },
-                text = { Text("Las fechas de descuento son inválidas o incompletas. Se guardará el producto sin ninguna de las fechas de oferta.") },
+                title = { Text(UiTranslations.getString(context, "product_invalid_dates_title", language)) },
+                text = { Text(UiTranslations.getString(context, "product_invalid_dates_desc", language)) },
                 confirmButton = {
                     TextButton(onClick = {
                         val basePrice = price.toDoubleOrNull() ?: 0.0
@@ -398,7 +400,7 @@ fun ProductEditorScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DateSelectionRow(label: String, date: Long?, onDateChange: (Long?) -> Unit) {
+fun DateSelectionRow(label: String, date: Long?, language: String, onDateChange: (Long?) -> Unit) {
     val context = LocalContext.current
     val sdf = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
     var showModal by remember { mutableStateOf(false) }
@@ -473,7 +475,7 @@ fun DateSelectionRow(label: String, date: Long?, onDateChange: (Long?) -> Unit) 
             shape = RoundedCornerShape(12.dp),
             isError = isError,
             supportingText = if (isError) {
-                { Text("Fecha inválida o pasada", color = MaterialTheme.colorScheme.error) }
+                { Text(UiTranslations.getString(context, "product_date_invalid_past", language), color = MaterialTheme.colorScheme.error) }
             } else null,
             trailingIcon = {
                 IconButton(onClick = { showModal = true }) {
@@ -508,19 +510,19 @@ fun DateSelectionRow(label: String, date: Long?, onDateChange: (Long?) -> Unit) 
                         
                         if (localCal.timeInMillis < today.timeInMillis) {
                             // Show toast or warning
-                            android.widget.Toast.makeText(context, "La fecha no puede ser anterior a hoy", android.widget.Toast.LENGTH_SHORT).show()
+                            android.widget.Toast.makeText(context, UiTranslations.getString(context, "product_date_not_before_today", language), android.widget.Toast.LENGTH_SHORT).show()
                         } else {
                             onDateChange(localCal.timeInMillis)
                             showModal = false
                         }
                     }
                 }) {
-                    Text(UiTranslations.getString(context, "btn_confirm", "Español"))
+                    Text(UiTranslations.getString(context, "btn_confirm", language))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showModal = false }) {
-                    Text(UiTranslations.getString(context, "btn_cancel", "Español"))
+                    Text(UiTranslations.getString(context, "btn_cancel", language))
                 }
             }
         ) {

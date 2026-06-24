@@ -11,14 +11,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import yupay.turismo.utils.UiTranslations
 
 @Composable
 fun BottomNavigationBar(
     currentRoute: String,
+    language: String,
     onNavigate: (String) -> Unit
 ) {
+    val context = LocalContext.current
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp
     val horizontalPadding = if (isLandscape && configuration.screenWidthDp > 600) {
@@ -36,19 +40,20 @@ fun BottomNavigationBar(
 
         items.forEach { item ->
             val isSelected = currentRoute == item.route
+            val title = UiTranslations.getString(context, item.titleKey, language)
             NavigationBarItem(
                 selected = isSelected,
                 onClick = { onNavigate(item.route) },
-                icon = { 
+                icon = {
                     Icon(
-                        imageVector = item.icon, 
-                        contentDescription = item.title,
+                        imageVector = item.icon,
+                        contentDescription = title,
                         tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                    ) 
+                    )
                 },
-                label = { 
+                label = {
                     Text(
-                        text = item.title,
+                        text = title,
                         fontSize = 10.sp,
                         color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                     ) 
@@ -64,8 +69,10 @@ fun BottomNavigationBar(
 @Composable
 fun MainNavigationRail(
     currentRoute: String,
-    onNavigate: (String) -> Unit
+    onNavigate: (String) -> Unit,
+    language: String = "Español"
 ) {
+    val context = LocalContext.current
     NavigationRail(
         containerColor = MaterialTheme.colorScheme.surface,
         header = {
@@ -81,19 +88,20 @@ fun MainNavigationRail(
         ) {
             items.forEach { item ->
                 val isSelected = currentRoute == item.route
+                val title = UiTranslations.getString(context, item.titleKey, language)
                 NavigationRailItem(
                     selected = isSelected,
                     onClick = { onNavigate(item.route) },
                     icon = {
                         Icon(
                             imageVector = item.icon,
-                            contentDescription = item.title,
+                            contentDescription = title,
                             tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     },
                     label = {
                         Text(
-                            text = item.title,
+                            text = title,
                             fontSize = 12.sp,
                             color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -109,14 +117,14 @@ fun MainNavigationRail(
 }
 
 private fun getNavItems() = listOf(
-    NavItem("Home", Icons.Default.Home, "home"),
-    NavItem("Visits", Icons.Default.BarChart, "visits"),
-    NavItem("Map", Icons.Default.Explore, "map"),
-    NavItem("Profile", Icons.Default.Person, "profile")
+    NavItem("nav_home", Icons.Default.Home, "home"),
+    NavItem("nav_visits", Icons.Default.BarChart, "visits"),
+    NavItem("nav_map", Icons.Default.Explore, "map"),
+    NavItem("nav_profile", Icons.Default.Person, "profile")
 )
 
 data class NavItem(
-    val title: String,
+    val titleKey: String,
     val icon: ImageVector,
     val route: String
 )

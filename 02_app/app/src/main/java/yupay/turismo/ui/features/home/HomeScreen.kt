@@ -214,7 +214,7 @@ fun HomeHeader(businessName: String, selectedService: String, profilePicture: By
             if (profilePicture != null) {
                 AsyncImage(
                     model = profilePicture,
-                    contentDescription = "Foto de perfil",
+                    contentDescription = UiTranslations.getString(context, "home_cd_profile_photo", language),
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
@@ -361,7 +361,7 @@ fun TipCard(entrepreneurTips: String, language: String, onNavigateToTip: () -> U
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = entrepreneurTips.ifEmpty { "Optimiza tus perfiles sociales para atraer más..." },
+                    text = entrepreneurTips.ifEmpty { UiTranslations.getString(context, "home_tip_fallback", language) },
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
@@ -377,7 +377,7 @@ fun TipCard(entrepreneurTips: String, language: String, onNavigateToTip: () -> U
             ) {
                 Icon(
                     imageVector = Icons.Default.PlayArrow,
-                    contentDescription = "Play",
+                    contentDescription = UiTranslations.getString(context, "home_cd_play", language),
                     tint = MaterialTheme.colorScheme.onPrimary
                 )
             }
@@ -402,7 +402,7 @@ fun RecentVisitsCard(visits: List<Visit>, preferredCurrency: String, usdRate: Do
             )
             
             Text(
-                text = "Ver todo",
+                text = UiTranslations.getString(context, "home_see_all", language),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,

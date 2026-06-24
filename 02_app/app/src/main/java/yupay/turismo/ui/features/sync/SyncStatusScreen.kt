@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -22,6 +23,7 @@ import androidx.navigation.NavController
 import kotlinx.coroutines.delay
 import yupay.turismo.sync.SyncViewModel
 import yupay.turismo.ui.components.ConnectionRequiredDialog
+import yupay.turismo.utils.UiTranslations
 import kotlin.random.Random
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -33,8 +35,10 @@ fun SyncStatusScreen(
     deviceName: String,
     ip: String,
     port: Int,
-    sessionId: String
+    sessionId: String,
+    language: String = "Español"
 ) {
+    val context = LocalContext.current
     val isConnected by syncViewModel.isConnected.collectAsState()
     val logs by syncViewModel.logs.collectAsState()
     val counter by syncViewModel.ticks.collectAsState()
@@ -74,10 +78,10 @@ fun SyncStatusScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (role == "SERVER") "Modo Servidor" else "Sincronizando...") },
+                title = { Text(if (role == "SERVER") UiTranslations.getString(context, "sync_server_mode", language) else UiTranslations.getString(context, "sync_syncing_title", language)) },
                 navigationIcon = {
                     IconButton(onClick = { /* Deshabilitado durante sync */ }, enabled = false) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Atrás")
+                        Icon(Icons.Default.ArrowBack, contentDescription = UiTranslations.getString(context, "btn_back", language))
                     }
                 }
             )
@@ -96,7 +100,7 @@ fun SyncStatusScreen(
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Text(
-                    text = if (isConnected) "● CONECTADO" else "● DESCONECTADO",
+                    text = if (isConnected) UiTranslations.getString(context, "sync_badge_connected", language) else UiTranslations.getString(context, "sync_badge_disconnected", language),
                     color = Color.White,
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                     fontSize = 12.sp,
@@ -121,13 +125,13 @@ fun SyncStatusScreen(
                         CircularProgressIndicator(modifier = Modifier.size(48.dp))
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "Sincronizando datos...",
+                            text = UiTranslations.getString(context, "sync_syncing_data", language),
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Medium
                         )
                     } else {
                         Text(
-                            text = "Esperando...",
+                            text = UiTranslations.getString(context, "sync_waiting", language),
                             fontSize = 24.sp,
                             color = Color.Gray
                         )
@@ -139,13 +143,13 @@ fun SyncStatusScreen(
 
             // Metrics
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                MetricItem("Último evento", "#$counter")
-                MetricItem("Latencia", "${latency}ms")
+                MetricItem(UiTranslations.getString(context, "sync_metric_last_event", language), "#$counter")
+                MetricItem(UiTranslations.getString(context, "sync_metric_latency", language), "${latency}ms")
             }
             Spacer(modifier = Modifier.height(16.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                MetricItem("ACKs (Éxito/Total)", "${acks.first} / ${acks.second}")
-                MetricItem("Tasa éxito", "$successRate%")
+                MetricItem(UiTranslations.getString(context, "sync_metric_acks", language), "${acks.first} / ${acks.second}")
+                MetricItem(UiTranslations.getString(context, "sync_metric_success_rate", language), "$successRate%")
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -156,13 +160,13 @@ fun SyncStatusScreen(
                 enabled = isConnected,
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
-                Text("ENVIAR SEÑAL DE PRUEBA (PING)")
+                Text(UiTranslations.getString(context, "sync_send_ping", language))
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                "Registro de eventos",
+                UiTranslations.getString(context, "sync_event_log", language),
                 modifier = Modifier.fillMaxWidth(),
                 style = MaterialTheme.typography.titleSmall
             )
@@ -193,7 +197,7 @@ fun SyncStatusScreen(
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
             ) {
-                Text("DESCONECTAR")
+                Text(UiTranslations.getString(context, "sync_disconnect_btn", language))
             }
         }
     }
@@ -201,7 +205,7 @@ fun SyncStatusScreen(
     if (showDisconnectDialog) {
         AlertDialog(
             onDismissRequest = { showDisconnectDialog = false },
-            title = { Text("¿Desconectar dispositivo?") },
+            title = { Text(UiTranslations.getString(context, "sync_disconnect_confirm_title", language)) },
             confirmButton = {
                 Button(onClick = {
                     showDisconnectDialog = false
@@ -211,19 +215,19 @@ fun SyncStatusScreen(
                         }
                     }
                 }) {
-                    Text("Desconectar")
+                    Text(UiTranslations.getString(context, "sync_disconnect_confirm_btn", language))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDisconnectDialog = false }) {
-                    Text("Cancelar")
+                    Text(UiTranslations.getString(context, "btn_cancel", language))
                 }
             }
         )
     }
 
     if (showConnectionRequiredDialog) {
-        ConnectionRequiredDialog(onDismiss = { showConnectionRequiredDialog = false })
+        ConnectionRequiredDialog(language = language, onDismiss = { showConnectionRequiredDialog = false })
     }
 }
 

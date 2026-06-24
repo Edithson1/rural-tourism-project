@@ -140,6 +140,35 @@ fun MainNavigation(
     val isMainRoute = currentRoute == Routes.MAIN_PAGER || currentRoute in mainRoutes
     val showBottomBar = isMainRoute
 
+    // Deep link de notificaciones: al tocar una notificación, navega a la sección correspondiente.
+    // VISITS/MAP son páginas del pager (scroll); PRODUCT_CATALOG/TIP_DETAIL son rutas (navigate).
+    // Se espera a que la app pase del splash/onboarding (appSettings cargado y ruta "real") para
+    // no saltar antes de tiempo en un arranque en frío desde la notificación.
+    val navTarget by viewModel.navTarget.collectAsState()
+    LaunchedEffect(navTarget, currentRoute, appSettings) {
+        val target = navTarget ?: return@LaunchedEffect
+        if (appSettings == null) return@LaunchedEffect
+        if (currentRoute == null || currentRoute == Routes.SPLASH ||
+            currentRoute == Routes.ONBOARDING || currentRoute == Routes.PROFILE_SETUP
+        ) return@LaunchedEffect
+
+        when (target) {
+            Routes.VISITS, Routes.MAP -> {
+                val index = mainRoutes.indexOf(target).takeIf { it != -1 } ?: 0
+                if (currentRoute != Routes.MAIN_PAGER) {
+                    navController.navigate(Routes.MAIN_PAGER) { popUpTo(0) { inclusive = true } }
+                }
+                isJumpNavigation = true
+                runCatching { mainPagerState.scrollToPage(index) }
+                isJumpNavigation = false
+            }
+            Routes.PRODUCT_CATALOG, Routes.TIP_DETAIL -> {
+                if (currentRoute != target) navController.navigate(target)
+            }
+        }
+        viewModel.consumeNavTarget()
+    }
+
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp && configuration.screenWidthDp > 600
 
@@ -151,6 +180,7 @@ fun MainNavigation(
                 }
                 BottomNavigationBar(
                     currentRoute = mainRoutes[currentPagerIndex],
+                    language = appSettings?.language ?: "Español",
                     onNavigate = { route ->
                         val targetIndex = mainRoutes.indexOf(route)
                         if (currentRoute == Routes.MAIN_PAGER) {
@@ -324,7 +354,7 @@ fun MainNavigation(
                     }
                     composable(Routes.MAIN_PAGER) {
                         if (appSettings == null) {
-                            GlobalLoadingScreen("Cargando ajustes...")
+                            GlobalLoadingScreen(UiTranslations.getString(context, "loading_settings", appSettings?.language ?: "Español"))
                         } else {
                             MainPagerScreen(
                                 pagerState = mainPagerState,
@@ -376,7 +406,9 @@ fun MainNavigation(
                         )
                     }
                     composable(Routes.SHOW_QR) {
-                        ShowQrScreen(navController = navController, syncViewModel = syncViewModel)
+                        val settings by viewModel.appSettings.collectAsState()
+                        val language = settings?.language ?: "Español"
+                        ShowQrScreen(navController = navController, syncViewModel = syncViewModel, language = language)
                     }
                     composable(Routes.SCAN_QR) {
                         val settings by viewModel.appSettings.collectAsState()
@@ -398,6 +430,8 @@ fun MainNavigation(
                             navArgument("sessionId") { defaultValue = "" }
                         )
                     ) { backStackEntry ->
+                        val settings by viewModel.appSettings.collectAsState()
+                        val language = settings?.language ?: "Español"
                         SyncStatusScreen(
                             navController = navController,
                             syncViewModel = syncViewModel,
@@ -405,7 +439,8 @@ fun MainNavigation(
                             deviceName = backStackEntry.arguments?.getString("deviceName") ?: "",
                             ip = backStackEntry.arguments?.getString("ip") ?: "",
                             port = backStackEntry.arguments?.getInt("port") ?: 0,
-                            sessionId = backStackEntry.arguments?.getString("sessionId") ?: ""
+                            sessionId = backStackEntry.arguments?.getString("sessionId") ?: "",
+                            language = language
                         )
                     }
                     composable(Routes.PROFILE_LANGUAGE) {
@@ -542,7 +577,7 @@ fun MainNavigation(
 
                 // Show Global Loading if appSettings are being loaded or if we are in a transition state
                 if (appSettings == null && currentRoute != Routes.SPLASH && currentRoute != Routes.ONBOARDING) {
-                    GlobalLoadingScreen(message = "Preparando recursos...")
+                    GlobalLoadingScreen(message = UiTranslations.getString(context, "loading_resources", appSettings?.language ?: "Español"))
                 }
             }
         }

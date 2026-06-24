@@ -109,7 +109,7 @@ fun EditProfileScreen(
                     }) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = UiTranslations.getString(context, "btn_back", language),
                             tint = MaterialTheme.colorScheme.onBackground
                         )
                     }
@@ -423,7 +423,7 @@ fun EditProfileScreen(
                 text = {
                     Column {
                         ListItem(
-                            headlineContent = { Text("Galería") },
+                            headlineContent = { Text(UiTranslations.getString(context, "edit_profile_gallery", language)) },
                             leadingContent = { Icon(Icons.Default.PhotoLibrary, contentDescription = null) },
                             modifier = Modifier.clickable {
                                 galleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
@@ -592,7 +592,7 @@ fun ImageEditorDialog(
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "Usa dos dedos para mover y ampliar la foto",
+                    text = UiTranslations.getString(context, "edit_profile_crop_hint", language),
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center

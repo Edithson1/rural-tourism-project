@@ -54,7 +54,7 @@ fun VisitDetailScreen(
                 title = { Text(UiTranslations.getString(context, "visits_detail_title", language)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = UiTranslations.getString(context, "btn_back", language))
                     }
                 }
             )

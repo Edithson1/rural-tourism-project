@@ -129,7 +129,7 @@ fun FullscreenMapScreen(
                 modifier = Modifier
                     .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f), CircleShape)
             ) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = MaterialTheme.colorScheme.primary)
+                Icon(Icons.Default.ArrowBack, contentDescription = UiTranslations.getString(context, "map_cd_back", language), tint = MaterialTheme.colorScheme.primary)
             }
 
             Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -141,7 +141,7 @@ fun FullscreenMapScreen(
                 ) {
                     Icon(
                         imageVector = if (viewMode == MapViewMode.POINTS) Icons.Default.BubbleChart else Icons.Default.LocationOn,
-                        contentDescription = "Modo",
+                        contentDescription = UiTranslations.getString(context, "map_cd_mode", language),
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
@@ -189,7 +189,8 @@ fun FullscreenMapScreen(
                     onFastForward = { currentTime = (currentTime + 10000L).coerceAtMost(totalDuration) },
                     onRewind = { currentTime = (currentTime - 10000L).coerceAtLeast(0L) },
                     compact = true,
-                    modifier = Modifier.padding(8.dp)
+                    modifier = Modifier.padding(8.dp),
+                    language = language
                 )
             }
         }

@@ -13,6 +13,7 @@ fun PrivacyPolicyScreen(
     InfoTextScreen(
         title = UiTranslations.getString(context, "profile_privacy", language),
         content = UiTranslations.getString(context, "privacy_content", language),
+        language = language,
         onBack = onBack
     )
 }

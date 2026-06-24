@@ -65,7 +65,7 @@ fun DashboardScreen(
                 title = { Text(UiTranslations.getString(context, "dashboard_title", language), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = null)
+                        Icon(Icons.Default.ArrowBack, contentDescription = UiTranslations.getString(context, "dashboard_cd_back", language))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

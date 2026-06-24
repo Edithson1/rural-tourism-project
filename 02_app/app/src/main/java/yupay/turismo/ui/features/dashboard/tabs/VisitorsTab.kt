@@ -40,12 +40,12 @@ internal fun VisitorsTab(
                     FilterChip(
                         selected = !showAll,
                         onClick = { showAll = false },
-                        label = { Text("Top 5", fontSize = 12.sp) }
+                        label = { Text(UiTranslations.getString(context, "insights_top_5", language), fontSize = 12.sp) }
                     )
                     FilterChip(
                         selected = showAll,
                         onClick = { showAll = true },
-                        label = { Text("Top 10", fontSize = 12.sp) }
+                        label = { Text(UiTranslations.getString(context, "insights_top_10", language), fontSize = 12.sp) }
                     )
                 }
                 VicoColumnChart(

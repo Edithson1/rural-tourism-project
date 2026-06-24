@@ -16,6 +16,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -25,6 +26,7 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import yupay.turismo.ui.MainViewModel
 import yupay.turismo.ui.AuthEvent
+import yupay.turismo.utils.UiTranslations
 
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.ui.text.TextRange
@@ -40,6 +42,9 @@ fun VerifyOtpScreen(
     onSuccess: () -> Unit
 ) {
     val authState by viewModel.authState.collectAsState()
+    val settings by viewModel.appSettings.collectAsState()
+    val language = settings?.language ?: "Español"
+    val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     val clipboardManager = LocalClipboardManager.current
     val otpLength = 8
@@ -74,10 +79,10 @@ fun VerifyOtpScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Verificación", fontWeight = FontWeight.Bold) },
+                title = { Text(UiTranslations.getString(context, "otp_title", language), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                        Icon(Icons.Default.ArrowBack, contentDescription = UiTranslations.getString(context, "btn_back", language))
                     }
                 }
             )
@@ -91,7 +96,7 @@ fun VerifyOtpScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                "Ingresa el código de $otpLength dígitos enviado a",
+                UiTranslations.getString(context, "otp_subtitle", language, otpLength),
                 fontSize = 16.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -168,7 +173,7 @@ fun VerifyOtpScreen(
             TextButton(onClick = { handlePaste() }) {
                 Icon(Icons.Default.ContentPaste, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Pegar código del portapapeles")
+                Text(UiTranslations.getString(context, "otp_paste_clipboard", language))
             }
 
             if (authState.error != null) {
@@ -201,7 +206,7 @@ fun VerifyOtpScreen(
                 if (authState.loading) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
                 } else {
-                    Text("Verificar Código", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text(UiTranslations.getString(context, "otp_btn_verify", language), fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
             }
 
@@ -214,7 +219,7 @@ fun VerifyOtpScreen(
                 },
                 enabled = !authState.loading
             ) {
-                Text("¿No recibiste el código? Reenviar")
+                Text(UiTranslations.getString(context, "otp_resend", language))
             }
         }
     }

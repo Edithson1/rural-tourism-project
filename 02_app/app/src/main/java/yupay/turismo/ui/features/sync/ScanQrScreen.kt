@@ -137,19 +137,19 @@ fun ScanQrScreen(navController: NavController, language: String = "Español") {
                     scannedData = null
                     navController.popBackStack()
                 },
-                title = { Text("Dispositivo encontrado") },
+                title = { Text(UiTranslations.getString(context, "scan_device_found_title", language)) },
                 text = {
                     Column {
-                        Text("Nombre: ${qrData.deviceName}")
-                        Text("IP: ${qrData.ip}:${qrData.port}")
-                        Text("Sesión: ${qrData.sessionId.take(8)}...")
+                        Text(UiTranslations.getString(context, "scan_label_name", language, qrData.deviceName))
+                        Text(UiTranslations.getString(context, "scan_label_ip", language, qrData.ip, qrData.port))
+                        Text(UiTranslations.getString(context, "scan_label_session", language, qrData.sessionId.take(8)))
                     }
                 },
                 confirmButton = {
                     Button(onClick = {
                         navController.navigate("sync_status?role=CLIENT&deviceName=${qrData.deviceName}&ip=${qrData.ip}&port=${qrData.port}&sessionId=${qrData.sessionId}")
                     }) {
-                        Text("Conectar")
+                        Text(UiTranslations.getString(context, "scan_connect_btn", language))
                     }
                 },
                 dismissButton = {
@@ -157,7 +157,7 @@ fun ScanQrScreen(navController: NavController, language: String = "Español") {
                         scannedData = null
                         navController.popBackStack()
                     }) {
-                        Text("Cancelar")
+                        Text(UiTranslations.getString(context, "btn_cancel", language))
                     }
                 }
             )

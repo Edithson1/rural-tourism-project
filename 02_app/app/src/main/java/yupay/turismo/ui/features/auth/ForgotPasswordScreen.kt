@@ -12,12 +12,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import yupay.turismo.ui.MainViewModel
 import yupay.turismo.ui.AuthEvent
+import yupay.turismo.utils.UiTranslations
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,6 +29,9 @@ fun ForgotPasswordScreen(
     onCodeSent: (String) -> Unit
 ) {
     val authState by viewModel.authState.collectAsState()
+    val settings by viewModel.appSettings.collectAsState()
+    val language = settings?.language ?: "Español"
+    val context = LocalContext.current
     var email by remember { mutableStateOf("") }
 
     LaunchedEffect(authState.event) {
@@ -39,10 +44,10 @@ fun ForgotPasswordScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Recuperar Cuenta", fontWeight = FontWeight.Bold) },
+                title = { Text(UiTranslations.getString(context, "forgot_title", language), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                        Icon(Icons.Default.ArrowBack, contentDescription = UiTranslations.getString(context, "btn_back", language))
                     }
                 }
             )
@@ -57,7 +62,7 @@ fun ForgotPasswordScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                "Ingresa tu correo electrónico para recibir un código de recuperación",
+                UiTranslations.getString(context, "forgot_subtitle", language),
                 fontSize = 16.sp,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -68,7 +73,7 @@ fun ForgotPasswordScreen(
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
-                label = { Text("Correo electrónico") },
+                label = { Text(UiTranslations.getString(context, "auth_email_label", language)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
@@ -95,7 +100,7 @@ fun ForgotPasswordScreen(
                 if (authState.loading) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
                 } else {
-                    Text("Enviar Código", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text(UiTranslations.getString(context, "forgot_btn_send_code", language), fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }

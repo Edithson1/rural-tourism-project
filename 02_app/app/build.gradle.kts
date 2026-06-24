@@ -62,6 +62,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
+    // ProcessLifecycleOwner: detecta si la app está en primer/segundo plano (notificaciones).
+    implementation("androidx.lifecycle:lifecycle-process:2.7.0")
 
     // Room
     implementation(libs.androidx.room.runtime)

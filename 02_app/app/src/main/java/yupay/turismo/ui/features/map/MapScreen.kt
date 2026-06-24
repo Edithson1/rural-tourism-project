@@ -134,7 +134,7 @@ fun MapScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Fullscreen,
-                                    contentDescription = "Expandir",
+                                    contentDescription = UiTranslations.getString(context, "map_cd_expand", language),
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                             }
@@ -149,7 +149,7 @@ fun MapScreen(
                             ) {
                                 Icon(
                                     imageVector = if (viewMode == MapViewMode.POINTS) Icons.Default.BubbleChart else Icons.Default.LocationOn,
-                                    contentDescription = "Modo",
+                                    contentDescription = UiTranslations.getString(context, "map_cd_mode", language),
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                             }
@@ -209,7 +209,8 @@ fun MapScreen(
                                 onSeek = { fraction -> currentTime = (totalDuration * fraction).toLong() },
                                 onFastForward = { currentTime = (currentTime + 10000L).coerceAtMost(totalDuration) },
                                 onRewind = { currentTime = (currentTime - 10000L).coerceAtLeast(0L) },
-                                compact = true
+                                compact = true,
+                                language = language
                             )
                         }
                     }
@@ -275,7 +276,7 @@ fun MapScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Fullscreen,
-                                    contentDescription = "Expandir",
+                                    contentDescription = UiTranslations.getString(context, "map_cd_expand", language),
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                             }
@@ -290,7 +291,7 @@ fun MapScreen(
                             ) {
                                 Icon(
                                     imageVector = if (viewMode == MapViewMode.POINTS) Icons.Default.BubbleChart else Icons.Default.LocationOn,
-                                    contentDescription = "Modo",
+                                    contentDescription = UiTranslations.getString(context, "map_cd_mode", language),
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                             }
@@ -342,7 +343,8 @@ fun MapScreen(
                             onSeek = { fraction -> currentTime = (totalDuration * fraction).toLong() },
                             onFastForward = { currentTime = (currentTime + 10000L).coerceAtMost(totalDuration) },
                             onRewind = { currentTime = (currentTime - 10000L).coerceAtLeast(0L) },
-                            compact = false
+                            compact = false,
+                            language = language
                         )
                     }
                 }

@@ -8,8 +8,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import yupay.turismo.utils.UiTranslations
 
 @Composable
 fun AudioPlayerUI(
@@ -21,8 +23,10 @@ fun AudioPlayerUI(
     onFastForward: () -> Unit,
     onRewind: () -> Unit,
     modifier: Modifier = Modifier,
-    compact: Boolean = false
+    compact: Boolean = false,
+    language: String = "Español"
 ) {
+    val context = LocalContext.current
     Column(
         modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -49,7 +53,7 @@ fun AudioPlayerUI(
             modifier = Modifier.fillMaxWidth()
         ) {
             IconButton(onClick = onRewind) {
-                Icon(Icons.Default.Replay10, contentDescription = "Retroceder 10s")
+                Icon(Icons.Default.Replay10, contentDescription = UiTranslations.getString(context, "audio_cd_rewind", language))
             }
             
             FloatingActionButton(
@@ -60,12 +64,12 @@ fun AudioPlayerUI(
             ) {
                 Icon(
                     imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                    contentDescription = if (isPlaying) "Pausar" else "Reproducir"
+                    contentDescription = UiTranslations.getString(context, if (isPlaying) "audio_cd_pause" else "audio_cd_play", language)
                 )
             }
 
             IconButton(onClick = onFastForward) {
-                Icon(Icons.Default.Forward10, contentDescription = "Adelantar 10s")
+                Icon(Icons.Default.Forward10, contentDescription = UiTranslations.getString(context, "audio_cd_forward", language))
             }
         }
         

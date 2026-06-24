@@ -5,12 +5,15 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import yupay.turismo.data.local.AppDatabase
+import yupay.turismo.data.prefs.DevicePreferences
 import yupay.turismo.data.remote.HttpModule
 import yupay.turismo.data.remote.YupayApiService
 import yupay.turismo.data.repository.AuthRepository
 import yupay.turismo.data.repository.CloudSyncRepository
 import yupay.turismo.data.session.SessionManager
 import yupay.turismo.data.sync.CloudSyncEngine
+import yupay.turismo.notifications.SyncEventBus
+import yupay.turismo.sync.P2pSyncController
 import yupay.turismo.utils.NetworkMonitor
 
 /**
@@ -39,6 +42,12 @@ object ServiceLocator {
         private set
     lateinit var networkMonitor: NetworkMonitor
         private set
+    lateinit var devicePrefs: DevicePreferences
+        private set
+    lateinit var syncEventBus: SyncEventBus
+        private set
+    lateinit var p2pController: P2pSyncController
+        private set
 
     fun init(context: Context) {
         if (initialized) return
@@ -49,6 +58,8 @@ object ServiceLocator {
 
             sessionManager = SessionManager(app)
             apiService = HttpModule.create(sessionManager)
+            devicePrefs = DevicePreferences(app)
+            syncEventBus = SyncEventBus()
             authRepository = AuthRepository(apiService, sessionManager, db.appSettingsDao())
             cloudSyncRepository = CloudSyncRepository(
                 api = apiService,
@@ -56,10 +67,12 @@ object ServiceLocator {
                 appSettingsDao = db.appSettingsDao(),
                 productDao = db.productDao(),
                 visitDao = db.visitDao(),
-                pendingOpDao = db.pendingOpDao()
+                pendingOpDao = db.pendingOpDao(),
+                syncEventBus = syncEventBus
             )
             networkMonitor = NetworkMonitor(app)
             cloudSyncEngine = CloudSyncEngine(cloudSyncRepository, sessionManager, networkMonitor, apiService)
+            p2pController = P2pSyncController(app)
 
             initialized = true
         }
@@ -72,6 +85,7 @@ object ServiceLocator {
             if (started) return
             networkMonitor.start()
             cloudSyncEngine.start(appScope)
+            p2pController.start()
             started = true
         }
     }

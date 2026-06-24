@@ -382,8 +382,8 @@ fun ProductItem(
                 }
                 IconButton(onClick = { onDelete(product) }) {
                     Icon(
-                        Icons.Default.Delete, 
-                        contentDescription = "Delete", 
+                        Icons.Default.Delete,
+                        contentDescription = UiTranslations.getString(context, "catalog_cd_delete", language),
                         tint = MaterialTheme.colorScheme.error
                     )
                 }

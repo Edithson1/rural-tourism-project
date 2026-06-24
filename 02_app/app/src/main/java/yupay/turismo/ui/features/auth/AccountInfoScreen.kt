@@ -11,11 +11,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import yupay.turismo.ui.MainViewModel
+import yupay.turismo.utils.UiTranslations
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,16 +27,18 @@ fun AccountInfoScreen(
     onChangePassword: () -> Unit
 ) {
     val settings by viewModel.appSettings.collectAsState()
+    val language = settings?.language ?: "Español"
+    val context = LocalContext.current
     val session by viewModel.cloudSession.collectAsState()
-    val email = session?.email?.ifBlank { null } ?: settings?.accountEmail ?: "No disponible"
+    val email = session?.email?.ifBlank { null } ?: settings?.accountEmail ?: UiTranslations.getString(context, "account_email_unavailable", language)
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Información de Cuenta", fontWeight = FontWeight.Bold) },
+                title = { Text(UiTranslations.getString(context, "account_title", language), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                        Icon(Icons.Default.ArrowBack, contentDescription = UiTranslations.getString(context, "btn_back", language))
                     }
                 }
             )
@@ -58,7 +62,7 @@ fun AccountInfoScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                "Tu cuenta está vinculada y sincronizada",
+                UiTranslations.getString(context, "account_linked_synced", language),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
@@ -71,7 +75,7 @@ fun AccountInfoScreen(
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Correo electrónico", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                    Text(UiTranslations.getString(context, "auth_email_label", language), fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
                     Text(email, fontSize = 16.sp, fontWeight = FontWeight.Medium)
                 }
             }
@@ -94,9 +98,9 @@ fun AccountInfoScreen(
                     Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     Spacer(modifier = Modifier.width(16.dp))
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Establecer / cambiar contraseña", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                        Text(UiTranslations.getString(context, "account_set_change_password", language), fontSize = 16.sp, fontWeight = FontWeight.Medium)
                         Text(
-                            "Si entraste con Google, crea una contraseña para también usar tu correo",
+                            UiTranslations.getString(context, "account_set_change_password_desc", language),
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -108,7 +112,7 @@ fun AccountInfoScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             Text(
-                "Tus datos se guardan automáticamente en nuestros servidores para que puedas acceder desde cualquier dispositivo.",
+                UiTranslations.getString(context, "account_data_saved_info", language),
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant

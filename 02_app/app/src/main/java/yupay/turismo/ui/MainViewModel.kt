@@ -56,6 +56,47 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val authState: StateFlow<AuthUiState> = _authState.asStateFlow()
     private var recoveryToken: String? = null
 
+    // ───────── Deep link de notificaciones ─────────
+    private val _navTarget = MutableStateFlow<String?>(null)
+    /** Ruta a la que navegar cuando la app se abre/retoma desde una notificación. */
+    val navTarget: StateFlow<String?> = _navTarget.asStateFlow()
+
+    /** Lo fija [yupay.turismo.MainActivity] al leer el extra del Intent de la notificación. */
+    fun setNavTarget(target: String?) { _navTarget.value = target }
+
+    /** Lo llama la navegación tras consumir el destino, para no repetir el salto. */
+    fun consumeNavTarget() { _navTarget.value = null }
+
+    // ───────── Notificaciones (toggle por-dispositivo) ─────────
+    private val devicePrefs by lazy { ServiceLocator.devicePrefs }
+
+    /** ¿Notificaciones activadas? Persistido en DataStore local (no se sincroniza). */
+    val notificationsEnabled: StateFlow<Boolean> by lazy {
+        devicePrefs.notificationsEnabledFlow.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = false
+        )
+    }
+
+    /**
+     * Activa/desactiva las notificaciones: persiste la preferencia y arranca/detiene el
+     * Foreground Service de sincronización. El permiso runtime (Android 13+) se pide en la UI
+     * ANTES de llamar aquí con `enabled = true`.
+     */
+    fun setNotificationsEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            devicePrefs.setNotificationsEnabled(enabled)
+            val app = getApplication<Application>()
+            if (enabled) {
+                yupay.turismo.service.SyncForegroundService.start(app)
+            } else {
+                yupay.turismo.service.SyncForegroundService.stop(app)
+                yupay.turismo.notifications.NotificationHelper.cancelEventNotifications(app)
+            }
+        }
+    }
+
     init {
         // Idempotente: garantiza los singletons aunque YupayApp no se haya ejecutado aún.
         ServiceLocator.init(application)

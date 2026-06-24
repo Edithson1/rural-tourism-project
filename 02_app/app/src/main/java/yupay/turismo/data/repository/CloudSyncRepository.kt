@@ -25,6 +25,8 @@ import yupay.turismo.data.remote.toProfileRequestDto
 import yupay.turismo.data.remote.toRequestDto
 import yupay.turismo.data.remote.yupayJson
 import yupay.turismo.data.session.SessionManager
+import yupay.turismo.notifications.SyncEvent
+import yupay.turismo.notifications.SyncEventBus
 
 /** Resultado de una operación de sincronización. */
 sealed interface SyncOutcome {
@@ -48,7 +50,8 @@ class CloudSyncRepository(
     private val appSettingsDao: AppSettingsDao,
     private val productDao: ProductDao,
     private val visitDao: VisitDao,
-    private val pendingOpDao: PendingOpDao
+    private val pendingOpDao: PendingOpDao,
+    private val syncEventBus: SyncEventBus
 ) {
     val pendingCountFlow = pendingOpDao.countFlow()
 
@@ -344,13 +347,27 @@ class CloudSyncRepository(
         }
         merged = applyContentToSettings(merged, pull.content, settings.language)
 
+        // Contadores de cambios remotos REALES, sólo para emitir notificaciones en sync incremental
+        // (replace==false). En el primer enlace (replace==true) se reemplaza todo y no se notifica,
+        // para no inundar al usuario con la carga inicial.
+        var newVisits = 0
+        var changedProducts = 0
+
         if (replace) {
             productDao.replaceProducts(pull.products.map { it.toEntity() })
         } else {
             pull.products.forEach { dto ->
                 val existing = productDao.getByRemoteId(dto.id)
-                if (existing != null) productDao.updateProduct(dto.toEntity(localId = existing.id))
-                else productDao.insertProduct(dto.toEntity())
+                if (existing != null) {
+                    val entity = dto.toEntity(localId = existing.id)
+                    productDao.updateProduct(entity)
+                    // Sólo cuenta si el servidor lo modificó después de lo que ya teníamos (el solape
+                    // del watermark puede re-traer filas sin cambios: no deben re-notificar).
+                    if (entity.lastModified > existing.lastModified) changedProducts++
+                } else {
+                    productDao.insertProduct(dto.toEntity())
+                    changedProducts++
+                }
             }
         }
 
@@ -360,9 +377,20 @@ class CloudSyncRepository(
             pull.visits.forEach { dto ->
                 val ms = parseIsoToMillis(dto.registrationDate)
                 val existing = visitDao.getByRemoteId(dto.id) ?: ms?.let { visitDao.getByRegistrationDate(it) }
-                if (existing != null) visitDao.updateVisit(dto.toEntity(localId = existing.id))
-                else visitDao.insertVisit(dto.toEntity())
+                if (existing != null) {
+                    visitDao.updateVisit(dto.toEntity(localId = existing.id))
+                } else {
+                    visitDao.insertVisit(dto.toEntity())
+                    newVisits++
+                }
             }
+        }
+
+        if (!replace) {
+            if (newVisits > 0) syncEventBus.emit(SyncEvent.NewVisits(newVisits))
+            if (changedProducts > 0) syncEventBus.emit(SyncEvent.ProductsChanged(changedProducts))
+            if (merged.entrepreneurTips != settings.entrepreneurTips) syncEventBus.emit(SyncEvent.TipsChanged)
+            if (merged.mapSummary != settings.mapSummary) syncEventBus.emit(SyncEvent.MapChanged)
         }
         return merged
     }

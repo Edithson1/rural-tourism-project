@@ -22,15 +22,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavController
 import com.google.zxing.BarcodeFormat
 import com.journeyapps.barcodescanner.BarcodeEncoder
 import yupay.turismo.sync.SyncViewModel
+import yupay.turismo.utils.UiTranslations
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ShowQrScreen(navController: NavController, syncViewModel: SyncViewModel) {
+fun ShowQrScreen(navController: NavController, syncViewModel: SyncViewModel, language: String = "Español") {
+    val context = LocalContext.current
     val isConnected by syncViewModel.isConnected.collectAsState()
     val localIp = syncViewModel.getLocalIpAddress()
     val port = 51234
@@ -72,10 +73,10 @@ fun ShowQrScreen(navController: NavController, syncViewModel: SyncViewModel) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Vincular dispositivo") },
+                title = { Text(UiTranslations.getString(context, "qr_link_device_title", language)) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Atrás")
+                        Icon(Icons.Default.ArrowBack, contentDescription = UiTranslations.getString(context, "btn_back", language))
                     }
                 }
             )
@@ -90,7 +91,7 @@ fun ShowQrScreen(navController: NavController, syncViewModel: SyncViewModel) {
             verticalArrangement = Arrangement.Center
         ) {
             Text(
-                text = "Escanea este código desde el otro dispositivo",
+                text = UiTranslations.getString(context, "qr_scan_instruction", language),
                 fontSize = 18.sp,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(bottom = 32.dp)
@@ -109,7 +110,7 @@ fun ShowQrScreen(navController: NavController, syncViewModel: SyncViewModel) {
                 ) {
                     Image(
                         bitmap = bitmap.asImageBitmap(),
-                        contentDescription = "QR Code",
+                        contentDescription = UiTranslations.getString(context, "qr_cd_code", language),
                         modifier = Modifier
                             .size(260.dp)
                             .clip(RoundedCornerShape(8.dp))
@@ -128,18 +129,18 @@ fun ShowQrScreen(navController: NavController, syncViewModel: SyncViewModel) {
                     strokeWidth = 2.dp
                 )
                 Spacer(modifier = Modifier.width(12.dp))
-                Text("Esperando conexión...", fontSize = 16.sp)
+                Text(UiTranslations.getString(context, "qr_waiting_connection", language), fontSize = 16.sp)
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
             SuggestionChip(
                 onClick = { },
-                label = { Text("IP: $localIp") }
+                label = { Text(UiTranslations.getString(context, "qr_label_ip", language, localIp)) }
             )
             SuggestionChip(
                 onClick = { },
-                label = { Text("Sesión: ${sessionId.take(8)}") }
+                label = { Text(UiTranslations.getString(context, "qr_label_session", language, sessionId.take(8))) }
             )
         }
     }

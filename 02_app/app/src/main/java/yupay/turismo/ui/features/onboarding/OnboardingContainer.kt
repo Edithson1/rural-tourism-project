@@ -61,7 +61,7 @@ fun OnboardingContainer(
                 IconButton(onClick = { showMenu = true }) {
                     Icon(
                         imageVector = Icons.Default.MoreVert,
-                        contentDescription = "Options",
+                        contentDescription = UiTranslations.getString(context, "onboarding_cd_options", selectedLanguage),
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
