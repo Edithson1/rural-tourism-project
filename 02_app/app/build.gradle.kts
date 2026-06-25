@@ -30,11 +30,24 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
+            // Firmar el release con el keystore DEBUG estándar (~/.android/debug.keystore).
+            // Mantiene el MISMO SHA-1 que los builds debug, que es el registrado en Google
+            // Cloud, así el inicio de sesión con Google sigue funcionando. Sin esto Gradle
+            // genera "app-release-unsigned.apk" (no instalable) y el pipeline no lo encuentra.
+            signingConfig = signingConfigs.getByName("debug")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
         }
+    }
+    lint {
+        // El "lint vital" del build release crea .jar en intermediates/lint-cache que un
+        // daemon de Gradle deja con candado en Windows, haciendo fallar el siguiente
+        // `:app:clean` ("Unable to delete directory ...\app\build"). Como esto es un build
+        // de DISTRIBUCIÓN de una app ya probada, se omite el lint del release (sigue
+        // corriendo en debug y en el IDE). Esto elimina la causa del bloqueo y acelera el build.
+        checkReleaseBuilds = false
     }
     compileOptions {
         // Habilita java.time (Instant/OffsetDateTime) en minSdk 24 vía desugaring.
