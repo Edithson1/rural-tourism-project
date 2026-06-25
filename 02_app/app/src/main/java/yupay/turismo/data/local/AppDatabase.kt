@@ -7,8 +7,8 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 
 @Database(
-    entities = [AppSettings::class, Visit::class, Product::class, PendingOp::class],
-    version = 11
+    entities = [AppSettings::class, Visit::class, Product::class, PendingOp::class, TtsPreference::class],
+    version = 12
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
@@ -16,6 +16,9 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun visitDao(): VisitDao
     abstract fun productDao(): ProductDao
     abstract fun pendingOpDao(): PendingOpDao
+    // tts_preferences: modelo de voz activo por idioma (v12). Con fallbackToDestructiveMigration
+    // no hace falta migración manual (las tablas se recrean si cambia el esquema).
+    abstract fun ttsPreferenceDao(): TtsPreferenceDao
 
     companion object {
         @Volatile

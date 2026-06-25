@@ -20,7 +20,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.delay
+import androidx.lifecycle.viewmodel.compose.viewModel
+import yupay.turismo.tts.SupportedLanguage
+import yupay.turismo.tts.audio.AudioPlaybackViewModel
 import yupay.turismo.ui.MainViewModel
 import yupay.turismo.ui.components.AudioPlayerUI
 import yupay.turismo.ui.components.MapSubtitles
@@ -29,32 +31,37 @@ import yupay.turismo.utils.UiTranslations
 @Composable
 fun MapScreen(
     viewModel: MainViewModel,
-    onNavigate: (String) -> Unit
+    onNavigate: (String) -> Unit,
+    isAudioActive: Boolean = true
 ) {
     val visits by viewModel.allVisits.collectAsState()
     val settings by viewModel.appSettings.collectAsState()
     val language = settings?.language ?: "Español"
     val context = LocalContext.current
-    
+
     val currentSummary = settings?.let { it.mapSummary[it.language] ?: it.mapSummary["Español"] ?: "" } ?: ""
 
-    // Estados para la simulación de audio
-    var currentTime by remember { mutableLongStateOf(0L) }
-    var isPlaying by remember { mutableStateOf(false) }
+    // Reproductor de audio real (TTS cacheado). Owner "map" compartido con FullscreenMapScreen
+    // (misma página): el audio es continuo al expandir/contraer el mapa.
     var viewMode by remember { mutableStateOf(MapViewMode.POINTS) }
-    val readingTimePerLine = 4000L
-    val lines = remember(currentSummary) { currentSummary.split("\n", ". ").filter { it.isNotBlank() } }
-    val totalDuration = remember(lines) { (lines.size * readingTimePerLine).coerceAtLeast(1000L) }
+    val ttsLanguage = SupportedLanguage.fromSettings(settings?.language)
+    val voiceSpeed = settings?.voiceSpeed ?: 1.0f
+    val owner = "map"
+    val audioVm: AudioPlaybackViewModel = viewModel()
+    val audio by audioVm.state.collectAsState()
+    val isOwner = audio.ownerKey == owner
+    val currentTime = if (isOwner) audio.positionMs else 0L
+    val totalDuration = if (isOwner) audio.durationMs else 0L
+    val isPlaying = isOwner && audio.isPlaying
+    val isPreparing = !isOwner || audio.isPreparing
+    val audioReady = isOwner && audio.ready
+    val hasVoice = !isOwner || audio.hasVoice
 
-    LaunchedEffect(isPlaying) {
-        if (isPlaying) {
-            while (currentTime < totalDuration) {
-                delay(100)
-                currentTime += 100
-            }
-            isPlaying = false
-        }
-    }
+    LaunchedEffect(currentSummary, language) { audioVm.prepare(owner, currentSummary, ttsLanguage) }
+    LaunchedEffect(voiceSpeed) { audioVm.setSpeed(voiceSpeed) }
+    // Alcance por página: al dejar de ser la página visible del pager, se pausa.
+    LaunchedEffect(isAudioActive) { if (!isAudioActive) audioVm.pauseIfOwner(owner) }
+    DisposableEffect(owner) { onDispose { audioVm.releaseIfOwner(owner) } }
 
     val productCounts = remember(visits) {
         val counts = mutableMapOf<String, Int>()
@@ -118,9 +125,9 @@ fun MapScreen(
 
                             if (isPlaying) {
                                 MapSubtitles(
-                                    text = lines.joinToString("\n"),
+                                    text = currentSummary,
                                     currentTime = currentTime,
-                                    readingTimePerLine = readingTimePerLine,
+                                    durationMs = totalDuration,
                                     modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp)
                                 )
                             }
@@ -201,17 +208,22 @@ fun MapScreen(
                                 modifier = Modifier.padding(bottom = 8.dp)
                             )
                             
-                            AudioPlayerUI(
-                                currentTime = currentTime,
-                                totalDuration = totalDuration,
-                                isPlaying = isPlaying,
-                                onPlayPauseClick = { isPlaying = !isPlaying },
-                                onSeek = { fraction -> currentTime = (totalDuration * fraction).toLong() },
-                                onFastForward = { currentTime = (currentTime + 10000L).coerceAtMost(totalDuration) },
-                                onRewind = { currentTime = (currentTime - 10000L).coerceAtLeast(0L) },
-                                compact = true,
-                                language = language
-                            )
+                            if (currentSummary.isNotBlank()) {
+                                AudioPlayerUI(
+                                    currentTime = currentTime,
+                                    totalDuration = totalDuration,
+                                    isPlaying = isPlaying,
+                                    onPlayPauseClick = { audioVm.togglePlayPause() },
+                                    onSeek = { fraction -> audioVm.seekToFraction(fraction) },
+                                    onFastForward = { audioVm.forward10() },
+                                    onRewind = { audioVm.rewind10() },
+                                    compact = true,
+                                    language = language,
+                                    isPreparing = isPreparing,
+                                    ready = audioReady,
+                                    hasVoice = hasVoice
+                                )
+                            }
                         }
                     }
                 }
@@ -260,9 +272,9 @@ fun MapScreen(
 
                             if (isPlaying) {
                                 MapSubtitles(
-                                    text = lines.joinToString("\n"),
+                                    text = currentSummary,
                                     currentTime = currentTime,
-                                    readingTimePerLine = readingTimePerLine,
+                                    durationMs = totalDuration,
                                     modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp)
                                 )
                             }
@@ -335,17 +347,22 @@ fun MapScreen(
                             modifier = Modifier.padding(bottom = 12.dp)
                         )
                         
-                        AudioPlayerUI(
-                            currentTime = currentTime,
-                            totalDuration = totalDuration,
-                            isPlaying = isPlaying,
-                            onPlayPauseClick = { isPlaying = !isPlaying },
-                            onSeek = { fraction -> currentTime = (totalDuration * fraction).toLong() },
-                            onFastForward = { currentTime = (currentTime + 10000L).coerceAtMost(totalDuration) },
-                            onRewind = { currentTime = (currentTime - 10000L).coerceAtLeast(0L) },
-                            compact = false,
-                            language = language
-                        )
+                        if (currentSummary.isNotBlank()) {
+                            AudioPlayerUI(
+                                currentTime = currentTime,
+                                totalDuration = totalDuration,
+                                isPlaying = isPlaying,
+                                onPlayPauseClick = { audioVm.togglePlayPause() },
+                                onSeek = { fraction -> audioVm.seekToFraction(fraction) },
+                                onFastForward = { audioVm.forward10() },
+                                onRewind = { audioVm.rewind10() },
+                                compact = false,
+                                language = language,
+                                isPreparing = isPreparing,
+                                ready = audioReady,
+                                hasVoice = hasVoice
+                            )
+                        }
                     }
                 }
             }

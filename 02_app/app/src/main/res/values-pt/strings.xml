@@ -386,4 +386,32 @@
     <string name="insights_msg_times">Seu horário de pico é %1$s.\nSeu dia mais ativo é %2$s.</string>
     <!-- Perfil: indicador curto de conta vinculada -->
     <string name="profile_account_connected">Conectado</string>
+
+    <!-- Voz e áudio (TTS Sherpa-ONNX) -->
+    <string name="voice_section_title">Voz e áudio</string>
+    <string name="profile_voice_models">Modelos de voz</string>
+    <string name="voice_models_subtitle">Baixe e ative a voz do seu idioma. Toque em ▶ para ouvir cada uma.</string>
+    <string name="voice_no_voice_configured">Nenhuma voz configurada. Baixe um modelo para ativar o áudio.</string>
+    <string name="voice_preview">Testar voz</string>
+    <string name="voice_quality_light">💡 leve, economiza dados</string>
+    <string name="voice_quality_high">⭐ alta qualidade</string>
+    <string name="voice_btn_download">Baixar</string>
+    <string name="voice_btn_cancel">Cancelar</string>
+    <string name="voice_btn_activate">Ativar</string>
+    <string name="voice_btn_delete">Excluir</string>
+    <string name="voice_btn_retry">Tentar de novo</string>
+    <string name="voice_in_use">Em uso</string>
+    <string name="voice_downloading">Baixando… %1$s</string>
+    <string name="voice_freed_space">Espaço liberado: %1$s</string>
+    <string name="voice_error">Falha no download</string>
+    <string name="audio_btn_no_voice">Configure uma voz no seu perfil</string>
+    <string name="audio_btn_play">Reproduzir</string>
+    <string name="audio_btn_stop">Parar</string>
+    <string name="audio_status_preparing">Convertendo texto em áudio…</string>
+    <string name="audio_status_no_audio">Sem áudio para este texto</string>
+    <string name="voice_btn_pause">Pausar</string>
+    <string name="voice_btn_resume">Retomar</string>
+    <string name="voice_paused">Pausado · %1$s</string>
+    <string name="voice_waiting_network">Aguardando conexão…</string>
+    <string name="voice_no_internet">Sem conexão com a internet</string>
 </resources>

@@ -33,6 +33,7 @@ object Routes {
     const val LINKED_DEVICES = "linked_devices"
     const val SYNC_STATUS = "sync_status?role={role}&deviceName={deviceName}&ip={ip}&port={port}&sessionId={sessionId}"
     const val PROFILE_LANGUAGE = "profile_language"
+    const val PROFILE_VOICE_MODELS = "profile_voice_models"
     const val PROFILE_HELP = "profile_help"
     const val PROFILE_PRIVACY = "profile_privacy"
     const val ADD_VISIT = "add_visit"

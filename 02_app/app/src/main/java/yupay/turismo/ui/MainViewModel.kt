@@ -144,35 +144,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             
             val currentSettings = repository.getSettingsOnce()
             if (currentSettings == null) {
+                // Sin cuenta todavía: arrancamos SIN tips/mapas. Los textos (y su audio) llegan al
+                // registrar la cuenta y vuelven al iniciar sesión (ver seedDefaultContentIfEmpty).
                 repository.saveSettings(AppSettings(
                     deviceId = androidId,
-                    hardwareDeviceId = androidId,
-                    entrepreneurTips = defaultTips,
-                    mapSummary = defaultSummaries
+                    hardwareDeviceId = androidId
                 ))
             } else {
                 var updated = currentSettings
                 var changed = false
-                
+
                 if (currentSettings.hardwareDeviceId.isEmpty()) {
                     updated = updated.copy(hardwareDeviceId = androidId)
                     changed = true
                 }
-                
+
                 // Si el deviceId está vacío (por ser nuevo campo) y no es servidor
                 if (currentSettings.deviceId.isEmpty()) {
                     updated = updated.copy(deviceId = androidId)
                     changed = true
                 }
 
-                if (currentSettings.entrepreneurTips.isEmpty()) {
-                    updated = updated.copy(
-                        entrepreneurTips = defaultTips,
-                        mapSummary = defaultSummaries
-                    )
-                    changed = true
-                }
-                
                 if (changed) {
                     repository.saveSettings(updated)
                 }
@@ -182,6 +174,33 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val defaultTips = DefaultContent.tips
     private val defaultSummaries = DefaultContent.summaries
+
+    /**
+     * Siembra los tips/resúmenes por defecto si están vacíos. Se usa al REGISTRAR una cuenta nueva
+     * (antes de firstLink, para que migrate los suba) y en logins de cuentas antiguas cuyo servidor
+     * no tenía contenido. Devuelve true si sembró algo.
+     */
+    private suspend fun seedDefaultContentIfEmpty(): Boolean {
+        val s = repository.getSettingsOnce() ?: return false
+        if (s.entrepreneurTips.isEmpty() || s.mapSummary.isEmpty()) {
+            repository.saveSettings(
+                s.copy(
+                    entrepreneurTips = defaultTips,
+                    mapSummary = defaultSummaries,
+                    lastModified = System.currentTimeMillis()
+                )
+            )
+            return true
+        }
+        return false
+    }
+
+    /** Login de cuenta existente: si el servidor no tenía tips/mapas, siémbralos y súbelos (una vez). */
+    private suspend fun seedAndUploadContentIfServerEmpty() {
+        if (seedDefaultContentIfEmpty()) {
+            cloudSyncEngine.reconcileFromP2p()
+        }
+    }
 
     fun addVisit(
         nationality: String,
@@ -367,6 +386,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             when (val r = authRepository.register(email, password, s?.businessName, s?.businessCategory)) {
                 is AuthResult.Ok -> when (r.value) {
                     RegisterStatus.LOGGED_IN -> {
+                        seedDefaultContentIfEmpty() // cuenta nueva: tips/mapas llegan al registrar
                         cloudSyncEngine.firstLink()
                         AuthUiState(event = AuthEvent.LoggedIn)
                     }
@@ -389,6 +409,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         runAuth {
             when (val r = authRepository.verifySignupCode(email, code)) {
                 is AuthResult.Ok -> {
+                    seedDefaultContentIfEmpty() // cuenta nueva: tips/mapas llegan al registrar
                     cloudSyncEngine.firstLink()
                     AuthUiState(event = AuthEvent.LoggedIn)
                 }
@@ -402,6 +423,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             when (val r = authRepository.login(email, password)) {
                 is AuthResult.Ok -> {
                     cloudSyncEngine.firstLink()
+                    seedAndUploadContentIfServerEmpty() // cuenta antigua sin contenido en la nube
                     markOnboardingCompleted()
                     AuthUiState(event = AuthEvent.LoggedIn)
                 }
@@ -420,8 +442,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         runAuth {
             when (val r = authRepository.loginWithGoogleIdToken(idToken, nonce)) {
                 is AuthResult.Ok -> {
-                    if (r.value) seedDefaultBusinessData() // isNewUser → datos por defecto
+                    if (r.value) {
+                        seedDefaultBusinessData()   // isNewUser → datos por defecto
+                        seedDefaultContentIfEmpty() // y tips/mapas, para subirlos en firstLink
+                    }
                     cloudSyncEngine.firstLink()
+                    if (!r.value) seedAndUploadContentIfServerEmpty() // cuenta antigua sin contenido
                     markOnboardingCompleted()
                     AuthUiState(event = AuthEvent.LoggedIn)
                 }
@@ -441,6 +467,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             when (val r = authRepository.loginWithGoogleIdToken(idToken, nonce)) {
                 is AuthResult.Ok -> {
                     if (r.value) {
+                        seedDefaultContentIfEmpty() // cuenta nueva: tips/mapas llegan al registrar
                         cloudSyncEngine.firstLink()
                         markOnboardingCompleted()
                         AuthUiState(event = AuthEvent.LoggedIn)

@@ -25,11 +25,15 @@ fun CinemaEffectText(
     text: String,
     currentTime: Long,
     totalDuration: Long,
-    readingTimePerLine: Long = 3000L, // 3 segundos por línea por defecto
+    readingTimePerLine: Long = 3000L, // fallback cuando no hay audio (durationMs == 0)
+    durationMs: Long = 0L, // duración REAL del audio: reparte las líneas proporcionalmente
     modifier: Modifier = Modifier
 ) {
     val lines = remember(text) { text.split("\n").filter { it.isNotBlank() } }
-    val currentLineIndex = (currentTime / readingTimePerLine).toInt().coerceIn(0, lines.size - 1)
+    // Sin timestamps por palabra: repartimos las líneas de forma uniforme sobre la duración real.
+    val perLine = if (lines.isNotEmpty() && durationMs > 0) durationMs / lines.size else readingTimePerLine
+    val currentLineIndex = if (lines.isEmpty()) 0
+        else (currentTime / perLine.coerceAtLeast(1)).toInt().coerceIn(0, lines.size - 1)
     
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
@@ -86,11 +90,13 @@ fun MapSubtitles(
     text: String,
     currentTime: Long,
     readingTimePerLine: Long = 3000L,
+    durationMs: Long = 0L, // duración REAL del audio (0 = usar readingTimePerLine)
     modifier: Modifier = Modifier
 ) {
     val lines = remember(text) { text.split("\n", ". ").filter { it.isNotBlank() } }
+    val perLine = if (lines.isNotEmpty() && durationMs > 0) durationMs / lines.size else readingTimePerLine
     val currentLineIndex = if (lines.isNotEmpty()) {
-        (currentTime / readingTimePerLine).toInt().coerceIn(0, lines.size - 1)
+        (currentTime / perLine.coerceAtLeast(1)).toInt().coerceIn(0, lines.size - 1)
     } else 0
     
     if (lines.isNotEmpty()) {

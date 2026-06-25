@@ -12,7 +12,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.delay
+import androidx.lifecycle.viewmodel.compose.viewModel
+import yupay.turismo.tts.SupportedLanguage
+import yupay.turismo.tts.audio.AudioPlaybackViewModel
 import yupay.turismo.ui.MainViewModel
 import yupay.turismo.ui.components.AudioPlayerUI
 import yupay.turismo.ui.components.CinemaEffectText
@@ -32,23 +34,25 @@ fun TipDetailScreen(
     val language = settings?.language ?: "Español"
     val currentTip = settings?.let { it.entrepreneurTips[it.language] ?: it.entrepreneurTips["Español"] ?: "" } ?: ""
 
-    // Estados para la simulación de audio
-    var currentTime by remember { mutableLongStateOf(0L) }
-    var isPlaying by remember { mutableStateOf(false) }
-    val readingTimePerLine = 3000L
-    val lines = remember(currentTip) { currentTip.split("\n").filter { it.isNotBlank() } }
-    val totalDuration = remember(lines) { lines.size * readingTimePerLine }
+    // Reproductor de audio real (TTS cacheado), ligado a esta página.
+    val ttsLanguage = SupportedLanguage.fromSettings(settings?.language)
+    val voiceSpeed = settings?.voiceSpeed ?: 1.0f
+    val owner = "tip:$language"
+    val audioVm: AudioPlaybackViewModel = viewModel()
+    val audio by audioVm.state.collectAsState()
+    val isOwner = audio.ownerKey == owner
+    val currentTime = if (isOwner) audio.positionMs else 0L
+    val totalDuration = if (isOwner) audio.durationMs else 0L
+    val isPlaying = isOwner && audio.isPlaying
+    // Indicadores: antes de que esta pantalla tome posesión (prepare en LaunchedEffect) se muestra
+    // "convirtiendo…"; luego ready/hasVoice deciden controles vs "no hay audio"/"configura una voz".
+    val isPreparing = !isOwner || audio.isPreparing
+    val audioReady = isOwner && audio.ready
+    val hasVoice = !isOwner || audio.hasVoice
 
-    // Simulación del temporizador
-    LaunchedEffect(isPlaying) {
-        if (isPlaying) {
-            while (currentTime < totalDuration) {
-                delay(100)
-                currentTime += 100
-            }
-            isPlaying = false
-        }
-    }
+    LaunchedEffect(currentTip, language) { audioVm.prepare(owner, currentTip, ttsLanguage) }
+    LaunchedEffect(voiceSpeed) { audioVm.setSpeed(voiceSpeed) }
+    DisposableEffect(owner) { onDispose { audioVm.releaseIfOwner(owner) } }
 
     Scaffold(
         topBar = {
@@ -88,8 +92,8 @@ fun TipDetailScreen(
                             CinemaEffectText(
                                 text = currentTip,
                                 currentTime = currentTime,
-                                totalDuration = totalDuration.toLong(),
-                                readingTimePerLine = readingTimePerLine
+                                totalDuration = totalDuration,
+                                durationMs = totalDuration
                             )
                         } else {
                             Text(
@@ -109,16 +113,21 @@ fun TipDetailScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    AudioPlayerUI(
-                        currentTime = currentTime,
-                        totalDuration = totalDuration.toLong(),
-                        isPlaying = isPlaying,
-                        onPlayPauseClick = { isPlaying = !isPlaying },
-                        onSeek = { fraction -> currentTime = (totalDuration * fraction).toLong() },
-                        onFastForward = { currentTime = (currentTime + 10000L).coerceAtMost(totalDuration.toLong()) },
-                        onRewind = { currentTime = (currentTime - 10000L).coerceAtLeast(0L) },
-                        language = language
-                    )
+                    if (currentTip.isNotBlank()) {
+                        AudioPlayerUI(
+                            currentTime = currentTime,
+                            totalDuration = totalDuration,
+                            isPlaying = isPlaying,
+                            onPlayPauseClick = { audioVm.togglePlayPause() },
+                            onSeek = { fraction -> audioVm.seekToFraction(fraction) },
+                            onFastForward = { audioVm.forward10() },
+                            onRewind = { audioVm.rewind10() },
+                            language = language,
+                            isPreparing = isPreparing,
+                            ready = audioReady,
+                            hasVoice = hasVoice
+                        )
+                    }
                 }
             }
         } else {
@@ -143,8 +152,8 @@ fun TipDetailScreen(
                         CinemaEffectText(
                             text = currentTip,
                             currentTime = currentTime,
-                            totalDuration = totalDuration.toLong(),
-                            readingTimePerLine = readingTimePerLine
+                            totalDuration = totalDuration,
+                            durationMs = totalDuration
                         )
                     } else {
                         Text(
@@ -159,16 +168,21 @@ fun TipDetailScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // Reproductor de Audio
-                AudioPlayerUI(
-                    currentTime = currentTime,
-                    totalDuration = totalDuration.toLong(),
-                    isPlaying = isPlaying,
-                    onPlayPauseClick = { isPlaying = !isPlaying },
-                    onSeek = { fraction -> currentTime = (totalDuration * fraction).toLong() },
-                    onFastForward = { currentTime = (currentTime + 10000L).coerceAtMost(totalDuration.toLong()) },
-                    onRewind = { currentTime = (currentTime - 10000L).coerceAtLeast(0L) },
-                    language = language
-                )
+                if (currentTip.isNotBlank()) {
+                    AudioPlayerUI(
+                        currentTime = currentTime,
+                        totalDuration = totalDuration,
+                        isPlaying = isPlaying,
+                        onPlayPauseClick = { audioVm.togglePlayPause() },
+                        onSeek = { fraction -> audioVm.seekToFraction(fraction) },
+                        onFastForward = { audioVm.forward10() },
+                        onRewind = { audioVm.rewind10() },
+                        language = language,
+                        isPreparing = isPreparing,
+                        ready = audioReady,
+                        hasVoice = hasVoice
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(24.dp))
             }

@@ -84,6 +84,7 @@ fun MainPagerScreen(
             )
             2 -> MapScreen(
                 viewModel = viewModel,
+                isAudioActive = pagerState.settledPage == 2,
                 onNavigate = { route ->
                     if (route == "fullscreen_map") {
                         navController.navigate(Routes.FULLSCREEN_MAP)
@@ -104,7 +105,8 @@ fun MainPagerScreen(
                 onNavigateToLanguage = { navController.navigate(Routes.PROFILE_LANGUAGE) },
                 onNavigateToHelp = { navController.navigate(Routes.PROFILE_HELP) },
                 onNavigateToPrivacy = { navController.navigate(Routes.PROFILE_PRIVACY) },
-                onNavigateToCatalog = { navController.navigate(Routes.PRODUCT_CATALOG) }
+                onNavigateToCatalog = { navController.navigate(Routes.PRODUCT_CATALOG) },
+                onNavigateToVoiceModels = { navController.navigate(Routes.PROFILE_VOICE_MODELS) }
             )
         }
     }

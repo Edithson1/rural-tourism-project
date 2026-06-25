@@ -396,7 +396,14 @@ fun MainNavigation(
                             onNavigateToLanguage = { navController.navigate(Routes.PROFILE_LANGUAGE) },
                             onNavigateToHelp = { navController.navigate(Routes.PROFILE_HELP) },
                             onNavigateToPrivacy = { navController.navigate(Routes.PROFILE_PRIVACY) },
-                            onNavigateToCatalog = { navController.navigate(Routes.PRODUCT_CATALOG) }
+                            onNavigateToCatalog = { navController.navigate(Routes.PRODUCT_CATALOG) },
+                            onNavigateToVoiceModels = { navController.navigate(Routes.PROFILE_VOICE_MODELS) }
+                        )
+                    }
+                    composable(Routes.PROFILE_VOICE_MODELS) {
+                        VoiceModelsScreen(
+                            viewModel = viewModel,
+                            onBack = { navController.popBackStack() }
                         )
                     }
                     composable(Routes.PROFILE_EDIT) {
@@ -586,10 +593,11 @@ fun MainNavigation(
 
 private fun isSecondaryRoute(route: String?): Boolean {
     val secondaryRoutes = listOf(
-        Routes.PROFILE_EDIT, Routes.PROFILE_LANGUAGE, Routes.PROFILE_HELP, Routes.PROFILE_PRIVACY, 
+        Routes.PROFILE_EDIT, Routes.PROFILE_LANGUAGE, Routes.PROFILE_HELP, Routes.PROFILE_PRIVACY,
         Routes.ADD_VISIT, Routes.VISIT_DETAIL, Routes.PRODUCT_CATALOG, Routes.PRODUCT_EDITOR,
         Routes.CURRENCY_SELECTION, Routes.DASHBOARD, Routes.TIP_DETAIL, Routes.SYNC_STATUS,
-        Routes.SHOW_QR, Routes.SCAN_QR, Routes.LINKED_DEVICES, Routes.FULLSCREEN_MAP
+        Routes.SHOW_QR, Routes.SCAN_QR, Routes.LINKED_DEVICES, Routes.FULLSCREEN_MAP,
+        Routes.PROFILE_VOICE_MODELS
     )
     return route in secondaryRoutes
 }

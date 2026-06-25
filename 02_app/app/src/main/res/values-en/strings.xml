@@ -387,4 +387,32 @@
     <string name="insights_msg_times">Your peak hour is %1$s.\nYour busiest day is %2$s.</string>
     <!-- Profile: short linked-account indicator -->
     <string name="profile_account_connected">Connected</string>
+
+    <!-- Voice & audio (Sherpa-ONNX TTS) -->
+    <string name="voice_section_title">Voice &amp; audio</string>
+    <string name="profile_voice_models">Voice models</string>
+    <string name="voice_models_subtitle">Download and activate a voice for your language. Tap ▶ to hear each one.</string>
+    <string name="voice_no_voice_configured">No voice set up. Download a model to enable audio.</string>
+    <string name="voice_preview">Test voice</string>
+    <string name="voice_quality_light">💡 light, saves data</string>
+    <string name="voice_quality_high">⭐ high quality</string>
+    <string name="voice_btn_download">Download</string>
+    <string name="voice_btn_cancel">Cancel</string>
+    <string name="voice_btn_activate">Activate</string>
+    <string name="voice_btn_delete">Delete</string>
+    <string name="voice_btn_retry">Retry</string>
+    <string name="voice_in_use">In use</string>
+    <string name="voice_downloading">Downloading… %1$s</string>
+    <string name="voice_freed_space">Freed space: %1$s</string>
+    <string name="voice_error">Download failed</string>
+    <string name="audio_btn_no_voice">Set up a voice in your profile</string>
+    <string name="audio_btn_play">Play</string>
+    <string name="audio_btn_stop">Stop</string>
+    <string name="audio_status_preparing">Converting text to audio…</string>
+    <string name="audio_status_no_audio">No audio for this text</string>
+    <string name="voice_btn_pause">Pause</string>
+    <string name="voice_btn_resume">Resume</string>
+    <string name="voice_paused">Paused · %1$s</string>
+    <string name="voice_waiting_network">Waiting for connection…</string>
+    <string name="voice_no_internet">No internet connection</string>
 </resources>

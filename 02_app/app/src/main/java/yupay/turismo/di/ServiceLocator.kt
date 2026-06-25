@@ -14,6 +14,9 @@ import yupay.turismo.data.session.SessionManager
 import yupay.turismo.data.sync.CloudSyncEngine
 import yupay.turismo.notifications.SyncEventBus
 import yupay.turismo.sync.P2pSyncController
+import yupay.turismo.tts.TtsManager
+import yupay.turismo.tts.audio.AudioPlaybackController
+import yupay.turismo.tts.download.TtsDownloadRepository
 import yupay.turismo.utils.NetworkMonitor
 
 /**
@@ -49,6 +52,16 @@ object ServiceLocator {
     lateinit var p2pController: P2pSyncController
         private set
 
+    // ───────── Text-to-Speech (Sherpa-ONNX) ─────────
+    lateinit var ttsDownloadRepository: TtsDownloadRepository
+        private set
+    lateinit var ttsManager: TtsManager
+        private set
+
+    /** Reproductor "ligado a página" (tips/mapas/dashboard) con seek + velocidad + caché WAV. */
+    lateinit var audioPlaybackController: AudioPlaybackController
+        private set
+
     fun init(context: Context) {
         if (initialized) return
         synchronized(this) {
@@ -73,6 +86,12 @@ object ServiceLocator {
             networkMonitor = NetworkMonitor(app)
             cloudSyncEngine = CloudSyncEngine(cloudSyncRepository, sessionManager, networkMonitor, apiService)
             p2pController = P2pSyncController(app)
+
+            // TTS: repositorio de descargas (WorkManager + Room) y manager de reproducción.
+            // Recibe networkMonitor (gating offline) y devicePrefs (checkpoints de pausa).
+            ttsDownloadRepository = TtsDownloadRepository(app, db.ttsPreferenceDao(), networkMonitor, devicePrefs)
+            ttsManager = TtsManager(app, ttsDownloadRepository)
+            audioPlaybackController = AudioPlaybackController(app, ttsDownloadRepository)
 
             initialized = true
         }

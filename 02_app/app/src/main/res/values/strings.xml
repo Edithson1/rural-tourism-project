@@ -396,4 +396,34 @@
     <string name="insights_msg_times">Tu hora pico es a las %1$s.\nTu día más activo es el %2$s.</string>
     <!-- Perfil: indicador corto de cuenta vinculada -->
     <string name="profile_account_connected">Conectado</string>
+
+    <!-- Voz y audio (TTS Sherpa-ONNX) -->
+    <string name="voice_section_title">Voz y audio</string>
+    <string name="profile_voice_models">Modelos de voz</string>
+    <string name="voice_models_subtitle">Descarga y activa la voz de tu idioma. Pulsa ▶ para escuchar cada una.</string>
+    <string name="voice_no_voice_configured">Sin voz configurada. Descarga un modelo para activar el audio.</string>
+    <string name="voice_preview">Probar voz</string>
+    <string name="voice_quality_light">💡 ligero, ahorra datos</string>
+    <string name="voice_quality_high">⭐ alta calidad</string>
+    <string name="voice_btn_download">Descargar</string>
+    <string name="voice_btn_cancel">Cancelar</string>
+    <string name="voice_btn_activate">Activar</string>
+    <string name="voice_btn_delete">Eliminar</string>
+    <string name="voice_btn_retry">Reintentar</string>
+    <string name="voice_in_use">En uso</string>
+    <string name="voice_downloading">Descargando… %1$s</string>
+    <string name="voice_freed_space">Espacio liberado: %1$s</string>
+    <string name="voice_error">Error al descargar</string>
+    <string name="audio_btn_no_voice">Configura una voz en tu perfil</string>
+    <string name="audio_btn_play">Reproducir</string>
+    <string name="audio_btn_stop">Detener</string>
+    <!-- Estado del reproductor de audio TTS -->
+    <string name="audio_status_preparing">Convirtiendo texto a audio…</string>
+    <string name="audio_status_no_audio">No hay audio del texto</string>
+    <!-- Descarga de modelos de voz: pausa/reanudar/sin conexión -->
+    <string name="voice_btn_pause">Pausar</string>
+    <string name="voice_btn_resume">Reanudar</string>
+    <string name="voice_paused">Pausada · %1$s</string>
+    <string name="voice_waiting_network">Esperando conexión…</string>
+    <string name="voice_no_internet">Sin conexión a internet</string>
 </resources>

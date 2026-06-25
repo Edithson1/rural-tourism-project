@@ -47,7 +47,8 @@ fun ProfileScreen(
     onNavigateToLanguage: () -> Unit,
     onNavigateToHelp: () -> Unit,
     onNavigateToPrivacy: () -> Unit,
-    onNavigateToCatalog: () -> Unit
+    onNavigateToCatalog: () -> Unit,
+    onNavigateToVoiceModels: () -> Unit
 ) {
     val settings by viewModel.appSettings.collectAsState()
     val visits by viewModel.allVisits.collectAsState()
@@ -97,6 +98,7 @@ fun ProfileScreen(
                     paddingValues, settings, role, isConnected, remoteDeviceName,
                     navController, onNavigateToEdit, onNavigateToLanguage,
                     onNavigateToHelp, onNavigateToPrivacy, language, onNavigateToCatalog,
+                    onNavigateToVoiceModels = onNavigateToVoiceModels,
                     onVoiceSpeedClick = { showVoiceSpeedModal = true },
                     onLinkDeviceClick = { navController.navigate("scan_qr") },
                     onLogoutClick = {
@@ -116,6 +118,7 @@ fun ProfileScreen(
                     paddingValues, settings, role, isConnected, remoteDeviceName,
                     navController, onNavigateToEdit, onNavigateToLanguage,
                     onNavigateToHelp, onNavigateToPrivacy, language, onNavigateToCatalog,
+                    onNavigateToVoiceModels = onNavigateToVoiceModels,
                     onVoiceSpeedClick = { showVoiceSpeedModal = true },
                     onLinkDeviceClick = { navController.navigate("scan_qr") },
                     onLogoutClick = {
@@ -249,6 +252,7 @@ fun PortraitProfileContent(
     onNavigateToPrivacy: () -> Unit,
     language: String,
     onNavigateToCatalog: () -> Unit,
+    onNavigateToVoiceModels: () -> Unit,
     onVoiceSpeedClick: () -> Unit,
     onLinkDeviceClick: () -> Unit,
     onLogoutClick: () -> Unit,
@@ -273,12 +277,12 @@ fun PortraitProfileContent(
         SettingsSection(
             settings, role, remoteDeviceName, language, onNavigateToLanguage,
             onVoiceSpeedClick, onLinkDeviceClick, onLogoutClick, navController,
-            onNavigateToCatalog, onFullResetClick, visitsCount,
+            onNavigateToCatalog, onNavigateToVoiceModels, onFullResetClick, visitsCount,
             notificationsEnabled, onToggleNotifications
         )
         Spacer(modifier = Modifier.height(24.dp))
         InfoSection(language, onNavigateToHelp, onNavigateToPrivacy)
-        
+
         // Moved "Cerrar Sesión" here, visible only if linked
         if (settings?.isLinked == true) {
             Spacer(modifier = Modifier.height(24.dp))
@@ -303,6 +307,7 @@ fun LandscapeProfileContent(
     onNavigateToPrivacy: () -> Unit,
     language: String,
     onNavigateToCatalog: () -> Unit,
+    onNavigateToVoiceModels: () -> Unit,
     onVoiceSpeedClick: () -> Unit,
     onLinkDeviceClick: () -> Unit,
     onLogoutClick: () -> Unit,
@@ -342,7 +347,7 @@ fun LandscapeProfileContent(
             SettingsSection(
                 settings, role, remoteDeviceName, language, onNavigateToLanguage,
                 onVoiceSpeedClick, onLinkDeviceClick, onLogoutClick, navController,
-                onNavigateToCatalog, onFullResetClick, visitsCount,
+                onNavigateToCatalog, onNavigateToVoiceModels, onFullResetClick, visitsCount,
                 notificationsEnabled, onToggleNotifications
             )
             Spacer(modifier = Modifier.height(24.dp))
@@ -492,6 +497,7 @@ fun SettingsSection(
     onLogoutClick: () -> Unit,
     navController: NavController,
     onNavigateToCatalog: () -> Unit,
+    onNavigateToVoiceModels: () -> Unit,
     onFullResetClick: () -> Unit,
     visitsCount: Int,
     notificationsEnabled: Boolean,
@@ -547,6 +553,13 @@ fun SettingsSection(
                 title = UiTranslations.getString(context, "profile_language", language),
                 value = settings?.language ?: "",
                 onClick = onNavigateToLanguage
+            )
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+            // Modelos de voz (TTS): navega a una pantalla dedicada con el catálogo del idioma actual.
+            SettingsItem(
+                icon = Icons.Default.RecordVoiceOver,
+                title = UiTranslations.getString(context, "profile_voice_models", language),
+                onClick = onNavigateToVoiceModels
             )
             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
             SettingsItem(
@@ -726,6 +739,7 @@ fun ProfileLandscapePreview() {
             onNavigateToPrivacy = {},
             language = "Español",
             onNavigateToCatalog = {},
+            onNavigateToVoiceModels = {},
             onVoiceSpeedClick = {},
             onLinkDeviceClick = {},
             onLogoutClick = {},

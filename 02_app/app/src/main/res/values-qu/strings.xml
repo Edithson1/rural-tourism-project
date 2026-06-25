@@ -387,4 +387,32 @@
     <string name="insights_msg_times">Aswan hunt\'asqa urayki %1$s.\nAswan hunt\'asqa p\'unchawniyki %2$s.</string>
     <!-- Perfil: cuenta watasqa pisi rikuchiq -->
     <string name="profile_account_connected">Watasqa</string>
+
+    <!-- Kunka / uyariy (TTS Sherpa-ONNX). NOTA: quechua best-effort, pendiente de revisión nativa. -->
+    <string name="voice_section_title">Kunka uyariy</string>
+    <string name="profile_voice_models">Kunka modelokuna</string>
+    <string name="voice_models_subtitle">Simiykipaq kunkata uraykachispa kallpachay. ▶ ñit\'iy sapankata uyarinaykipaq.</string>
+    <string name="voice_no_voice_configured">Manaraq kunka churasqa. Huk modelota uraykachiy uyariyta kallpachanaykipaq.</string>
+    <string name="voice_preview">Kunkata uyariy</string>
+    <string name="voice_quality_light">💡 pisi, datosta waqaychan</string>
+    <string name="voice_quality_high">⭐ allin rikch\'aq</string>
+    <string name="voice_btn_download">Uraykachiy</string>
+    <string name="voice_btn_cancel">Saqiy</string>
+    <string name="voice_btn_activate">Llamk\'achiy</string>
+    <string name="voice_btn_delete">Pichay</string>
+    <string name="voice_btn_retry">Yapamanta</string>
+    <string name="voice_in_use">Llamk\'achkan</string>
+    <string name="voice_downloading">Uraykachkan… %1$s</string>
+    <string name="voice_freed_space">Kicharisqa: %1$s</string>
+    <string name="voice_error">Pantay uraykachiypi</string>
+    <string name="audio_btn_no_voice">Perfilniykipi huk kunkata churay</string>
+    <string name="audio_btn_play">Uyariy</string>
+    <string name="audio_btn_stop">Sayachiy</string>
+    <string name="audio_status_preparing">Qillqata uyarinapaq tikrachkan…</string>
+    <string name="audio_status_no_audio">Kay qillqapaq mana uyariy kanchu</string>
+    <string name="voice_btn_pause">Samachiy</string>
+    <string name="voice_btn_resume">Kutiy</string>
+    <string name="voice_paused">Samachisqa · %1$s</string>
+    <string name="voice_waiting_network">Tinkuyta suyachkan…</string>
+    <string name="voice_no_internet">Mana internet tinkuy</string>
 </resources>

@@ -17,6 +17,14 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        ndk {
+            // Solo empaquetar arm64-v8a (móviles modernos, 2019+). Evita duplicar el motor TTS de
+            // Sherpa-ONNX (~30 MB de .so por arquitectura) en ABIs que no se usan: x86/x86_64 son
+            // solo para el emulador y armeabi-v7a es ARM de 32 bits antiguo. Reduce el APK ~90 MB.
+            // Para incluir más ABIs: añádelas aquí Y bájalas con scripts/fetch-sherpa-onnx-libs.ps1 -Abis ...
+            abiFilters += "arm64-v8a"
+        }
     }
 
     buildTypes {
@@ -69,6 +77,20 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
+
+    // --- Text-to-Speech (Sherpa-ONNX) ---
+    // WorkManager: descarga bajo demanda de los modelos de voz (con restricción de red,
+    // progreso observable y cancelación). Coroutine-friendly vía work-runtime-ktx.
+    implementation("androidx.work:work-runtime-ktx:2.9.1")
+    // Apache Commons Compress: descomprime los paquetes .tar.bz2 de los modelos Piper de
+    // sherpa-onnx (bzip2 + tar son Java puro y funcionan en Android). La v1.21 está
+    // ampliamente probada en Android (no usa java.nio.file en el camino de streaming).
+    implementation("org.apache.commons:commons-compress:1.21")
+    // NOTA: la librería NATIVA de Sherpa-ONNX (libsherpa-onnx-jni.so + libonnxruntime.so) NO
+    // se declara aquí como dependencia Maven. Hay que copiar los .so oficiales en
+    // app/src/main/jniLibs/<abi>/ (ver com/k2fsa/sherpa/onnx/Tts.kt para instrucciones).
+    // La API Kotlin (com.k2fsa.sherpa.onnx) va vendorizada como fuente en este módulo, así que
+    // NO debe añadirse además el AAR oficial (provocaría clases duplicadas).
 
     // --- Integración con la API en la nube ---
     // Cliente HTTP (OkHttp) + (de)serialización con kotlinx.serialization (ya presente).

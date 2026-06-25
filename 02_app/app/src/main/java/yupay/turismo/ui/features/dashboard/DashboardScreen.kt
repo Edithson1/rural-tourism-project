@@ -1,9 +1,11 @@
 package yupay.turismo.ui.features.dashboard
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -19,6 +21,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import yupay.turismo.data.local.Visit
 import yupay.turismo.data.local.AppSettings
+import yupay.turismo.tts.SupportedLanguage
+import yupay.turismo.tts.audio.AudioPlaybackViewModel
 import yupay.turismo.ui.features.dashboard.components.FilterSelector
 import yupay.turismo.ui.features.dashboard.components.InsightMessageOverlay
 import yupay.turismo.ui.features.dashboard.tabs.SalesTab
@@ -58,6 +62,30 @@ fun DashboardScreen(
     var selectedTab by remember { mutableStateOf(DashboardTab.SUMMARY) }
     var insightMessage by remember { mutableStateOf<String?>(null) }
 
+    // Reproductor de audio real, ligado a esta página (un solo botón).
+    val ttsLanguage = SupportedLanguage.fromSettings(language)
+    val voiceSpeed = settings?.voiceSpeed ?: 1.0f
+    val owner = "dashboard"
+    val audioVm: AudioPlaybackViewModel = viewModel()
+    val audio by audioVm.state.collectAsState()
+    val dashboardOwnsAudio = audio.ownerKey == owner
+    val dashboardPreparing = dashboardOwnsAudio && audio.isPreparing
+    LaunchedEffect(voiceSpeed) { audioVm.setSpeed(voiceSpeed) }
+    DisposableEffect(owner) { onDispose { audioVm.releaseIfOwner(owner) } }
+
+    // Si tras intentar reproducir no hay audio (sin voz instalada o síntesis fallida), avisar.
+    val audioUnavailable = dashboardOwnsAudio && !audio.isPreparing && !audio.ready
+    LaunchedEffect(audioUnavailable, audio.hasVoice) {
+        if (audioUnavailable) {
+            val msg = if (!audio.hasVoice) {
+                UiTranslations.getString(context, "audio_btn_no_voice", language)
+            } else {
+                UiTranslations.getString(context, "audio_status_no_audio", language)
+            }
+            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+        }
+    }
+
     LaunchedEffect(visits, settings) {
         dashboardViewModel.updateVisits(visits)
         dashboardViewModel.updateSettings(settings)
@@ -78,16 +106,40 @@ fun DashboardScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    // Resumen distinto según la pestaña en la que está el usuario al pulsar.
-                    insightMessage = dashboardViewModel.getTabSummary(context, selectedTab, language)
-                },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                shape = CircleShape
-            ) {
-                Icon(Icons.Default.VolumeUp, contentDescription = UiTranslations.getString(context, "insights_tts_description", language))
+            // El botón solo aparece cuando hay suficientes visitas que resumir.
+            if (totalVisitors > 0) {
+                FloatingActionButton(
+                    onClick = {
+                        // Resumen distinto según la pestaña en la que está el usuario al pulsar.
+                        val summary = dashboardViewModel.getTabSummary(context, selectedTab, language)
+                        insightMessage = summary
+                        // Si este mismo contenido ya resultó "sin audio", da feedback inmediato
+                        // (pulsar de nuevo no relanza la síntesis: prepare es idempotente).
+                        val a = audio
+                        if (a.ownerKey == owner && !a.isPreparing && !a.ready) {
+                            val msg = if (!a.hasVoice) {
+                                UiTranslations.getString(context, "audio_btn_no_voice", language)
+                            } else {
+                                UiTranslations.getString(context, "audio_status_no_audio", language)
+                            }
+                            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                        }
+                        audioVm.prepareAndPlay(owner, summary, ttsLanguage)
+                    },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    shape = CircleShape
+                ) {
+                    if (dashboardPreparing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                        )
+                    } else {
+                        Icon(Icons.Default.VolumeUp, contentDescription = UiTranslations.getString(context, "insights_tts_description", language))
+                    }
+                }
             }
         },
         containerColor = MaterialTheme.colorScheme.background
