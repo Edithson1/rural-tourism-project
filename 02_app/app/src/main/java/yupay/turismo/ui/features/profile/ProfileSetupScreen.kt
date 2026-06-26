@@ -33,8 +33,10 @@ fun ProfileSetupScreen(
     val context = LocalContext.current
     val settings by viewModel.appSettings.collectAsState()
     
-    var businessName by remember(settings) { mutableStateOf(settings?.businessName ?: "") }
-    var selectedService by remember(settings) { mutableStateOf(settings?.businessCategory ?: "") }
+    // Key en el VALOR del campo, no en el objeto `settings`: una sync re-emite AppSettings (avanza
+    // lastSyncAt/lastModified) y con key=`settings` remember borraría la edición en curso. Ver EditProfileScreen.
+    var businessName by remember(settings?.businessName) { mutableStateOf(settings?.businessName ?: "") }
+    var selectedService by remember(settings?.businessCategory) { mutableStateOf(settings?.businessCategory ?: "") }
 
     val services = listOf(
         ServiceOption(UiTranslations.translateService("Hospedaje", selectedLanguage, context), Icons.Default.Bed),

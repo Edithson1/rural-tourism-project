@@ -33,7 +33,9 @@ fun LanguageSelectionScreen(
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp && configuration.screenWidthDp > 600
-    var selectedLanguage by remember(settings) { mutableStateOf(settings?.language ?: "Español") }
+    // Key en settings?.language, no en el objeto `settings`: una sync re-emite AppSettings y con
+    // key=`settings` remember reiniciaría la selección en curso. Ver EditProfileScreen.
+    var selectedLanguage by remember(settings?.language) { mutableStateOf(settings?.language ?: "Español") }
     val currentLanguage = settings?.language ?: "Español"
 
     var showExitDialog by remember { mutableStateOf(false) }

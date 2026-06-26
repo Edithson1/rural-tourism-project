@@ -62,8 +62,14 @@ fun EditProfileScreen(
     val settings by viewModel.appSettings.collectAsState()
     val language = settings?.language ?: "Español"
 
-    var businessName by remember(settings) { mutableStateOf(settings?.businessName ?: "") }
-    var selectedService by remember(settings) { mutableStateOf(settings?.businessCategory ?: "") }
+    // IMPORTANTE: keyear en el VALOR del campo (businessName/businessCategory), NO en el objeto
+    // `settings` completo. Una sync en segundo plano reescribe AppSettings en cada ciclo (avanza
+    // lastSyncAt/lastModified) y el Flow `appSettings` re-emite un objeto nuevo. Con key=`settings`,
+    // remember re-inicializaba estos estados a los valores del servidor y borraba lo que el usuario
+    // estaba escribiendo → los cambios "se revertían" mientras esperaba. Keyeando al valor, una sync
+    // que no tocó el perfil no cambia el key y la edición en curso se conserva.
+    var businessName by remember(settings?.businessName) { mutableStateOf(settings?.businessName ?: "") }
+    var selectedService by remember(settings?.businessCategory) { mutableStateOf(settings?.businessCategory ?: "") }
     var pendingBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var editingUri by remember { mutableStateOf<Uri?>(null) }
     var showImageSourceDialog by remember { mutableStateOf(false) }
