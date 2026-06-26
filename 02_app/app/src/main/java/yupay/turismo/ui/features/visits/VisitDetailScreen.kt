@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -47,6 +48,8 @@ fun VisitDetailScreen(
     val usdRate = settings?.usdExchangeRate ?: 3.8
     val eurRate = settings?.eurExchangeRate ?: 4.1
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp && configuration.screenWidthDp > 600
 
     Scaffold(
         topBar = {
@@ -62,14 +65,8 @@ fun VisitDetailScreen(
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         visit?.let { v ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(24.dp)
-                    .verticalScroll(rememberScrollState())
-            ) {
-                // Header
+            // Bloques de contenido reutilizados en vertical (apilados) y horizontal (dos columnas).
+            val header: @Composable () -> Unit = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
@@ -83,78 +80,78 @@ fun VisitDetailScreen(
                     Spacer(modifier = Modifier.width(20.dp))
                     Column {
                         Text(
-                            text = v.nationality, 
-                            fontSize = 24.sp, 
+                            text = v.nationality,
+                            fontSize = 24.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onBackground
                         )
                         Text(
-                            text = formatDate(v.registrationDate), 
-                            fontSize = 14.sp, 
+                            text = formatDate(v.registrationDate),
+                            fontSize = 14.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
+            }
 
-                Spacer(modifier = Modifier.height(32.dp))
+            val productsSection: @Composable () -> Unit = {
+                Column {
+                    Text(
+                        text = UiTranslations.getString(context, "product_label", language),
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 12.dp),
+                        color = MaterialTheme.colorScheme.primary
+                    )
 
-                // Tabla de Productos
-                Text(
-                    text = UiTranslations.getString(context, "product_label", language), 
-                    fontWeight = FontWeight.Bold, 
-                    modifier = Modifier.padding(bottom = 12.dp),
-                    color = MaterialTheme.colorScheme.primary
-                )
-                
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        v.selectedProducts.forEach { item ->
-                            Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                                Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
-                                    Text(
-                                        "${item.quantity} x ${item.name}", 
-                                        modifier = Modifier.weight(1f),
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                    val itemPriceConverted = CurrencyUtils.convert(item.priceAtSale, item.currency, prefCurrency, usdRate, eurRate)
-                                    Text(
-                                        "$prefCurrency ${String.format("%.2f", itemPriceConverted * item.quantity)}",
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-                                if (item.hasDiscount) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(Icons.Default.LocalOffer, null, modifier = Modifier.size(10.dp), tint = Color(0xFFE53935))
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        val originalPriceConverted = CurrencyUtils.convert(item.originalPrice, item.currency, prefCurrency, usdRate, eurRate)
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            v.selectedProducts.forEach { item ->
+                                Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                                    Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
                                         Text(
-                                            text = "$prefCurrency ${String.format("%.2f", originalPriceConverted * item.quantity)}",
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                            fontSize = 11.sp,
-                                            textDecoration = TextDecoration.LineThrough
+                                            "${item.quantity} x ${item.name}",
+                                            modifier = Modifier.weight(1f),
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                        val itemPriceConverted = CurrencyUtils.convert(item.priceAtSale, item.currency, prefCurrency, usdRate, eurRate)
+                                        Text(
+                                            "$prefCurrency ${String.format("%.2f", itemPriceConverted * item.quantity)}",
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
                                         )
                                     }
+                                    if (item.hasDiscount) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(Icons.Default.LocalOffer, null, modifier = Modifier.size(10.dp), tint = Color(0xFFE53935))
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            val originalPriceConverted = CurrencyUtils.convert(item.originalPrice, item.currency, prefCurrency, usdRate, eurRate)
+                                            Text(
+                                                text = "$prefCurrency ${String.format("%.2f", originalPriceConverted * item.quantity)}",
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                                fontSize = 11.sp,
+                                                textDecoration = TextDecoration.LineThrough
+                                            )
+                                        }
+                                    }
                                 }
-                            }
-                            if (item != v.selectedProducts.last()) {
-                                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                                if (item != v.selectedProducts.last()) {
+                                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                                }
                             }
                         }
                     }
                 }
+            }
 
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                // Totales
+            val totalsSection: @Composable () -> Unit = {
                 val subtotalConverted = CurrencyUtils.convert(v.subtotal, v.currency, prefCurrency, usdRate, eurRate)
                 val totalAmountConverted = CurrencyUtils.convert(v.totalAmount, v.currency, prefCurrency, usdRate, eurRate)
-                
+
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -169,35 +166,35 @@ fun VisitDetailScreen(
                             "${UiTranslations.getString(context, "discount_label", language)}$discSuffix",
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        val discAmountConverted = if (v.discountType == DiscountType.PERCENTAGE) 
-                            (subtotalConverted * v.discountValue / 100.0) 
-                        else 
+                        val discAmountConverted = if (v.discountType == DiscountType.PERCENTAGE)
+                            (subtotalConverted * v.discountValue / 100.0)
+                        else
                             CurrencyUtils.convert(v.discountValue, v.currency, prefCurrency, usdRate, eurRate)
-                        
+
                         Text("- $prefCurrency ${String.format("%.2f", discAmountConverted)}", color = Color(0xFFD32F2F))
                     }
-                    
+
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
-                    
+
                     Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            UiTranslations.getString(context, "total_label", language), 
-                            fontWeight = FontWeight.Bold, 
+                            UiTranslations.getString(context, "total_label", language),
+                            fontWeight = FontWeight.Bold,
                             fontSize = 20.sp,
                             color = MaterialTheme.colorScheme.onBackground
                         )
                         Text(
                             "$prefCurrency ${String.format("%.2f", totalAmountConverted)}",
-                            fontWeight = FontWeight.Bold, 
-                            fontSize = 24.sp, 
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 24.sp,
                             color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
+            }
 
-                Spacer(modifier = Modifier.height(48.dp))
-
-                // Status Card: "Enviado" si la visita ya está en la nube (tiene id de servidor).
+            val statusSection: @Composable () -> Unit = {
+                // "Enviado" si la visita ya está en la nube (tiene id de servidor).
                 val isSent = v.remoteId != null
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
@@ -222,6 +219,54 @@ fun VisitDetailScreen(
                             fontWeight = FontWeight.Medium
                         )
                     }
+                }
+            }
+
+            if (isLandscape) {
+                // Horizontal: izquierda cliente + productos, derecha totales + estado.
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                        .padding(horizontal = 24.dp, vertical = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        header()
+                        Spacer(modifier = Modifier.height(24.dp))
+                        productsSection()
+                    }
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        totalsSection()
+                        Spacer(modifier = Modifier.height(32.dp))
+                        statusSection()
+                    }
+                }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                        .padding(24.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    header()
+                    Spacer(modifier = Modifier.height(32.dp))
+                    productsSection()
+                    Spacer(modifier = Modifier.height(24.dp))
+                    totalsSection()
+                    Spacer(modifier = Modifier.height(48.dp))
+                    statusSection()
                 }
             }
         } ?: run {

@@ -2,6 +2,10 @@ package yupay.turismo.ui.features.profile
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -9,6 +13,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -35,6 +40,8 @@ fun VoiceModelsScreen(
     val uiLanguage = settings?.language ?: "Español"
     val language = SupportedLanguage.fromSettings(settings?.language)
     val voiceSpeed = settings?.voiceSpeed ?: 1.0f
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp && configuration.screenWidthDp > 600
 
     val models = remember(language) { ttsViewModel.catalog(language) }
     val maxSize = remember(language) { ttsViewModel.maxSizeBytes(language) }
@@ -69,31 +76,60 @@ fun VoiceModelsScreen(
             )
         },
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp)
-                .verticalScroll(rememberScrollState()),
-        ) {
-            Spacer(Modifier.height(8.dp))
+        val subtitle: @Composable () -> Unit = {
             Text(
                 text = UiTranslations.getString(context, "voice_models_subtitle", uiLanguage),
                 fontSize = 13.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Spacer(Modifier.height(12.dp))
-            models.forEach { info ->
-                ModelCard(
-                    info = info,
-                    maxSizeBytes = maxSize,
-                    uiLanguage = uiLanguage,
-                    voiceSpeed = voiceSpeed,
-                    viewModel = ttsViewModel,
-                )
-                Spacer(Modifier.height(12.dp))
+        }
+
+        if (isLandscape) {
+            // Horizontal: rejilla de 2 columnas para aprovechar el ancho.
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(vertical = 12.dp),
+            ) {
+                item(span = { GridItemSpan(maxLineSpan) }) { subtitle() }
+                items(models) { info ->
+                    ModelCard(
+                        info = info,
+                        maxSizeBytes = maxSize,
+                        uiLanguage = uiLanguage,
+                        voiceSpeed = voiceSpeed,
+                        viewModel = ttsViewModel,
+                    )
+                }
             }
-            Spacer(Modifier.height(24.dp))
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(horizontal = 16.dp)
+                    .verticalScroll(rememberScrollState()),
+            ) {
+                Spacer(Modifier.height(8.dp))
+                subtitle()
+                Spacer(Modifier.height(12.dp))
+                models.forEach { info ->
+                    ModelCard(
+                        info = info,
+                        maxSizeBytes = maxSize,
+                        uiLanguage = uiLanguage,
+                        voiceSpeed = voiceSpeed,
+                        viewModel = ttsViewModel,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                }
+                Spacer(Modifier.height(24.dp))
+            }
         }
     }
 }

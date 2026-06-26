@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Fullscreen
@@ -56,6 +57,8 @@ fun MapScreen(
     val isPreparing = !isOwner || audio.isPreparing
     val audioReady = isOwner && audio.ready
     val hasVoice = !isOwner || audio.hasVoice
+    val isSynthesizing = isOwner && audio.isSynthesizing
+    val hasText = !isOwner || audio.hasText
 
     LaunchedEffect(currentSummary, language) { audioVm.prepare(owner, currentSummary, ttsLanguage) }
     LaunchedEffect(voiceSpeed) { audioVm.setSpeed(voiceSpeed) }
@@ -63,20 +66,10 @@ fun MapScreen(
     LaunchedEffect(isAudioActive) { if (!isAudioActive) audioVm.pauseIfOwner(owner) }
     DisposableEffect(owner) { onDispose { audioVm.releaseIfOwner(owner) } }
 
-    val productCounts = remember(visits) {
-        val counts = mutableMapOf<String, Int>()
-        visits.forEach { visit ->
-            visit.selectedProducts.forEach { item ->
-                counts[item.name] = counts.getOrDefault(item.name, 0) + item.quantity
-            }
-        }
-        counts.toList().sortedByDescending { it.second }.take(3)
-    }
-
-    val colorPrimary = MaterialTheme.colorScheme.primary
-    val colorSecondary = MaterialTheme.colorScheme.secondary
-    val colorTertiary = MaterialTheme.colorScheme.tertiary
-    val colors = listOf(colorPrimary, colorSecondary, colorTertiary)
+    // Orden y colores de productos, compartidos con el dibujo del mapa (puntos/burbujas) para que la
+    // leyenda y el mapa usen el mismo color por producto. Incluye TODOS los productos (la leyenda
+    // muestra ~4 y permite scroll).
+    val legend = rememberProductLegend(visits)
 
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp && configuration.screenWidthDp > 600
@@ -120,7 +113,8 @@ fun MapScreen(
                                 visits = visits,
                                 isInteractive = false,
                                 showLabels = false,
-                                viewMode = viewMode
+                                viewMode = viewMode,
+                                productColors = legend.colorsArgb
                             )
 
                             if (isPlaying) {
@@ -187,8 +181,16 @@ fun MapScreen(
                                 modifier = Modifier.padding(bottom = 12.dp)
                             )
                             
-                            productCounts.forEachIndexed { index, (name, count) ->
-                                LegendItemRow(name, colors.getOrElse(index) { Color.Gray }, count)
+                            // Leyenda con scroll VERTICAL en horizontal: hasta ~4 visibles y se
+                            // desplaza para ver todos los productos.
+                            Column(
+                                modifier = Modifier
+                                    .heightIn(max = 140.dp)
+                                    .verticalScroll(rememberScrollState())
+                            ) {
+                                legend.ordered.forEachIndexed { index, (name, count) ->
+                                    LegendItemRow(name, legend.colorAt(index), count)
+                                }
                             }
                         }
                     }
@@ -220,8 +222,10 @@ fun MapScreen(
                                     compact = true,
                                     language = language,
                                     isPreparing = isPreparing,
+                                    isSynthesizing = isSynthesizing,
                                     ready = audioReady,
-                                    hasVoice = hasVoice
+                                    hasVoice = hasVoice,
+                                    hasText = hasText
                                 )
                             }
                         }
@@ -267,7 +271,8 @@ fun MapScreen(
                                 visits = visits,
                                 isInteractive = false,
                                 showLabels = false,
-                                viewMode = viewMode
+                                viewMode = viewMode,
+                                productColors = legend.colorsArgb
                             )
 
                             if (isPlaying) {
@@ -319,12 +324,16 @@ fun MapScreen(
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
                         
+                        // Leyenda con scroll HORIZONTAL en vertical/portrait: hasta ~4 visibles y se
+                        // desplaza para ver todos los productos.
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            productCounts.forEachIndexed { index, (name, count) ->
-                                LegendItem(name, colors.getOrElse(index) { Color.Gray }, count)
+                            legend.ordered.forEachIndexed { index, (name, count) ->
+                                LegendItem(name, legend.colorAt(index), count)
                             }
                         }
                     }
@@ -359,8 +368,10 @@ fun MapScreen(
                                 compact = false,
                                 language = language,
                                 isPreparing = isPreparing,
+                                isSynthesizing = isSynthesizing,
                                 ready = audioReady,
-                                hasVoice = hasVoice
+                                hasVoice = hasVoice,
+                                hasText = hasText
                             )
                         }
                     }

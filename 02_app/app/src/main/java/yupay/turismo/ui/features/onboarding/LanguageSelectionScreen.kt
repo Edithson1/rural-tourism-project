@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -28,11 +29,13 @@ fun LanguageSelectionScreen(
 ) {
     val settings by viewModel.appSettings.collectAsState()
     val languages = listOf("Español", "Quechua", "Inglés", "Portugués")
-    
+
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp && configuration.screenWidthDp > 600
     var selectedLanguage by remember(settings) { mutableStateOf(settings?.language ?: "Español") }
     val currentLanguage = settings?.language ?: "Español"
-    
+
     var showExitDialog by remember { mutableStateOf(false) }
 
     val hasChanges = selectedLanguage != currentLanguage
@@ -56,37 +59,69 @@ fun LanguageSelectionScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(androidx.compose.foundation.rememberScrollState())
-                    .padding(bottom = 80.dp)
+        // Fila/celda de idioma reutilizada en vertical (lista) y horizontal (rejilla 2 columnas).
+        val languageOption: @Composable (String, Modifier) -> Unit = { lang, mod ->
+            Row(
+                modifier = mod
+                    .clickable { selectedLanguage = lang }
+                    .padding(24.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                languages.forEach { lang ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { selectedLanguage = lang }
-                            .padding(24.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = lang,
-                            fontSize = 18.sp,
-                            fontWeight = if (selectedLanguage == lang) FontWeight.Bold else FontWeight.Normal,
-                            color = if (selectedLanguage == lang) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground
-                        )
-                        if (selectedLanguage == lang) {
-                            Icon(
-                                Icons.Default.Check,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
+                Text(
+                    text = lang,
+                    fontSize = 18.sp,
+                    fontWeight = if (selectedLanguage == lang) FontWeight.Bold else FontWeight.Normal,
+                    color = if (selectedLanguage == lang) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground
+                )
+                if (selectedLanguage == lang) {
+                    Icon(
+                        Icons.Default.Check,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        }
+
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+            if (isLandscape) {
+                // Horizontal: 4 idiomas en rejilla 2x2.
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 8.dp)
+                        .padding(bottom = 88.dp)
+                ) {
+                    languages.chunked(2).forEach { rowLangs ->
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            rowLangs.forEach { lang ->
+                                Box(modifier = Modifier.weight(1f)) {
+                                    languageOption(lang, Modifier.fillMaxWidth())
+                                }
+                            }
                         }
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 24.dp),
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
+                        )
                     }
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 24.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+                }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(bottom = 80.dp)
+                ) {
+                    languages.forEach { lang ->
+                        languageOption(lang, Modifier.fillMaxWidth())
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 24.dp),
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
+                        )
+                    }
                 }
             }
 
@@ -98,8 +133,8 @@ fun LanguageSelectionScreen(
                     },
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
                         .padding(24.dp)
+                        .then(if (isLandscape) Modifier.widthIn(max = 420.dp).fillMaxWidth() else Modifier.fillMaxWidth())
                         .height(56.dp)
                 ) {
                     Text(UiTranslations.getString(context, "profile_save_changes", currentLanguage), fontWeight = FontWeight.Bold)
@@ -117,4 +152,3 @@ fun LanguageSelectionScreen(
         }
     }
 }
-

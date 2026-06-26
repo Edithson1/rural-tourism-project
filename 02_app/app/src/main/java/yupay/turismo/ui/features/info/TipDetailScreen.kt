@@ -49,6 +49,8 @@ fun TipDetailScreen(
     val isPreparing = !isOwner || audio.isPreparing
     val audioReady = isOwner && audio.ready
     val hasVoice = !isOwner || audio.hasVoice
+    val isSynthesizing = isOwner && audio.isSynthesizing
+    val hasText = !isOwner || audio.hasText
 
     LaunchedEffect(currentTip, language) { audioVm.prepare(owner, currentTip, ttsLanguage) }
     LaunchedEffect(voiceSpeed) { audioVm.setSpeed(voiceSpeed) }
@@ -113,21 +115,21 @@ fun TipDetailScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    if (currentTip.isNotBlank()) {
-                        AudioPlayerUI(
-                            currentTime = currentTime,
-                            totalDuration = totalDuration,
-                            isPlaying = isPlaying,
-                            onPlayPauseClick = { audioVm.togglePlayPause() },
-                            onSeek = { fraction -> audioVm.seekToFraction(fraction) },
-                            onFastForward = { audioVm.forward10() },
-                            onRewind = { audioVm.rewind10() },
-                            language = language,
-                            isPreparing = isPreparing,
-                            ready = audioReady,
-                            hasVoice = hasVoice
-                        )
-                    }
+                    AudioPlayerUI(
+                        currentTime = currentTime,
+                        totalDuration = totalDuration,
+                        isPlaying = isPlaying,
+                        onPlayPauseClick = { audioVm.togglePlayPause() },
+                        onSeek = { fraction -> audioVm.seekToFraction(fraction) },
+                        onFastForward = { audioVm.forward10() },
+                        onRewind = { audioVm.rewind10() },
+                        language = language,
+                        isPreparing = isPreparing,
+                        isSynthesizing = isSynthesizing,
+                        ready = audioReady,
+                        hasVoice = hasVoice,
+                        hasText = hasText
+                    )
                 }
             }
         } else {
@@ -168,21 +170,21 @@ fun TipDetailScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // Reproductor de Audio
-                if (currentTip.isNotBlank()) {
-                    AudioPlayerUI(
-                        currentTime = currentTime,
-                        totalDuration = totalDuration,
-                        isPlaying = isPlaying,
-                        onPlayPauseClick = { audioVm.togglePlayPause() },
-                        onSeek = { fraction -> audioVm.seekToFraction(fraction) },
-                        onFastForward = { audioVm.forward10() },
-                        onRewind = { audioVm.rewind10() },
-                        language = language,
-                        isPreparing = isPreparing,
-                        ready = audioReady,
-                        hasVoice = hasVoice
-                    )
-                }
+                AudioPlayerUI(
+                    currentTime = currentTime,
+                    totalDuration = totalDuration,
+                    isPlaying = isPlaying,
+                    onPlayPauseClick = { audioVm.togglePlayPause() },
+                    onSeek = { fraction -> audioVm.seekToFraction(fraction) },
+                    onFastForward = { audioVm.forward10() },
+                    onRewind = { audioVm.rewind10() },
+                    language = language,
+                    isPreparing = isPreparing,
+                    isSynthesizing = isSynthesizing,
+                    ready = audioReady,
+                    hasVoice = hasVoice,
+                    hasText = hasText
+                )
 
                 Spacer(modifier = Modifier.height(24.dp))
             }

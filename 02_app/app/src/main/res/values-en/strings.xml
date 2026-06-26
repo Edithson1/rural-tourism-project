@@ -410,6 +410,12 @@
     <string name="audio_btn_stop">Stop</string>
     <string name="audio_status_preparing">Converting text to audio…</string>
     <string name="audio_status_no_audio">No audio for this text</string>
+    <string name="audio_status_no_text">There\'s no text to convert</string>
+    <string name="audio_status_loading">Loading audio…</string>
+    <string name="delete_account_button">Delete account</string>
+    <string name="delete_account_title">Delete your account?</string>
+    <string name="delete_account_desc">Your account and all your data in the cloud and on this device will be permanently deleted. This action cannot be undone.</string>
+    <string name="btn_delete_account">Delete</string>
     <string name="voice_btn_pause">Pause</string>
     <string name="voice_btn_resume">Resume</string>
     <string name="voice_paused">Paused · %1$s</string>

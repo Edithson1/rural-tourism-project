@@ -420,6 +420,13 @@
     <!-- Estado del reproductor de audio TTS -->
     <string name="audio_status_preparing">Convirtiendo texto a audio…</string>
     <string name="audio_status_no_audio">No hay audio del texto</string>
+    <string name="audio_status_no_text">No hay texto para convertir</string>
+    <string name="audio_status_loading">Cargando audio…</string>
+    <!-- Borrar cuenta -->
+    <string name="delete_account_button">Borrar cuenta</string>
+    <string name="delete_account_title">¿Borrar tu cuenta?</string>
+    <string name="delete_account_desc">Se eliminarán de forma permanente tu cuenta y todos tus datos de la nube y de este dispositivo. Esta acción no se puede deshacer.</string>
+    <string name="btn_delete_account">Borrar</string>
     <!-- Descarga de modelos de voz: pausa/reanudar/sin conexión -->
     <string name="voice_btn_pause">Pausar</string>
     <string name="voice_btn_resume">Reanudar</string>

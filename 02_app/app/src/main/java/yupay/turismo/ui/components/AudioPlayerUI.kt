@@ -26,12 +26,16 @@ fun AudioPlayerUI(
     compact: Boolean = false,
     language: String = "Español",
     // Estado del audio para mostrar indicadores en vez de un botón "muerto":
-    //  - isPreparing → "Convirtiendo texto a audio…" (con spinner).
+    //  - !hasText → "No hay texto" (aún no hay insights que convertir).
+    //  - isSynthesizing → "Convirtiendo texto a audio…" (síntesis real, con spinner).
+    //  - isPreparing → "Cargando audio…" (WAV ya cacheado: spinner neutro, sin "convirtiendo").
     //  - !ready && !hasVoice → "Configura una voz en tu perfil".
     //  - !ready && hasVoice → "No hay audio del texto" (síntesis fallida/vacía).
     isPreparing: Boolean = false,
+    isSynthesizing: Boolean = false,
     ready: Boolean = true,
     hasVoice: Boolean = true,
+    hasText: Boolean = true,
 ) {
     val context = LocalContext.current
     Column(
@@ -39,9 +43,19 @@ fun AudioPlayerUI(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         when {
-            isPreparing -> AudioStatusRow(
+            !hasText -> AudioStatusRow(
+                text = UiTranslations.getString(context, "audio_status_no_text", language),
+                icon = Icons.Default.SpeakerNotesOff,
+            )
+
+            isSynthesizing -> AudioStatusRow(
                 text = UiTranslations.getString(context, "audio_status_preparing", language),
                 icon = null, // spinner
+            )
+
+            isPreparing -> AudioStatusRow(
+                text = UiTranslations.getString(context, "audio_status_loading", language),
+                icon = null, // spinner neutro (cargando audio cacheado)
             )
 
             !ready -> AudioStatusRow(

@@ -568,8 +568,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         runAuth {
             when (val r = authRepository.deleteAccount()) {
                 is AuthResult.Ok -> {
-                    cloudSync.clearOutbox()
-                    repository.clearAllData()
+                    // La cuenta y sus datos ya se borraron en la API (DELETE /auth/account).
+                    // Dejamos el dispositivo como recién instalado: sesión + outbox + audio +
+                    // Room + ajustes por defecto (mismo reset que el logout/P2P, vía AppReset).
+                    AppReset.factoryReset(getApplication())
                     AuthUiState(event = AuthEvent.AccountDeleted)
                 }
                 is AuthResult.Err -> AuthUiState(error = r.message)

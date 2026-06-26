@@ -12,6 +12,7 @@ fun CountdownConfirmationDialog(
     titleKey: String,
     descKey: String,
     seconds: Int = 10,
+    confirmKey: String = "btn_confirm",
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -35,10 +36,10 @@ fun CountdownConfirmationDialog(
                 enabled = timeLeft == 0
             ) {
                 Text(
-                    if (timeLeft > 0) 
-                        "${UiTranslations.getString(context, "btn_confirm", language)} ($timeLeft)" 
-                    else 
-                        UiTranslations.getString(context, "btn_confirm", language)
+                    if (timeLeft > 0)
+                        "${UiTranslations.getString(context, confirmKey, language)} ($timeLeft)"
+                    else
+                        UiTranslations.getString(context, confirmKey, language)
                 )
             }
         },

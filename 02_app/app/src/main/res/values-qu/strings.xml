@@ -410,6 +410,12 @@
     <string name="audio_btn_stop">Sayachiy</string>
     <string name="audio_status_preparing">Qillqata uyarinapaq tikrachkan…</string>
     <string name="audio_status_no_audio">Kay qillqapaq mana uyariy kanchu</string>
+    <string name="audio_status_no_text">Manam tikrachinapaq qillqa kanchu</string>
+    <string name="audio_status_loading">Uyariyta chaskichkan…</string>
+    <string name="delete_account_button">Cuentata pichay</string>
+    <string name="delete_account_title">¿Cuentaykita pichankichu?</string>
+    <string name="delete_account_desc">Cuentaykiwan llapan willaykikunawan phuyupipas kay dispositivopipas wiñaypaq pichakunqa. Kay ruwayqa manam kutichiy atikunchu.</string>
+    <string name="btn_delete_account">Pichay</string>
     <string name="voice_btn_pause">Samachiy</string>
     <string name="voice_btn_resume">Kutiy</string>
     <string name="voice_paused">Samachisqa · %1$s</string>

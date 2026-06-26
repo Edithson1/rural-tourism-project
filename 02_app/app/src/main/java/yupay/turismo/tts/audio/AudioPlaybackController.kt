@@ -30,8 +30,10 @@ import yupay.turismo.tts.engine.SherpaOnnxTtsEngine
 data class AudioUiState(
     /** Pantalla dueña del audio actual (ver claves en [AudioPlaybackController.prepare]). */
     val ownerKey: String? = null,
-    /** Sintetizando o preparando el [MediaPlayer]: la UI muestra spinner en el botón de play. */
+    /** Cargando el [MediaPlayer] desde un WAV ya cacheado: spinner neutro (NO "convirtiendo"). */
     val isPreparing: Boolean = false,
+    /** Sintetizando el audio por primera vez (no estaba en caché): la UI muestra "Convirtiendo…". */
+    val isSynthesizing: Boolean = false,
     val isPlaying: Boolean = false,
     val positionMs: Long = 0L,
     val durationMs: Long = 0L,
@@ -43,6 +45,8 @@ data class AudioUiState(
      * del texto". Permite distinguir ambos casos en el reproductor.
      */
     val hasVoice: Boolean = true,
+    /** ¿Hay texto que convertir? Si es `false` la UI muestra "No hay texto" (no intenta sintetizar). */
+    val hasText: Boolean = true,
 )
 
 /**
@@ -108,10 +112,12 @@ class AudioPlaybackController(
         releasePlayer()
 
         if (text.isBlank()) {
-            _state.value = AudioUiState(ownerKey = ownerKey)
+            // Sin texto que convertir (p.ej. cuenta recién creada, sin insights aún).
+            _state.value = AudioUiState(ownerKey = ownerKey, hasText = false)
             return
         }
 
+        // Estado neutro de "cargando" mientras resolvemos voz/caché; NO es "convirtiendo".
         _state.value = AudioUiState(ownerKey = ownerKey, isPreparing = true)
         prepareJob = scope.launch {
             try {
@@ -121,10 +127,23 @@ class AudioPlaybackController(
                     _state.value = AudioUiState(ownerKey = ownerKey, ready = false, hasVoice = false)
                     return@launch
                 }
+
+                val cacheKey = AudioCache.keyFor(text, language, model.id)
+                val cacheFile = AudioCache.fileFor(appContext, cacheKey)
+                val cached = withContext(Dispatchers.IO) { cacheFile.exists() && cacheFile.length() > 0L }
+                // Registra este audio como el actual del owner y borra el del texto anterior.
+                withContext(Dispatchers.IO) { AudioCache.updateOwnerAudio(appContext, ownerKey, cacheKey) }
+
+                // Solo mostramos "Convirtiendo…" cuando hay que sintetizar de verdad. Si el WAV ya
+                // está cacheado (al volver a la pantalla) seguimos en "isPreparing" (spinner neutro)
+                // y pasamos a los controles en cuanto el MediaPlayer esté listo.
+                if (!cached) {
+                    _state.value = AudioUiState(ownerKey = ownerKey, isSynthesizing = true)
+                }
+
                 // Síntesis (si no está cacheada) + construcción y prepare() del MediaPlayer en IO,
                 // para no bloquear el hilo principal con un fichero local.
                 val mp = withContext(Dispatchers.IO) {
-                    val cacheFile = AudioCache.fileFor(appContext, AudioCache.keyFor(text, language, model.id))
                     if (!cacheFile.exists() || cacheFile.length() == 0L) {
                         if (loadedModelId != model.id || !engine.isReady) {
                             engine.load(repository.modelDir(model), model)
@@ -155,6 +174,7 @@ class AudioPlaybackController(
                 _state.value = AudioUiState(
                     ownerKey = ownerKey,
                     isPreparing = false,
+                    isSynthesizing = false,
                     isPlaying = false,
                     positionMs = 0L,
                     durationMs = mp.duration.toLong().coerceAtLeast(0L),

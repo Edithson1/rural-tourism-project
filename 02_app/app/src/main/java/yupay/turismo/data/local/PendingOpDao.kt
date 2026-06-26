@@ -17,6 +17,10 @@ interface PendingOpDao {
     @Query("SELECT COUNT(*) FROM pending_ops")
     suspend fun count(): Int
 
+    /** ¿Hay alguna operación pendiente (no enviada) para este tipo de entidad? (p.ej. PROFILE). */
+    @Query("SELECT EXISTS(SELECT 1 FROM pending_ops WHERE entityType = :entityType)")
+    suspend fun hasPending(entityType: String): Boolean
+
     @Insert
     suspend fun insert(op: PendingOp): Long
 

@@ -552,7 +552,13 @@ fun MainNavigation(
                         AccountInfoScreen(
                             viewModel = viewModel,
                             onBack = { navController.popBackStack() },
-                            onChangePassword = { navController.navigate(Routes.resetPassword("account")) }
+                            onChangePassword = { navController.navigate(Routes.resetPassword("account")) },
+                            onAccountDeleted = {
+                                navController.navigate(Routes.ONBOARDING) {
+                                    popUpTo(0) { inclusive = true }
+                                    launchSingleTop = true
+                                }
+                            }
                         )
                     }
                     composable(Routes.ADD_VISIT) {

@@ -1,5 +1,6 @@
 package yupay.turismo.ui.features.auth
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -16,7 +17,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import yupay.turismo.ui.AuthEvent
 import yupay.turismo.ui.MainViewModel
+import yupay.turismo.ui.components.CountdownConfirmationDialog
 import yupay.turismo.utils.UiTranslations
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -24,13 +27,25 @@ import yupay.turismo.utils.UiTranslations
 fun AccountInfoScreen(
     viewModel: MainViewModel,
     onBack: () -> Unit,
-    onChangePassword: () -> Unit
+    onChangePassword: () -> Unit,
+    onAccountDeleted: () -> Unit
 ) {
     val settings by viewModel.appSettings.collectAsState()
     val language = settings?.language ?: "Español"
     val context = LocalContext.current
     val session by viewModel.cloudSession.collectAsState()
     val email = session?.email?.ifBlank { null } ?: settings?.accountEmail ?: UiTranslations.getString(context, "account_email_unavailable", language)
+
+    val authState by viewModel.authState.collectAsState()
+    var showDelete by remember { mutableStateOf(false) }
+
+    // Al completarse el borrado en la API + reset de fábrica, volver al onboarding.
+    LaunchedEffect(authState.event) {
+        if (authState.event is AuthEvent.AccountDeleted) {
+            viewModel.consumeAuthEvent()
+            onAccountDeleted()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -117,6 +132,55 @@ fun AccountInfoScreen(
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Borrar cuenta (acción destructiva): borra la cuenta y todos sus datos en la API y
+            // resetea el dispositivo. Tras un modal con cuenta atrás de 10 s, vuelve al onboarding.
+            OutlinedButton(
+                onClick = { showDelete = true },
+                enabled = !authState.loading,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
+            ) {
+                if (authState.loading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                } else {
+                    Icon(Icons.Default.DeleteForever, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(UiTranslations.getString(context, "delete_account_button", language))
+                }
+            }
+
+            authState.error?.let { err ->
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    err,
+                    color = MaterialTheme.colorScheme.error,
+                    fontSize = 13.sp,
+                    textAlign = TextAlign.Center
+                )
+            }
         }
+    }
+
+    if (showDelete) {
+        CountdownConfirmationDialog(
+            language = language,
+            titleKey = "delete_account_title",
+            descKey = "delete_account_desc",
+            confirmKey = "btn_delete_account",
+            seconds = 10,
+            onConfirm = {
+                showDelete = false
+                viewModel.deleteAccount()
+            },
+            onDismiss = { showDelete = false }
+        )
     }
 }

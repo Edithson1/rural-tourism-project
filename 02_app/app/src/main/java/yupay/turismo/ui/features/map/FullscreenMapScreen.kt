@@ -7,6 +7,8 @@ import android.content.pm.ActivityInfo
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -56,25 +58,16 @@ fun FullscreenMapScreen(
     val isPreparing = !isOwner || audio.isPreparing
     val audioReady = isOwner && audio.ready
     val hasVoice = !isOwner || audio.hasVoice
+    val isSynthesizing = isOwner && audio.isSynthesizing
+    val hasText = !isOwner || audio.hasText
 
     LaunchedEffect(currentSummary, language) { audioVm.prepare(owner, currentSummary, ttsLanguage) }
     LaunchedEffect(voiceSpeed) { audioVm.setSpeed(voiceSpeed) }
     DisposableEffect(owner) { onDispose { audioVm.releaseIfOwner(owner) } }
 
-    val productCounts = remember(visits) {
-        val counts = mutableMapOf<String, Int>()
-        visits.forEach { visit ->
-            visit.selectedProducts.forEach { item ->
-                counts[item.name] = counts.getOrDefault(item.name, 0) + item.quantity
-            }
-        }
-        counts.toList().sortedByDescending { it.second }.take(3)
-    }
-
-    val colorPrimary = MaterialTheme.colorScheme.primary
-    val colorSecondary = MaterialTheme.colorScheme.secondary
-    val colorTertiary = MaterialTheme.colorScheme.tertiary
-    val colors = listOf(colorPrimary, colorSecondary, colorTertiary)
+    // Orden y colores de productos compartidos con el dibujo del mapa (puntos/burbujas) e idénticos
+    // a la leyenda. Incluye TODOS los productos (la leyenda muestra ~4 con scroll).
+    val legend = rememberProductLegend(visits)
 
     // Handle system back button
     BackHandler {
@@ -101,7 +94,8 @@ fun FullscreenMapScreen(
             isInteractive = true,
             zoomLevel = 4.0,
             showLabels = true,
-            viewMode = viewMode
+            viewMode = viewMode,
+            productColors = legend.colorsArgb
         )
 
         // Subtítulos flotantes
@@ -163,8 +157,15 @@ fun FullscreenMapScreen(
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(bottom = 4.dp)
                         )
-                        productCounts.forEachIndexed { index, (name, count) ->
-                            LegendItemFullScreen(name, colors.getOrElse(index) { Color.Gray }, count)
+                        // Scroll vertical: hasta ~4 visibles; se desplaza para ver todos los productos.
+                        Column(
+                            modifier = Modifier
+                                .heightIn(max = 140.dp)
+                                .verticalScroll(rememberScrollState())
+                        ) {
+                            legend.ordered.forEachIndexed { index, (name, count) ->
+                                LegendItemFullScreen(name, legend.colorAt(index), count)
+                            }
                         }
                     }
                 }
@@ -195,8 +196,10 @@ fun FullscreenMapScreen(
                     modifier = Modifier.padding(8.dp),
                     language = language,
                     isPreparing = isPreparing,
+                    isSynthesizing = isSynthesizing,
                     ready = audioReady,
-                    hasVoice = hasVoice
+                    hasVoice = hasVoice,
+                    hasText = hasText
                 )
             }
         }

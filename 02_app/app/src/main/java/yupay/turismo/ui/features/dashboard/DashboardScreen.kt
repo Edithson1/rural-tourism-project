@@ -3,6 +3,7 @@ package yupay.turismo.ui.features.dashboard
 import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -14,6 +15,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -41,6 +43,8 @@ fun DashboardScreen(
 ) {
     val dashboardViewModel: DashboardViewModel = viewModel()
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp && configuration.screenWidthDp > 600
 
     val totalVisitors by dashboardViewModel.totalVisitors.collectAsState()
     val totalItemsSold by dashboardViewModel.totalItemsSold.collectAsState()
@@ -69,12 +73,12 @@ fun DashboardScreen(
     val audioVm: AudioPlaybackViewModel = viewModel()
     val audio by audioVm.state.collectAsState()
     val dashboardOwnsAudio = audio.ownerKey == owner
-    val dashboardPreparing = dashboardOwnsAudio && audio.isPreparing
+    val dashboardPreparing = dashboardOwnsAudio && (audio.isPreparing || audio.isSynthesizing)
     LaunchedEffect(voiceSpeed) { audioVm.setSpeed(voiceSpeed) }
     DisposableEffect(owner) { onDispose { audioVm.releaseIfOwner(owner) } }
 
     // Si tras intentar reproducir no hay audio (sin voz instalada o síntesis fallida), avisar.
-    val audioUnavailable = dashboardOwnsAudio && !audio.isPreparing && !audio.ready
+    val audioUnavailable = dashboardOwnsAudio && !audio.isPreparing && !audio.isSynthesizing && !audio.ready
     LaunchedEffect(audioUnavailable, audio.hasVoice) {
         if (audioUnavailable) {
             val msg = if (!audio.hasVoice) {
@@ -116,7 +120,7 @@ fun DashboardScreen(
                         // Si este mismo contenido ya resultó "sin audio", da feedback inmediato
                         // (pulsar de nuevo no relanza la síntesis: prepare es idempotente).
                         val a = audio
-                        if (a.ownerKey == owner && !a.isPreparing && !a.ready) {
+                        if (a.ownerKey == owner && !a.isPreparing && !a.isSynthesizing && !a.ready) {
                             val msg = if (!a.hasVoice) {
                                 UiTranslations.getString(context, "audio_btn_no_voice", language)
                             } else {
@@ -146,28 +150,20 @@ fun DashboardScreen(
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             Column(modifier = Modifier.fillMaxSize()) {
-            // Filtro de periodo compartido por todas las pestañas
-            FilterSelector(currentFilter, language) { dashboardViewModel.setFilter(it) }
-
-            // Pestañas temáticas
-            ScrollableTabRow(
-                selectedTabIndex = selectedTab.ordinal,
-                edgePadding = 16.dp,
-                containerColor = MaterialTheme.colorScheme.background
-            ) {
-                DashboardTab.entries.forEach { tab ->
-                    Tab(
-                        selected = selectedTab == tab,
-                        onClick = { selectedTab = tab },
-                        text = {
-                            Text(
-                                UiTranslations.getString(context, tab.labelKey, language),
-                                fontSize = 13.sp,
-                                fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Normal
-                            )
-                        }
-                    )
+            if (isLandscape) {
+                // En horizontal: filtros de tiempo a la izquierda y pestañas a su derecha, en una fila.
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = Modifier.weight(1f)) {
+                        FilterSelector(currentFilter, language) { dashboardViewModel.setFilter(it) }
+                    }
+                    Box(modifier = Modifier.weight(1f)) {
+                        DashboardTabs(selectedTab, language) { selectedTab = it }
+                    }
                 }
+            } else {
+                // En vertical: filtros encima de las pestañas.
+                FilterSelector(currentFilter, language) { dashboardViewModel.setFilter(it) }
+                DashboardTabs(selectedTab, language) { selectedTab = it }
             }
 
             when (selectedTab) {
@@ -210,6 +206,39 @@ fun DashboardScreen(
                 language = language,
                 onDismiss = { insightMessage = null },
                 modifier = Modifier.align(Alignment.BottomCenter)
+            )
+        }
+    }
+}
+
+/**
+ * Barra de pestañas temáticas (Resumen / Visitantes / Ventas / Tiempos). Extraída para poder colocarla
+ * tanto debajo de los filtros (vertical) como a su derecha (horizontal).
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DashboardTabs(
+    selectedTab: DashboardTab,
+    language: String,
+    onTabSelected: (DashboardTab) -> Unit
+) {
+    val context = LocalContext.current
+    ScrollableTabRow(
+        selectedTabIndex = selectedTab.ordinal,
+        edgePadding = 16.dp,
+        containerColor = MaterialTheme.colorScheme.background
+    ) {
+        DashboardTab.entries.forEach { tab ->
+            Tab(
+                selected = selectedTab == tab,
+                onClick = { onTabSelected(tab) },
+                text = {
+                    Text(
+                        UiTranslations.getString(context, tab.labelKey, language),
+                        fontSize = 13.sp,
+                        fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Normal
+                    )
+                }
             )
         }
     }

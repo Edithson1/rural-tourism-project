@@ -338,12 +338,20 @@ class CloudSyncRepository(
     private suspend fun applyPull(pull: PullResponse, replace: Boolean): AppSettings {
         val settings = appSettingsDao.getSettingsOnce() ?: AppSettings()
         var merged = settings
-        pull.user?.let { u ->
-            merged = merged.copy(
-                businessName = u.businessName ?: merged.businessName,
-                businessCategory = u.businessCategory ?: merged.businessCategory,
-                profilePicture = u.profilePicture.fromBase64() ?: merged.profilePicture
-            )
+        // No pisar el perfil local si hay una edición propia aún sin subir (PendingOp de PROFILE):
+        // un pull en vuelo (sync cada 15 s / Realtime) podría traer la versión anterior y revertir
+        // el cambio recién guardado. El guard solo aplica al sync incremental (replace=false); en el
+        // primer enlace (replace=true) se adopta el servidor a propósito. Tras subir el cambio, el op
+        // se elimina del outbox y el servidor vuelve a mandar (no afecta a la sync entre dispositivos).
+        val skipProfile = !replace && pendingOpDao.hasPending(PendingOp.ENTITY_PROFILE)
+        if (!skipProfile) {
+            pull.user?.let { u ->
+                merged = merged.copy(
+                    businessName = u.businessName ?: merged.businessName,
+                    businessCategory = u.businessCategory ?: merged.businessCategory,
+                    profilePicture = u.profilePicture.fromBase64() ?: merged.profilePicture
+                )
+            }
         }
         merged = applyContentToSettings(merged, pull.content, settings.language)
 
