@@ -32,6 +32,9 @@ interface VisitDao {
     @Query("SELECT * FROM visits WHERE remoteId = :remoteId LIMIT 1")
     suspend fun getByRemoteId(remoteId: Long): Visit?
 
+    @Query("SELECT * FROM visits WHERE uuid = :uuid LIMIT 1")
+    suspend fun getByUuid(uuid: String): Visit?
+
     @Query("SELECT * FROM visits WHERE registrationDate = :registrationDate LIMIT 1")
     suspend fun getByRegistrationDate(registrationDate: Long): Visit?
 

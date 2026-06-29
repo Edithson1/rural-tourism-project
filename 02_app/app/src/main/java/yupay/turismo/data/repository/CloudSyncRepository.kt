@@ -367,7 +367,9 @@ class CloudSyncRepository(
             pull.products.forEach { dto ->
                 val existing = productDao.getByRemoteId(dto.id)
                 if (existing != null) {
-                    val entity = dto.toEntity(localId = existing.id)
+                    // Preservar el uuid local (identidad estable para el merge P2P): el servidor no lo
+                    // maneja, así que toEntity generaría uno nuevo en cada pull.
+                    val entity = dto.toEntity(localId = existing.id).copy(uuid = existing.uuid)
                     productDao.updateProduct(entity)
                     // Sólo cuenta si el servidor lo modificó después de lo que ya teníamos (el solape
                     // del watermark puede re-traer filas sin cambios: no deben re-notificar).
@@ -386,7 +388,8 @@ class CloudSyncRepository(
                 val ms = parseIsoToMillis(dto.registrationDate)
                 val existing = visitDao.getByRemoteId(dto.id) ?: ms?.let { visitDao.getByRegistrationDate(it) }
                 if (existing != null) {
-                    visitDao.updateVisit(dto.toEntity(localId = existing.id))
+                    // Preservar el uuid local (identidad estable entre dispositivos).
+                    visitDao.updateVisit(dto.toEntity(localId = existing.id).copy(uuid = existing.uuid))
                 } else {
                     visitDao.insertVisit(dto.toEntity())
                     newVisits++

@@ -10,6 +10,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import yupay.turismo.data.AppReset
 import yupay.turismo.di.ServiceLocator
@@ -84,6 +86,19 @@ class P2pSyncController(private val appContext: Context) {
     private var lastRemotePort: Int = sharedPrefs.getInt("last_port", 51234)
     private var isProcessingRemoteUpdate = false
 
+    // Token de emparejamiento estable: identifica el vínculo. Se valida en el handshake para impedir
+    // reconexiones silenciosas con un peer que ya se desvinculó/reseteó (ver handler de Handshake).
+    private var pairingToken: String? = sharedPrefs.getString("pairing_token", null)
+
+    // Serializa las secciones que mutan la DB al recibir mensajes, para que el check-then-insert sea
+    // atómico (corrige el race que duplicaba visitas cuando NewVisit y UpdateVisits llegaban juntos).
+    private val inboundMutex = Mutex()
+
+    // Firma del último catálogo de productos enviado/aplicado. Suprime ecos por contenido (no por una
+    // ventana temporal global), de modo que una edición local hecha mientras se procesa un mensaje
+    // entrante NO se descarte.
+    @Volatile private var lastProductsSig: String? = null
+
     // Puente P2P → nube: sube a la API los cambios que llegan por LAN (con debounce).
     private var cloudBridgeJob: Job? = null
 
@@ -105,7 +120,8 @@ class P2pSyncController(private val appContext: Context) {
                 _isConnected.value = it
                 addLog(if (it) "Conectado" else "Desconectado")
                 if (it) {
-                    syncManager.sendMessage(SyncMessage.Handshake(android.os.Build.MODEL, "SESSION"))
+                    // El handshake transporta el token de emparejamiento para que el otro lado lo valide.
+                    syncManager.sendMessage(SyncMessage.Handshake(android.os.Build.MODEL, pairingToken ?: ""))
                     // Asegurar que el onboarding se marque como completado en la DB persistente
                     markOnboardingCompleted()
                 }
@@ -142,9 +158,17 @@ class P2pSyncController(private val appContext: Context) {
 
             repository.allProducts
                 .onEach { products ->
-                    if (!isProcessingRemoteUpdate && _isConnected.value) {
-                        syncManager.sendMessage(SyncMessage.UpdateProducts(products))
-                        addLog("Sincronizando catálogo de productos...")
+                    // Supresión de eco por firma de contenido (no por ventana temporal): sólo se envía
+                    // si el catálogo difiere del último enviado/aplicado. Así un cambio remoto recién
+                    // aplicado no se reenvía en bucle, pero una edición local SÍ se propaga aunque
+                    // coincida con el procesamiento de otro mensaje.
+                    if (_isConnected.value) {
+                        val sig = productsSignature(products)
+                        if (sig != lastProductsSig) {
+                            lastProductsSig = sig
+                            syncManager.sendMessage(SyncMessage.UpdateProducts(products))
+                            addLog("Sincronizando catálogo de productos...")
+                        }
                     }
                 }
                 .launchIn(scope)
@@ -276,11 +300,10 @@ class P2pSyncController(private val appContext: Context) {
                 totalAmount = totalAmount
             )
             repository.insertVisit(visit)
-
-            if (_isConnected.value) {
-                syncManager.sendMessage(SyncMessage.NewVisit(visit))
-                addLog("Nueva visita enviada")
-            }
+            // NO se envía un NewVisit explícito: el observador de `allVisits` ya emite un UpdateVisits
+            // con esta alta. Enviar ambos provocaba que el receptor procesara dos mensajes en paralelo
+            // y, por el race del check-then-insert, duplicara la visita. UpdateVisits es la fuente única.
+            if (_isConnected.value) addLog("Nueva visita registrada")
         }
     }
 
@@ -314,7 +337,7 @@ class P2pSyncController(private val appContext: Context) {
         }
     }
 
-    fun startServer(port: Int) {
+    fun startServer(port: Int, token: String? = null) {
         // Limpieza profunda antes de iniciar un nuevo servidor
         syncManager.stop()
         nsdHelper.stop()
@@ -322,6 +345,10 @@ class P2pSyncController(private val appContext: Context) {
         _isConnected.value = false
         _role.value = "SERVER"
         lastRemotePort = port
+        // token != null → emparejamiento nuevo (desde ShowQrScreen): se fija un token nuevo, lo que
+        // invalida a clientes que quedaron vinculados a una sesión anterior. token == null → reconexión
+        // automática (caída de WiFi): se reutiliza el token almacenado para no romper el vínculo.
+        if (token != null) pairingToken = token
         saveSyncState()
 
         // Cambiar ID a modo servidor
@@ -362,11 +389,14 @@ class P2pSyncController(private val appContext: Context) {
         }
     }
 
-    fun connectToServer(ip: String, port: Int) {
+    fun connectToServer(ip: String, port: Int, token: String? = null) {
         _isConnected.value = false // Reiniciar estado para evitar saltos de UI
         _role.value = "CLIENT"
         lastRemoteIp = ip
         lastRemotePort = port
+        // token != null → vino del QR escaneado (emparejamiento explícito). token == null → reconexión
+        // automática: se reutiliza el token almacenado para que el handshake siga validando.
+        if (token != null) pairingToken = token
         saveSyncState()
         syncManager.connectTo(ip, port)
         addLog("Conectando a $ip:$port...")
@@ -394,6 +424,7 @@ class P2pSyncController(private val appContext: Context) {
             // 4. Limpiar estado de sincronización persistente y preferencias
             isFullyLinked = false
             lastRemoteIp = null
+            pairingToken = null
             sharedPrefs.edit().clear().apply()
 
             // 5. Notificar navegación inmediata
@@ -458,6 +489,9 @@ class P2pSyncController(private val appContext: Context) {
         syncManager.stop()
         nsdHelper.stop()
         isFullyLinked = false
+        // Olvidar el token de emparejamiento: este dispositivo deja de poder reconectar solo y, para
+        // re-vincularse, deberá escanear un QR nuevo (que generará un token nuevo).
+        pairingToken = null
 
         // Restaurar ID original si era servidor
         scope.launch {
@@ -482,6 +516,7 @@ class P2pSyncController(private val appContext: Context) {
             putInt("last_port", lastRemotePort)
             putBoolean("is_fully_linked", isFullyLinked)
             putString("remote_device_name", _remoteDeviceName.value)
+            putString("pairing_token", pairingToken)
             apply()
         }
     }
@@ -494,65 +529,70 @@ class P2pSyncController(private val appContext: Context) {
             is SyncMessage.SyncData -> {
                 scope.launch {
                     var needsSyncBack = false
+                    var missingInRemote = false
                     isProcessingRemoteUpdate = true
                     try {
-                        val localSettings = repository.getSettingsOnce()
-                        val remoteSettings = message.settings
-                        val isFirstLink = !isFullyLinked
+                        // Secciones que mutan la DB serializadas con el resto de handlers entrantes
+                        // (evita races de check-then-insert entre mensajes concurrentes).
+                        inboundMutex.withLock {
+                            val localSettings = repository.getSettingsOnce()
+                            val remoteSettings = message.settings
+                            val isFirstLink = !isFullyLinked
 
-                        // Lógica de Prioridad de Ajustes (Flujo de Vinculación):
-                        val shouldUpdateLocalSettings = when {
-                            isFirstLink && _role.value == "SERVER" -> {
-                                addLog("Vinculación inicial: Clonando perfil del Cliente")
-                                true
+                            // Lógica de Prioridad de Ajustes (Flujo de Vinculación):
+                            val shouldUpdateLocalSettings = when {
+                                isFirstLink && _role.value == "SERVER" -> {
+                                    addLog("Vinculación inicial: Clonando perfil del Cliente")
+                                    true
+                                }
+                                isFirstLink && _role.value == "CLIENT" -> {
+                                    addLog("Vinculación inicial: Ignorando datos del servidor")
+                                    false
+                                }
+                                else -> localSettings == null || remoteSettings.lastModified > localSettings.lastModified
                             }
-                            isFirstLink && _role.value == "CLIENT" -> {
-                                addLog("Vinculación inicial: Ignorando datos del servidor")
-                                false
+
+                            if (shouldUpdateLocalSettings) {
+                                repository.saveSettings(remoteSettings)
+                                if (isFirstLink) {
+                                    addLog("Perfil sincronizado desde el dispositivo principal")
+                                } else {
+                                    addLog("Ajustes actualizados (Cambio remoto más reciente)")
+                                    emitSettingsEvents(localSettings, remoteSettings)
+                                }
+                            } else if (localSettings != null && (isFirstLink || localSettings.lastModified > remoteSettings.lastModified)) {
+                                needsSyncBack = true
                             }
-                            else -> localSettings == null || remoteSettings.lastModified > localSettings.lastModified
+
+                            // Fusión de Visitas (Unión Real). Empareja por uuid y, como respaldo para
+                            // visitas previas a esta versión, por registrationDate.
+                            val localVisits = repository.allVisits.first()
+                            val remoteVisits = message.visits
+
+                            val newVisitsForLocal = remoteVisits.filter { rv -> localVisits.none { visitsMatch(it, rv) } }
+
+                            if (newVisitsForLocal.isNotEmpty()) {
+                                newVisitsForLocal.forEach { remoteVisit ->
+                                    repository.insertVisit(remoteVisit.copy(id = 0))
+                                }
+                                addLog("Fusionadas ${newVisitsForLocal.size} visitas del remoto")
+                                if (!isFirstLink) emitEvent(SyncEvent.NewVisits(newVisitsForLocal.size))
+                            }
+
+                            // ¿El remoto carece de visitas que sí tenemos? → reenviar nuestros datos.
+                            missingInRemote = localVisits.any { lv -> remoteVisits.none { visitsMatch(lv, it) } }
+
+                            // Fusión de Productos (merge por uuid/remoteId/firma con lastModified).
+                            val remoteProducts = message.products
+                            if (remoteProducts.isNotEmpty()) {
+                                val localProducts = repository.allProducts.first()
+                                mergeProducts(remoteProducts)
+                                addLog("Catálogo de productos actualizado")
+                                if (!isFirstLink && catalogChanged(localProducts, remoteProducts)) {
+                                    emitEvent(SyncEvent.ProductsChanged(countCatalogChanges(localProducts, remoteProducts)))
+                                }
+                            }
                         }
-
-                        if (shouldUpdateLocalSettings) {
-                            repository.saveSettings(remoteSettings)
-                            if (isFirstLink) {
-                                addLog("Perfil sincronizado desde el dispositivo principal")
-                            } else {
-                                addLog("Ajustes actualizados (Cambio remoto más reciente)")
-                                emitSettingsEvents(localSettings, remoteSettings)
-                            }
-                        } else if (localSettings != null && (isFirstLink || localSettings.lastModified > remoteSettings.lastModified)) {
-                            needsSyncBack = true
-                        }
-
-                        // Fusión de Visitas (Sigue siendo Unión Real)
-                        val localVisits = repository.allVisits.first()
-                        val localTimestamps = localVisits.map { it.registrationDate }.toSet()
-                        val remoteVisits = message.visits
-
-                        val newVisitsForLocal = remoteVisits.filter { it.registrationDate !in localTimestamps }
-
-                        if (newVisitsForLocal.isNotEmpty()) {
-                            newVisitsForLocal.forEach { remoteVisit ->
-                                repository.insertVisit(remoteVisit.copy(id = 0))
-                            }
-                            addLog("Fusionadas ${newVisitsForLocal.size} visitas del remoto")
-                            if (!isFirstLink) emitEvent(SyncEvent.NewVisits(newVisitsForLocal.size))
-                        }
-
-                        // Fusión de Productos (Catálogo)
-                        val remoteProducts = message.products
-                        if (remoteProducts.isNotEmpty()) {
-                            val localProducts = repository.allProducts.first()
-                            repository.replaceAllProducts(remoteProducts.map { it.copy(id = 0) })
-                            addLog("Catálogo de productos actualizado")
-                            if (!isFirstLink && catalogChanged(localProducts, remoteProducts)) {
-                                emitEvent(SyncEvent.ProductsChanged(countCatalogChanges(localProducts, remoteProducts)))
-                            }
-                        }
-
-                        val remoteTimestamps = remoteVisits.map { it.registrationDate }.toSet()
-                        val missingInRemote = localVisits.any { it.registrationDate !in remoteTimestamps }
 
                         if (missingInRemote || needsSyncBack) {
                             addLog("Sincronizando datos locales hacia el remoto...")
@@ -582,17 +622,20 @@ class P2pSyncController(private val appContext: Context) {
                 }
             }
             is SyncMessage.NewVisit -> {
+                // (Ya no se emite NewVisit desde esta versión; se mantiene idempotente por compatibilidad
+                // con peers antiguos.) Dedup atómica bajo el mutex por uuid (respaldo registrationDate).
                 scope.launch {
                     isProcessingRemoteUpdate = true
                     try {
-                        val localVisits = repository.allVisits.first()
-                        if (localVisits.none { it.registrationDate == message.visit.registrationDate }) {
-                            // Resetear ID para evitar sobrescribir visitas locales por colisión de ID
-                            repository.insertVisit(message.visit.copy(id = 0))
-                            addLog("Nueva visita recibida")
-                            emitEvent(SyncEvent.NewVisits(1))
-                            bridgeP2pChangesToCloud()
-                            _ticks.value++
+                        inboundMutex.withLock {
+                            val localVisits = repository.allVisits.first()
+                            if (localVisits.none { visitsMatch(it, message.visit) }) {
+                                repository.insertVisit(message.visit.copy(id = 0))
+                                addLog("Nueva visita recibida")
+                                emitEvent(SyncEvent.NewVisits(1))
+                                bridgeP2pChangesToCloud()
+                                _ticks.value++
+                            }
                         }
                     } finally {
                         delay(500)
@@ -604,37 +647,39 @@ class P2pSyncController(private val appContext: Context) {
                 scope.launch {
                     isProcessingRemoteUpdate = true
                     try {
-                        val locals = repository.allVisits.first()
-                        var changed = false
-                        var newCount = 0
-                        for (rv in message.visits) {
-                            val existing = locals.firstOrNull { it.registrationDate == rv.registrationDate }
-                            if (existing == null) {
-                                // Visita nueva (id=0 → autogenera; evita colisión de ID local).
-                                repository.insertVisit(rv.copy(id = 0))
-                                changed = true
-                                newCount++
-                            } else {
-                                // Merge idempotente y monótono de los campos de estado de sync.
-                                // Sólo se escribe si hay diferencia real → corta el bucle de reenvío.
-                                val merged = existing.copy(
-                                    remoteId = existing.remoteId ?: rv.remoteId,
-                                    isSent = existing.isSent || rv.isSent,
-                                    sentDate = existing.sentDate ?: rv.sentDate
-                                )
-                                if (merged != existing) {
-                                    repository.insertVisit(merged) // misma PK = update (REPLACE)
+                        inboundMutex.withLock {
+                            val locals = repository.allVisits.first()
+                            var changed = false
+                            var newCount = 0
+                            for (rv in message.visits) {
+                                val existing = locals.firstOrNull { visitsMatch(it, rv) }
+                                if (existing == null) {
+                                    // Visita nueva (id=0 → autogenera; evita colisión de ID local).
+                                    repository.insertVisit(rv.copy(id = 0))
                                     changed = true
+                                    newCount++
+                                } else {
+                                    // Merge idempotente y monótono de los campos de estado de sync.
+                                    // Sólo se escribe si hay diferencia real → corta el bucle de reenvío.
+                                    val merged = existing.copy(
+                                        remoteId = existing.remoteId ?: rv.remoteId,
+                                        isSent = existing.isSent || rv.isSent,
+                                        sentDate = existing.sentDate ?: rv.sentDate
+                                    )
+                                    if (merged != existing) {
+                                        repository.insertVisit(merged) // misma PK = update (REPLACE)
+                                        changed = true
+                                    }
                                 }
                             }
-                        }
-                        if (changed) {
-                            addLog("Visitas reconciliadas con el remoto")
-                            // Sólo notificar cuando hay visitas REALMENTE nuevas (no meros cambios de
-                            // estado isSent/remoteId), para no avisar por ecos de sincronización.
-                            if (newCount > 0) emitEvent(SyncEvent.NewVisits(newCount))
-                            bridgeP2pChangesToCloud()
-                            _ticks.value++
+                            if (changed) {
+                                addLog("Visitas reconciliadas con el remoto")
+                                // Sólo notificar cuando hay visitas REALMENTE nuevas (no meros cambios de
+                                // estado isSent/remoteId), para no avisar por ecos de sincronización.
+                                if (newCount > 0) emitEvent(SyncEvent.NewVisits(newCount))
+                                bridgeP2pChangesToCloud()
+                                _ticks.value++
+                            }
                         }
                     } catch (e: Exception) {
                         Log.e("P2pSyncController", "Error en UpdateVisits", e)
@@ -671,25 +716,49 @@ class P2pSyncController(private val appContext: Context) {
                 }
             }
             is SyncMessage.UpdateProducts -> {
+                // El eco de productos se evita por firma de contenido (ver observador y mergeProducts),
+                // no con isProcessingRemoteUpdate: así una edición local concurrente no se pierde.
                 scope.launch {
-                    isProcessingRemoteUpdate = true
                     try {
-                        val localProducts = repository.allProducts.first()
-                        repository.replaceAllProducts(message.products.map { it.copy(id = 0) })
-                        addLog("Catálogo de productos actualizado remotamente")
-                        if (catalogChanged(localProducts, message.products)) {
-                            emitEvent(SyncEvent.ProductsChanged(countCatalogChanges(localProducts, message.products)))
+                        inboundMutex.withLock {
+                            val localProducts = repository.allProducts.first()
+                            mergeProducts(message.products)
+                            addLog("Catálogo de productos actualizado remotamente")
+                            if (catalogChanged(localProducts, message.products)) {
+                                emitEvent(SyncEvent.ProductsChanged(countCatalogChanges(localProducts, message.products)))
+                            }
+                            bridgeP2pChangesToCloud()
+                            _ticks.value++
                         }
-                        bridgeP2pChangesToCloud()
-                        _ticks.value++
-                    } finally {
-                        delay(500)
-                        isProcessingRemoteUpdate = false
+                    } catch (e: Exception) {
+                        Log.e("P2pSyncController", "Error en UpdateProducts", e)
                     }
                 }
             }
             is SyncMessage.Handshake -> {
                 scope.launch {
+                    // Validación del token de emparejamiento. Si tenemos un token local y el del peer no
+                    // coincide, es un vínculo obsoleto/ajeno → se rechaza para impedir la reconexión
+                    // silenciosa sin re-escanear el QR. (Token local vacío = vínculo previo a esta versión:
+                    // se acepta por compatibilidad.)
+                    val localToken = pairingToken
+                    if (!localToken.isNullOrEmpty() && message.sessionId != localToken) {
+                        addLog("Handshake rechazado: token de emparejamiento no coincide")
+                        if (_role.value == "CLIENT") {
+                            // Este dispositivo es el lado obsoleto: se desvincula localmente (sin notificar,
+                            // para no afectar al servidor que sí tiene un emparejamiento válido). NO se hace
+                            // reset de fábrica: el cliente conserva sus datos, sólo olvida el vínculo.
+                            unlink()
+                        } else {
+                            // Servidor con un emparejamiento válido: avisa al cliente obsoleto que se
+                            // desvincule y descarta SÓLO esta conexión (sigue escuchando al cliente legítimo).
+                            try { syncManager.sendMessage(SyncMessage.PairingRejected) } catch (_: Exception) {}
+                            delay(200)
+                            syncManager.dropCurrentConnection()
+                        }
+                        return@launch
+                    }
+
                     _remoteDeviceName.value = message.deviceName
                     saveSyncState()
                     addLog("Vínculo establecido con: ${message.deviceName}")
@@ -727,6 +796,15 @@ class P2pSyncController(private val appContext: Context) {
                     logout()
                 } else {
                     // Si el cliente detecta que el servidor se fue, solo desvincula
+                    unlink()
+                }
+            }
+            is SyncMessage.PairingRejected -> {
+                // El servidor rechazó nuestro token (somos un vínculo obsoleto): desvincularse para
+                // dejar de reconectar solo. Sólo aplica al cliente; un servidor lo ignora (mantiene su
+                // sesión de emparejamiento válida).
+                if (_role.value == "CLIENT") {
+                    addLog("El servidor rechazó el emparejamiento; desvinculando")
                     unlink()
                 }
             }
@@ -812,13 +890,17 @@ class P2pSyncController(private val appContext: Context) {
         if (old.mapSummary != new.mapSummary) emitEvent(SyncEvent.MapChanged)
     }
 
+    /** Firma de contenido de un producto (ignora id/uuid/remoteId; compara campos de negocio). */
+    private fun productSig(p: Product) =
+        "${p.name}|${p.basePrice}|${p.currency}|${p.category}|${p.discountValue}|${p.discountType}"
+
+    /** Firma de un catálogo completo, independiente del orden (para suprimir ecos por contenido). */
+    private fun productsSignature(list: List<Product>): String =
+        list.map(::productSig).sorted().joinToString("\n")
+
     /** ¿El catálogo remoto difiere del local? (ignora ids; compara campos de negocio). */
-    private fun catalogChanged(local: List<Product>, remote: List<Product>): Boolean {
-        fun sig(list: List<Product>) = list
-            .map { "${it.name}|${it.basePrice}|${it.currency}|${it.category}|${it.discountValue}|${it.discountType}" }
-            .sorted()
-        return sig(local) != sig(remote)
-    }
+    private fun catalogChanged(local: List<Product>, remote: List<Product>): Boolean =
+        productsSignature(local) != productsSignature(remote)
 
     /**
      * Nº de productos remotos nuevos o modificados respecto al catálogo local (misma firma que
@@ -826,9 +908,65 @@ class P2pSyncController(private val appContext: Context) {
      * en vez del tamaño total del catálogo.
      */
     private fun countCatalogChanges(local: List<Product>, remote: List<Product>): Int {
-        fun sig(p: Product) =
-            "${p.name}|${p.basePrice}|${p.currency}|${p.category}|${p.discountValue}|${p.discountType}"
-        val localSigs = local.map(::sig).toSet()
-        return remote.count { sig(it) !in localSigs }
+        val localSigs = local.map(::productSig).toSet()
+        return remote.count { productSig(it) !in localSigs }
+    }
+
+    /** Dos visitas son la misma si comparten uuid o (respaldo legado) la fecha de registro exacta. */
+    private fun visitsMatch(a: Visit, b: Visit): Boolean =
+        a.uuid == b.uuid || a.registrationDate == b.registrationDate
+
+    /**
+     * Empareja un producto remoto con uno local por: uuid → remoteId (ambos no nulos) → firma de
+     * contenido (respaldo para filas previas a la migración, que reciben uuid distinto por dispositivo).
+     * Cada local se empareja una sola vez (`used`).
+     */
+    private fun findProductMatch(r: Product, local: List<Product>, used: Set<Int>): Product? {
+        local.firstOrNull { it.id !in used && it.uuid == r.uuid }?.let { return it }
+        if (r.remoteId != null) {
+            local.firstOrNull { it.id !in used && it.remoteId == r.remoteId }?.let { return it }
+        }
+        val rSig = productSig(r)
+        return local.firstOrNull { it.id !in used && productSig(it) == rSig }
+    }
+
+    /**
+     * Fusiona el catálogo remoto con el local SIN regenerar ids locales (clave para no perder ediciones
+     * en curso) y resolviendo cada producto por `lastModified` (el más nuevo gana). Convergencia de
+     * identidad por uuid mínimo. Membresía autoritativa del emisor: los productos locales que el remoto
+     * ya no tiene se consideran borrados y se eliminan (preserva la propagación de borrados).
+     *
+     * Se aplica en una sola transacción y se fija [lastProductsSig] al catálogo entrante para que el
+     * observador NO haga eco si el resultado es idéntico, pero SÍ reenvíe si conservamos algo más nuevo.
+     */
+    private suspend fun mergeProducts(remote: List<Product>) {
+        val local = repository.allProducts.first()
+        val upserts = ArrayList<Product>()
+        val matchedLocalIds = HashSet<Int>()
+
+        for (r in remote) {
+            val l = findProductMatch(r, local, matchedLocalIds)
+            if (l != null) {
+                matchedLocalIds.add(l.id)
+                val chosenUuid = minOf(l.uuid, r.uuid)
+                val chosenRemoteId = l.remoteId ?: r.remoteId
+                if (l.lastModified >= r.lastModified) {
+                    // Local igual o más nuevo: conservar sus campos, sólo converger identidad.
+                    val merged = l.copy(uuid = chosenUuid, remoteId = chosenRemoteId)
+                    if (merged != l) upserts.add(merged) // mismo id → REPLACE = update en sitio
+                } else {
+                    // Remoto más nuevo: tomar sus campos pero preservando el id local de la fila.
+                    upserts.add(r.copy(id = l.id, uuid = chosenUuid, remoteId = chosenRemoteId))
+                }
+            } else {
+                // Producto nuevo del peer.
+                upserts.add(r.copy(id = 0))
+            }
+        }
+
+        val deletes = local.filter { it.id !in matchedLocalIds }
+
+        lastProductsSig = productsSignature(remote)
+        repository.applyProductMerge(deletes, upserts)
     }
 }

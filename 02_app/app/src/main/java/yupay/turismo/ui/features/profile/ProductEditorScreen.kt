@@ -287,19 +287,35 @@ fun ProductEditorScreen(
                             val finalStartDate = if (areDatesValid) startDate else null
                             val finalEndDate = if (areDatesValid) endDate else null
                             
-                            val newProduct = Product(
-                                id = productId ?: 0,
-                                name = name,
-                                basePrice = basePrice,
-                                currency = currency,
-                                category = category,
-                                isDefault = product?.isDefault ?: false,
-                                discountValue = dValue,
-                                discountType = discountType,
-                                discountStartDate = finalStartDate,
-                                discountEndDate = finalEndDate,
-                                createdAt = product?.createdAt ?: System.currentTimeMillis()
-                            )
+                            // Al editar se parte del producto existente con .copy(...) para PRESERVAR
+                            // id/uuid/remoteId/createdAt (descartarlos provocaba un duplicado con datos
+                            // viejos vía la nube). Se actualiza lastModified para que el merge P2P por
+                            // lastModified haga ganar este cambio.
+                            val existing = product
+                            val newProduct = if (existing != null) {
+                                existing.copy(
+                                    name = name,
+                                    basePrice = basePrice,
+                                    currency = currency,
+                                    category = category,
+                                    discountValue = dValue,
+                                    discountType = discountType,
+                                    discountStartDate = finalStartDate,
+                                    discountEndDate = finalEndDate,
+                                    lastModified = System.currentTimeMillis()
+                                )
+                            } else {
+                                Product(
+                                    name = name,
+                                    basePrice = basePrice,
+                                    currency = currency,
+                                    category = category,
+                                    discountValue = dValue,
+                                    discountType = discountType,
+                                    discountStartDate = finalStartDate,
+                                    discountEndDate = finalEndDate
+                                )
+                            }
                             if (productId == null) viewModel.addProduct(newProduct) else viewModel.updateProduct(newProduct)
                             onBack()
                         }
@@ -322,19 +338,32 @@ fun ProductEditorScreen(
                     TextButton(onClick = {
                         val basePrice = price.toDoubleOrNull() ?: 0.0
                         val dValue = discountValue.toDoubleOrNull() ?: 0.0
-                        val newProduct = Product(
-                            id = productId ?: 0,
-                            name = name,
-                            basePrice = basePrice,
-                            currency = currency,
-                            category = category,
-                            isDefault = product?.isDefault ?: false,
-                            discountValue = dValue,
-                            discountType = discountType,
-                            discountStartDate = null,
-                            discountEndDate = null,
-                            createdAt = product?.createdAt ?: System.currentTimeMillis()
-                        )
+                        // Igual que en el guardado normal: al editar se preserva la identidad con .copy().
+                        val existing = product
+                        val newProduct = if (existing != null) {
+                            existing.copy(
+                                name = name,
+                                basePrice = basePrice,
+                                currency = currency,
+                                category = category,
+                                discountValue = dValue,
+                                discountType = discountType,
+                                discountStartDate = null,
+                                discountEndDate = null,
+                                lastModified = System.currentTimeMillis()
+                            )
+                        } else {
+                            Product(
+                                name = name,
+                                basePrice = basePrice,
+                                currency = currency,
+                                category = category,
+                                discountValue = dValue,
+                                discountType = discountType,
+                                discountStartDate = null,
+                                discountEndDate = null
+                            )
+                        }
                         if (productId == null) viewModel.addProduct(newProduct) else viewModel.updateProduct(newProduct)
                         showInvalidDateWarning = false
                         onBack()

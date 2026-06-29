@@ -33,8 +33,20 @@ class DataRepository(
         return visitDao.getVisitById(id)
     }
 
+    suspend fun getVisitByUuid(uuid: String): Visit? {
+        return visitDao.getByUuid(uuid)
+    }
+
     suspend fun getProductById(id: Int): Product? {
         return productDao.getProductById(id)
+    }
+
+    suspend fun getProductByUuid(uuid: String): Product? {
+        return productDao.getByUuid(uuid)
+    }
+
+    suspend fun deleteProducts(products: List<Product>) {
+        products.forEach { productDao.deleteProduct(it) }
     }
 
     suspend fun insertProducts(products: List<Product>) {
@@ -43,6 +55,10 @@ class DataRepository(
 
     suspend fun replaceAllProducts(products: List<Product>) {
         productDao.replaceProducts(products)
+    }
+
+    suspend fun applyProductMerge(deletes: List<Product>, upserts: List<Product>) {
+        productDao.applyMerge(deletes, upserts)
     }
 
     suspend fun insertProduct(product: Product): Long {

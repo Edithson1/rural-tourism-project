@@ -12,6 +12,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,10 +36,13 @@ fun ShowQrScreen(navController: NavController, syncViewModel: SyncViewModel, lan
     val isConnected by syncViewModel.isConnected.collectAsState()
     val localIp = syncViewModel.getLocalIpAddress()
     val port = 51234
-    val sessionId = "SESS-${System.currentTimeMillis() % 10000}"
+    // Token de emparejamiento ESTABLE para esta sesión de vinculación. Identifica el vínculo y se
+    // valida en el handshake: al iniciar un emparejamiento nuevo se genera uno nuevo, por lo que un
+    // cliente que quedó vinculado a un servidor anterior (ya reseteado) es rechazado y debe re-escanear.
+    val sessionId = rememberSaveable { java.util.UUID.randomUUID().toString() }
 
     LaunchedEffect(Unit) {
-        syncViewModel.startServer(port)
+        syncViewModel.startServer(port, sessionId)
     }
 
     DisposableEffect(Unit) {

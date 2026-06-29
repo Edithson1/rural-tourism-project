@@ -116,6 +116,16 @@ class SyncManager(
         writer = null
     }
 
+    /**
+     * Cierra SÓLO la conexión actual con el peer (socket de datos), dejando el [serverSocket]
+     * escuchando. Se usa para rechazar a un peer con token de emparejamiento inválido sin tumbar el
+     * servidor, de modo que el cliente legítimo todavía pueda conectarse.
+     */
+    fun dropCurrentConnection() {
+        onConnectionStatusChanged(false)
+        disconnect()
+    }
+
     fun stop() {
         if (!isRunning) return
         isRunning = false

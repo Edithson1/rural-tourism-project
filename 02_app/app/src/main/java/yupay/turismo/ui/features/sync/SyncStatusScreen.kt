@@ -61,7 +61,8 @@ fun SyncStatusScreen(
 
     LaunchedEffect(Unit) {
         if (role == "CLIENT") {
-            syncViewModel.connectToServer(ip, port)
+            // Pasar el token de emparejamiento escaneado del QR para que el servidor lo valide.
+            syncViewModel.connectToServer(ip, port, sessionId.ifBlank { null })
         } else {
             // Si es servidor, ya está iniciado desde ShowQrScreen, 
             // pero nos aseguramos de que el rol sea correcto en el ViewModel

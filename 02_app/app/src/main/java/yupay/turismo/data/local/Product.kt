@@ -8,6 +8,9 @@ import kotlinx.serialization.Serializable
 @Entity(tableName = "products")
 data class Product(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    // Identificador estable entre dispositivos (clave de merge en P2P). El `id` de Room es local y se
+    // regenera en cada sincronización; el `uuid` viaja con el producto y lo identifica siempre.
+    val uuid: String = java.util.UUID.randomUUID().toString(),
     // id de este producto en el servidor (BIGSERIAL). null = aún no subido a la nube.
     val remoteId: Long? = null,
     val name: String,

@@ -7,6 +7,11 @@ import yupay.turismo.data.local.Visit
 
 @Serializable
 sealed class SyncMessage {
+    /**
+     * Saludo inicial. `sessionId` transporta el **token de emparejamiento** (UUID estable de la
+     * vinculación), que el otro lado valida para impedir reconexiones silenciosas con un peer que ya
+     * se desvinculó o pertenece a otra sesión.
+     */
     @Serializable
     data class Handshake(val deviceName: String, val sessionId: String) : SyncMessage()
 
@@ -45,4 +50,12 @@ sealed class SyncMessage {
 
     @Serializable
     object RemoteLogout : SyncMessage()
+
+    /**
+     * Rechazo de emparejamiento: lo envía el servidor a un cliente cuyo token no coincide para que el
+     * cliente se desvincule (limpie su información de conexión obsoleta). A diferencia de
+     * [RemoteLogout], NO provoca reset de fábrica: sólo desvincula localmente.
+     */
+    @Serializable
+    object PairingRejected : SyncMessage()
 }

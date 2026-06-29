@@ -51,9 +51,9 @@ class SyncViewModel(application: Application) : AndroidViewModel(application) {
 
     fun saveProfile(name: String, category: String) = controller.saveProfile(name, category)
     fun markOnboardingCompleted() = controller.markOnboardingCompleted()
-    fun startServer(port: Int) = controller.startServer(port)
+    fun startServer(port: Int, token: String? = null) = controller.startServer(port, token)
     fun cancelServerMode() = controller.cancelServerMode()
-    fun connectToServer(ip: String, port: Int) = controller.connectToServer(ip, port)
+    fun connectToServer(ip: String, port: Int, token: String? = null) = controller.connectToServer(ip, port, token)
     fun logout(onComplete: () -> Unit = {}) = controller.logout(onComplete)
     fun requestRemoteLogout(onComplete: () -> Unit = {}) = controller.requestRemoteLogout(onComplete)
     fun disconnectAllRemotes(onComplete: () -> Unit = {}) = controller.disconnectAllRemotes(onComplete)

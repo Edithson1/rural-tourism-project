@@ -20,7 +20,6 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.compose.ui.platform.LocalContext
 import yupay.turismo.sync.SyncViewModel
-import yupay.turismo.ui.components.ConnectionRequiredDialog
 import yupay.turismo.utils.UiTranslations
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,7 +31,6 @@ fun LinkedDevicesScreen(navController: NavController, syncViewModel: SyncViewMod
     
     var showIndividualDisconnectDialog by remember { mutableStateOf(false) }
     var showMassDisconnectDialog by remember { mutableStateOf(false) }
-    var showConnectionRequiredDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -60,13 +58,9 @@ fun LinkedDevicesScreen(navController: NavController, syncViewModel: SyncViewMod
                             name = remoteDeviceName ?: UiTranslations.getString(context, "linked_devices_unknown", language),
                             isActive = isConnected,
                             language = language,
-                            onDisconnect = {
-                                if (isConnected) {
-                                    showIndividualDisconnectDialog = true
-                                } else {
-                                    showConnectionRequiredDialog = true
-                                }
-                            }
+                            // Permitir quitar el vínculo también offline: limpia la información de
+                            // conexión obsoleta en este dispositivo aunque el peer no esté accesible.
+                            onDisconnect = { showIndividualDisconnectDialog = true }
                         )
                         HorizontalDivider(
                             modifier = Modifier.padding(start = 72.dp),
@@ -76,13 +70,7 @@ fun LinkedDevicesScreen(navController: NavController, syncViewModel: SyncViewMod
                 }
 
                 Button(
-                    onClick = {
-                        if (isConnected) {
-                            showMassDisconnectDialog = true
-                        } else {
-                            showConnectionRequiredDialog = true
-                        }
-                    },
+                    onClick = { showMassDisconnectDialog = true },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp),
@@ -147,9 +135,6 @@ fun LinkedDevicesScreen(navController: NavController, syncViewModel: SyncViewMod
         )
     }
 
-    if (showConnectionRequiredDialog) {
-        ConnectionRequiredDialog(language = language, onDismiss = { showConnectionRequiredDialog = false })
-    }
 }
 
 @Composable
@@ -189,15 +174,14 @@ fun DeviceItem(name: String, isActive: Boolean, language: String, onDisconnect: 
             )
         }
 
-        if (isActive) {
-            IconButton(onClick = onDisconnect) {
-                Icon(
-                    Icons.Default.ArrowBack, // Usamos ArrowBack como placeholder para "sacar" o desconectar
-                    contentDescription = UiTranslations.getString(context, "linked_devices_disconnect_action", language),
-                    tint = Color.Red,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
+        // Siempre disponible: permite también quitar un vínculo obsoleto cuando el peer está offline.
+        IconButton(onClick = onDisconnect) {
+            Icon(
+                Icons.Default.ArrowBack, // Usamos ArrowBack como placeholder para "sacar" o desconectar
+                contentDescription = UiTranslations.getString(context, "linked_devices_disconnect_action", language),
+                tint = Color.Red,
+                modifier = Modifier.size(20.dp)
+            )
         }
     }
 }

@@ -8,6 +8,9 @@ import kotlinx.serialization.Serializable
 @Entity(tableName = "visits")
 data class Visit(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    // Identificador estable entre dispositivos (clave de deduplicación/merge en P2P). El `id` de Room
+    // es local y se regenera en cada equipo; el `uuid` viaja con la visita y la identifica siempre.
+    val uuid: String = java.util.UUID.randomUUID().toString(),
     // id de esta visita en el servidor. null = aún no subida a la nube.
     val remoteId: Long? = null,
     val deviceId: String = "",
