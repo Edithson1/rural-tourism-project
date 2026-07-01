@@ -81,6 +81,13 @@ data class GoogleWebRequest(
 data class GoogleIdTokenRequest(
     val idToken: String,
     val nonce: String? = null,
+    /**
+     * Intención de la pantalla de origen: "login" o "register" (o null = comportamiento antiguo).
+     * La API la usa para respetar la simetría registro/login con Google:
+     *   - "register" + correo ya existente  → 409 (cuenta ya usada).
+     *   - "login"    + correo inexistente   → 404 (correo sin cuenta), sin crear la cuenta.
+     */
+    val mode: String? = null,
     val hardwareDeviceId: String? = null,
     val deviceName: String? = null,
     val businessName: String? = null,

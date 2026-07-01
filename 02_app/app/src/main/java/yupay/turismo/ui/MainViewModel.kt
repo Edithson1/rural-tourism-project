@@ -396,7 +396,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             info = "Revisa tu correo y confirma la cuenta para continuar."
                         )
                 }
-                is AuthResult.Err -> AuthUiState(error = r.message)
+                // 409 = el correo ya pertenece a una cuenta confirmada → diálogo "cuenta ya usada"
+                // (mismo que el registro con Google), en vez de un error genérico en línea.
+                is AuthResult.Err ->
+                    if (r.code == 409) AuthUiState(event = AuthEvent.AccountAlreadyExists)
+                    else AuthUiState(error = r.message)
             }
         }
     }
@@ -433,17 +437,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * LOGIN con Google (pantalla de inicio de sesión).
-     * - Cuenta nueva (no existía en Supabase): inicia sesión y **siembra datos por defecto**
-     *   (nombre/sector/productos) — caso 1.
-     * - Cuenta existente: login normal y baja sus datos — caso 2.
+     * LOGIN con Google (pantalla de inicio de sesión). `mode = "login"`: la API NO crea cuentas
+     * nuevas; si el correo de Google no está registrado devuelve 404 → mensaje "correo sin cuenta"
+     * en línea (simétrico al login por correo). Si la cuenta existe, login normal y baja sus datos.
+     *
+     * La rama `isNewUser` queda como defensa: con mode=login la API no devuelve usuarios nuevos.
      */
     fun signInWithGoogle(idToken: String, nonce: String? = null) {
         runAuth {
-            when (val r = authRepository.loginWithGoogleIdToken(idToken, nonce)) {
+            when (val r = authRepository.loginWithGoogleIdToken(idToken, nonce, mode = "login")) {
                 is AuthResult.Ok -> {
                     if (r.value) {
-                        seedDefaultBusinessData()   // isNewUser → datos por defecto
+                        seedDefaultBusinessData()   // defensivo: isNewUser → datos por defecto
                         seedDefaultContentIfEmpty() // y tips/mapas, para subirlos en firstLink
                     }
                     cloudSyncEngine.firstLink()
@@ -464,7 +469,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun signUpWithGoogle(idToken: String, nonce: String? = null) {
         runAuth {
-            when (val r = authRepository.loginWithGoogleIdToken(idToken, nonce)) {
+            when (val r = authRepository.loginWithGoogleIdToken(idToken, nonce, mode = "register")) {
                 is AuthResult.Ok -> {
                     if (r.value) {
                         seedDefaultContentIfEmpty() // cuenta nueva: tips/mapas llegan al registrar
@@ -472,12 +477,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         markOnboardingCompleted()
                         AuthUiState(event = AuthEvent.LoggedIn)
                     } else {
-                        // La cuenta de Google ya existía → no se permite "registrar".
+                        // Defensivo: con mode=register la API responde 409 (rama Err de abajo).
+                        // Si aun así llegara isNewUser=false, tratamos igual "cuenta ya usada".
                         authRepository.discardLocalSession()
                         AuthUiState(event = AuthEvent.AccountAlreadyExists)
                     }
                 }
-                is AuthResult.Err -> AuthUiState(error = r.message)
+                // 409 = la cuenta de Google ya existía → no se permite "registrar".
+                is AuthResult.Err ->
+                    if (r.code == 409) AuthUiState(event = AuthEvent.AccountAlreadyExists)
+                    else AuthUiState(error = r.message)
             }
         }
     }

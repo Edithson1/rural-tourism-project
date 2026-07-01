@@ -81,10 +81,20 @@ class AuthRepository(
         }
     }
 
-    /** Login/registro con Google nativo: el idToken se obtiene con Credential Manager. */
-    suspend fun loginWithGoogleIdToken(idToken: String, nonce: String? = null): AuthResult<Boolean> {
+    /**
+     * Login/registro con Google nativo: el idToken se obtiene con Credential Manager.
+     * [mode] indica la intención ("login" | "register") para que la API respete la simetría:
+     * registro de un correo existente → 409; login de un correo inexistente → 404.
+     */
+    suspend fun loginWithGoogleIdToken(
+        idToken: String,
+        nonce: String? = null,
+        mode: String? = null
+    ): AuthResult<Boolean> {
         val (hw, name) = deviceArgs()
-        return when (val res = api.googleIdToken(GoogleIdTokenRequest(idToken, nonce, hw, name))) {
+        return when (val res = api.googleIdToken(
+            GoogleIdTokenRequest(idToken = idToken, nonce = nonce, mode = mode, hardwareDeviceId = hw, deviceName = name)
+        )) {
             is ApiResult.Ok -> {
                 val sess = res.data.session
                 if (sess?.accessToken == null) AuthResult.Err("Respuesta de Google inválida.")
